@@ -13,7 +13,7 @@
     </head>
     <body>
         <div class="container">
-            <table id="ovirt_vms" class="display">
+            <table id="ovirt_vm_list" class="display">
                 <thead>
                     <tr>
                         <th>ID</th>
@@ -48,7 +48,7 @@
         </div>
         <script>
             $(document).ready(function() {
-                $('#ovirt_vms').DataTable({
+                $('#ovirt_vm_list').DataTable({
                     initComplete: function() {
                         this.api().columns().every(function () {
                             var column = this;

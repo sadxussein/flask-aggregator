@@ -1675,7 +1675,7 @@
         "state": "Up",
         "IP": "10.90.248.26",
         "engine": "e15",
-        "host": "e15-blade9-redvirt03.rncb.ru",
+        "host": "e15-blade9-redvirt01.rncb.ru",
         "cluster": "e15-blade9-test",
         "data_center": "e15-Datacenter",
         "was_migrated": ""
@@ -1735,7 +1735,7 @@
         "state": "Up",
         "IP": "10.90.250.42",
         "engine": "e15",
-        "host": "e15-blade9-redvirt04.rncb.ru",
+        "host": "e15-blade3-redvirt14.rncb.ru",
         "cluster": "e15-blade9-test",
         "data_center": "e15-Datacenter",
         "was_migrated": ""
@@ -1747,7 +1747,7 @@
         "state": "Up",
         "IP": "10.87.36.19",
         "engine": "e15",
-        "host": "e15-blade9-redvirt03.rncb.ru",
+        "host": "e15-blade2-redvirt13.rncb.ru",
         "cluster": "e15-blade9-test",
         "data_center": "e15-Datacenter",
         "was_migrated": ""
@@ -1759,7 +1759,7 @@
         "state": "Up",
         "IP": "10.90.250.44",
         "engine": "e15",
-        "host": "e15-blade9-redvirt02.rncb.ru",
+        "host": "e15-blade3-redvirt05.rncb.ru",
         "cluster": "e15-blade9-test",
         "data_center": "e15-Datacenter",
         "was_migrated": ""
@@ -1771,7 +1771,7 @@
         "state": "Up",
         "IP": "10.87.36.12",
         "engine": "e15",
-        "host": "e15-blade9-redvirt04.rncb.ru",
+        "host": "e15-blade2-redvirt13.rncb.ru",
         "cluster": "e15-blade9-test",
         "data_center": "e15-Datacenter",
         "was_migrated": ""
@@ -1783,7 +1783,7 @@
         "state": "Up",
         "IP": "10.87.36.13",
         "engine": "e15",
-        "host": "e15-blade9-redvirt02.rncb.ru",
+        "host": "e15-blade9-redvirt06.rncb.ru",
         "cluster": "e15-blade9-test",
         "data_center": "e15-Datacenter",
         "was_migrated": ""
@@ -1795,7 +1795,7 @@
         "state": "Up",
         "IP": "10.87.36.11",
         "engine": "e15",
-        "host": "e15-blade9-redvirt04.rncb.ru",
+        "host": "e15-blade3-redvirt16.rncb.ru",
         "cluster": "e15-blade9-test",
         "data_center": "e15-Datacenter",
         "was_migrated": ""
@@ -1807,7 +1807,7 @@
         "state": "Up",
         "IP": "10.87.36.17",
         "engine": "e15",
-        "host": "e15-blade9-redvirt01.rncb.ru",
+        "host": "e15-blade9-redvirt13.rncb.ru",
         "cluster": "e15-blade9-test",
         "data_center": "e15-Datacenter",
         "was_migrated": ""
@@ -1819,7 +1819,7 @@
         "state": "Up",
         "IP": "10.87.36.20",
         "engine": "e15",
-        "host": "e15-blade3-redvirt16.rncb.ru",
+        "host": "e15-blade9-redvirt07.rncb.ru",
         "cluster": "e15-blade9-test",
         "data_center": "e15-Datacenter",
         "was_migrated": ""
@@ -1855,7 +1855,7 @@
         "state": "Up",
         "IP": "10.186.33.142",
         "engine": "e15",
-        "host": "e15-blade9-redvirt04.rncb.ru",
+        "host": "e15-blade9-redvirt01.rncb.ru",
         "cluster": "e15-blade9-test",
         "data_center": "e15-Datacenter",
         "was_migrated": ""
@@ -1867,7 +1867,7 @@
         "state": "Up",
         "IP": "10.186.33.144",
         "engine": "e15",
-        "host": "e15-blade9-redvirt13.rncb.ru",
+        "host": "e15-blade9-redvirt07.rncb.ru",
         "cluster": "e15-blade9-test",
         "data_center": "e15-Datacenter",
         "was_migrated": ""
@@ -1879,7 +1879,7 @@
         "state": "Up",
         "IP": "10.186.33.143",
         "engine": "e15",
-        "host": "e15-blade9-redvirt09.rncb.ru",
+        "host": "e15-blade9-redvirt08.rncb.ru",
         "cluster": "e15-blade9-test",
         "data_center": "e15-Datacenter",
         "was_migrated": ""
@@ -1987,7 +1987,7 @@
         "state": "Up",
         "IP": "10.87.36.18",
         "engine": "e15",
-        "host": "e15-blade9-redvirt05.rncb.ru",
+        "host": "e15-blade3-redvirt05.rncb.ru",
         "cluster": "e15-blade9-test",
         "data_center": "e15-Datacenter",
         "was_migrated": ""
@@ -2011,7 +2011,7 @@
         "state": "Up",
         "IP": "10.186.33.145",
         "engine": "e15",
-        "host": "e15-blade9-redvirt03.rncb.ru",
+        "host": "e15-blade9-redvirt08.rncb.ru",
         "cluster": "e15-blade9-test",
         "data_center": "e15-Datacenter",
         "was_migrated": ""
@@ -2647,7 +2647,7 @@
         "name": "cicdabs-rnnr-prod-osabs",
         "hostname": "cicdabs-rnnr-prod-osabs.ipa.rncb.ru",
         "state": "Up",
-        "IP": "10.86.44.214",
+        "IP": "172.17.0.1",
         "engine": "e15",
         "host": "e15-blade9-redvirt09.rncb.ru",
         "cluster": "e15-blade9-test",
@@ -2829,7 +2829,7 @@
         "state": "Up",
         "IP": "10.87.14.201",
         "engine": "e15",
-        "host": "e15-blade2-redvirt16.rncb.ru",
+        "host": "e15-blade2-redvirt13.rncb.ru",
         "cluster": "e15-blade9-test",
         "data_center": "e15-Datacenter",
         "was_migrated": ""
@@ -2841,7 +2841,7 @@
         "state": "Up",
         "IP": "10.87.14.203",
         "engine": "e15",
-        "host": "e15-blade3-redvirt16.rncb.ru",
+        "host": "e15-blade2-redvirt13.rncb.ru",
         "cluster": "e15-blade9-test",
         "data_center": "e15-Datacenter",
         "was_migrated": ""
@@ -2865,7 +2865,7 @@
         "state": "Up",
         "IP": "10.87.14.213",
         "engine": "e15",
-        "host": "e15-blade2-redvirt16.rncb.ru",
+        "host": "e15-blade9-redvirt13.rncb.ru",
         "cluster": "e15-blade9-test",
         "data_center": "e15-Datacenter",
         "was_migrated": ""
@@ -3114,7 +3114,7 @@
         "name": "comm-app-prod-back-1",
         "hostname": "comm-app-prod-back-1.ipa.rncb.ru",
         "state": "Up",
-        "IP": "172.25.0.1",
+        "IP": "172.31.0.1",
         "engine": "e15",
         "host": "e15-blade9-redvirt05.rncb.ru",
         "cluster": "e15-blade9-test",
@@ -3126,7 +3126,7 @@
         "name": "comm-app-prod-front-1",
         "hostname": "comm-app-prod-front-1.ipa-dmz.rncb.ru",
         "state": "Up",
-        "IP": "172.25.0.1",
+        "IP": "172.26.0.1",
         "engine": "e15",
         "host": "e15-blade9-redvirt03.rncb.ru",
         "cluster": "e15-blade9-test",
@@ -3150,7 +3150,7 @@
         "name": "comm-bis-prod-front-1",
         "hostname": "comm-bis-prod-front-1.ipa-dmz.rncb.ru",
         "state": "Up",
-        "IP": "172.18.0.1",
+        "IP": "172.20.0.1",
         "engine": "e15",
         "host": "e15-blade9-redvirt05.rncb.ru",
         "cluster": "e15-blade9-test",
@@ -3194,6 +3194,18 @@
         "was_migrated": ""
     },
     {
+        "ID": "645e4057-3b81-4df9-a108-c5f67cf79687",
+        "name": "comm-nlb-prod-dmz-1",
+        "hostname": "comm-nlb-prod-dmz-1.ipa-dmz.rncb.ru",
+        "state": "Up",
+        "IP": "10.187.1.20",
+        "engine": "e15",
+        "host": "e15-redvirt-nginx-front.rncb.ru",
+        "cluster": "e15-nginx-front-cluster",
+        "data_center": "e15-nginx-front",
+        "was_migrated": ""
+    },
+    {
         "ID": "baf32010-b8e2-4d71-9d8d-182494dcd9f1",
         "name": "comm-nlb-prod-dmz-1",
         "hostname": null,
@@ -3203,18 +3215,6 @@
         "host": "",
         "cluster": "e15-blade9-test",
         "data_center": "e15-Datacenter",
-        "was_migrated": ""
-    },
-    {
-        "ID": "645e4057-3b81-4df9-a108-c5f67cf79687",
-        "name": "comm-nlb-prod-dmz-1",
-        "hostname": "comm-nlb-prod-dmz-1",
-        "state": "Up",
-        "IP": "10.187.1.20",
-        "engine": "e15",
-        "host": "e15-redvirt-nginx-front.rncb.ru",
-        "cluster": "e15-nginx-front-cluster",
-        "data_center": "e15-nginx-front",
         "was_migrated": ""
     },
     {
@@ -5792,9 +5792,9 @@
         "name": "dbojl-app-prod-front1",
         "hostname": "dbojl-app-prod-front1.ipa-dmz.rncb.ru",
         "state": "Up",
-        "IP": "172.46.0.1",
+        "IP": "172.17.0.1",
         "engine": "e15",
-        "host": "e15-blade3-redvirt16.rncb.ru",
+        "host": "e15-blade2-redvirt13.rncb.ru",
         "cluster": "e15-blade9-test",
         "data_center": "e15-Datacenter",
         "was_migrated": ""
@@ -5913,7 +5913,7 @@
         "state": "Up",
         "IP": "10.82.244.105",
         "engine": "e15",
-        "host": "e15-blade9-redvirt06.rncb.ru",
+        "host": "e15-blade2-redvirt13.rncb.ru",
         "cluster": "e15-blade9-test",
         "data_center": "e15-Datacenter",
         "was_migrated": ""
@@ -9132,7 +9132,7 @@
         "name": "indam-nlb-prod-e15",
         "hostname": "indam-nlb-prod-e15.ipa.rncb.ru",
         "state": "Up",
-        "IP": "10.85.37.71",
+        "IP": "10.85.37.79",
         "engine": "e15",
         "host": "e15-blade3-redvirt03.rncb.ru",
         "cluster": "e15-blade9-test",
@@ -9358,7 +9358,7 @@
         "state": "Up",
         "IP": "10.85.0.77",
         "engine": "e15",
-        "host": "e15-blade2-redvirt13.rncb.ru",
+        "host": "e15-blade9-redvirt08.rncb.ru",
         "cluster": "e15-blade9-test",
         "data_center": "e15-Datacenter",
         "was_migrated": ""
@@ -9370,7 +9370,7 @@
         "state": "Up",
         "IP": "10.85.0.78",
         "engine": "e15",
-        "host": "e15-blade2-redvirt13.rncb.ru",
+        "host": "e15-blade9-redvirt02.rncb.ru",
         "cluster": "e15-blade9-test",
         "data_center": "e15-Datacenter",
         "was_migrated": ""
@@ -9382,7 +9382,7 @@
         "state": "Up",
         "IP": "10.85.0.79",
         "engine": "e15",
-        "host": "e15-blade2-redvirt13.rncb.ru",
+        "host": "e15-blade9-redvirt08.rncb.ru",
         "cluster": "e15-blade9-test",
         "data_center": "e15-Datacenter",
         "was_migrated": ""
@@ -9394,7 +9394,7 @@
         "state": "Up",
         "IP": "10.85.0.80",
         "engine": "e15",
-        "host": "e15-blade2-redvirt13.rncb.ru",
+        "host": "e15-blade9-redvirt02.rncb.ru",
         "cluster": "e15-blade9-test",
         "data_center": "e15-Datacenter",
         "was_migrated": ""
@@ -10194,18 +10194,6 @@
         "was_migrated": ""
     },
     {
-        "ID": "0c773f4a-0d94-4691-8591-4ddee987f9c5",
-        "name": "lauth-usr-vm3",
-        "hostname": "lauth-usr-vm3.arm.rncb.ru",
-        "state": "Up",
-        "IP": "10.87.58.23",
-        "engine": "e15",
-        "host": "e15-blade9-redvirt11.rncb.ru",
-        "cluster": "e15-cluster-ARM",
-        "data_center": "e15-Datacenter-ARM",
-        "was_migrated": ""
-    },
-    {
         "ID": "e6c97db7-07e8-4ac2-a530-993a6745b05a",
         "name": "lauth-usr-vm3",
         "hostname": null,
@@ -10218,15 +10206,15 @@
         "was_migrated": ""
     },
     {
-        "ID": "e98ef2a6-65ae-4e89-9583-3b016da6fb8a",
-        "name": "lauth-usr-vm4",
-        "hostname": null,
-        "state": "Down",
-        "IP": "10.87.58.24",
+        "ID": "0c773f4a-0d94-4691-8591-4ddee987f9c5",
+        "name": "lauth-usr-vm3",
+        "hostname": "lauth-usr-vm3.arm.rncb.ru",
+        "state": "Up",
+        "IP": "10.87.58.23",
         "engine": "e15",
-        "host": "",
-        "cluster": "e15-blade9-cluster",
-        "data_center": "e15-Datacenter",
+        "host": "e15-blade9-redvirt11.rncb.ru",
+        "cluster": "e15-cluster-ARM",
+        "data_center": "e15-Datacenter-ARM",
         "was_migrated": ""
     },
     {
@@ -10239,6 +10227,18 @@
         "host": "e15-blade9-redvirt11.rncb.ru",
         "cluster": "e15-cluster-ARM",
         "data_center": "e15-Datacenter-ARM",
+        "was_migrated": ""
+    },
+    {
+        "ID": "e98ef2a6-65ae-4e89-9583-3b016da6fb8a",
+        "name": "lauth-usr-vm4",
+        "hostname": null,
+        "state": "Down",
+        "IP": "10.87.58.24",
+        "engine": "e15",
+        "host": "",
+        "cluster": "e15-blade9-cluster",
+        "data_center": "e15-Datacenter",
         "was_migrated": ""
     },
     {
@@ -10777,9 +10777,9 @@
         "name": "nexfs-stor-dc1",
         "hostname": "nexfs-stor-dc1",
         "state": "Up",
-        "IP": "10.87.49.152",
+        "IP": "10.90.248.34",
         "engine": "e15",
-        "host": "e15-blade9-redvirt07.rncb.ru",
+        "host": "e15-blade3-redvirt05.rncb.ru",
         "cluster": "e15-blade9-test",
         "data_center": "e15-Datacenter",
         "was_migrated": ""
@@ -12768,6 +12768,7 @@
         "name": "redos-armDIT-template",
         "hostname": "gold-templ.crimea.rncb.ru",
         "state": "Up",
+        "IP": "",
         "engine": "e15",
         "host": "e15-blade9-redvirt11.rncb.ru",
         "cluster": "e15-cluster-ARM",
@@ -14268,7 +14269,7 @@
     {
         "ID": "2532c856-0cb1-4f37-bd60-b37ab2c8e1ce",
         "name": "solmpi-app-prod-1-red",
-        "hostname": "solmpi-app-prod-1-red.ipa-dmz.rncb.ru",
+        "hostname": "solmpi-app-prod-1-red",
         "state": "Up",
         "IP": "10.75.6.25",
         "engine": "e15",
@@ -14280,7 +14281,7 @@
     {
         "ID": "c362c9e1-e0c7-4268-9950-7958e74ebf12",
         "name": "solmpi-app-prod-2-red",
-        "hostname": "solmpi-app-prod-2-red.ipa-dmz.rncb.ru",
+        "hostname": "solmpi-app-prod-2-red",
         "state": "Up",
         "IP": "10.75.6.26",
         "engine": "e15",
@@ -14292,7 +14293,7 @@
     {
         "ID": "49ad5394-2221-437c-8167-01559cd057b1",
         "name": "solmpi-app-prod-3ds-1-red",
-        "hostname": "solmpi-app-prod-3ds-1-red.ipa-dmz.rncb.ru",
+        "hostname": "solmpi-app-prod-3ds-1-red",
         "state": "Up",
         "IP": "10.75.6.27",
         "engine": "e15",
@@ -14304,7 +14305,7 @@
     {
         "ID": "b86a46eb-1aa9-4ab3-ac86-3f6b11b5258e",
         "name": "solmpi-app-prod-3ds-2-red",
-        "hostname": "solmpi-app-prod-3ds-2-red.ipa-dmz.rncb.ru",
+        "hostname": "solmpi-app-prod-3ds-2-red",
         "state": "Up",
         "IP": "10.75.6.28",
         "engine": "e15",
@@ -14599,7 +14600,7 @@
     {
         "ID": "14452d71-b7cb-4958-950b-c94245a6c154",
         "name": "spos-app-tst-back-e15",
-        "hostname": "spos-app-tst-back-e15",
+        "hostname": "spos-app-tst-back-e15.ipa-dmz.rncb.ru",
         "state": "Up",
         "IP": "10.186.14.78",
         "engine": "e15",
@@ -14740,13 +14741,13 @@
         "was_migrated": ""
     },
     {
-        "ID": "5eedb27d-6b2a-4c77-9506-3b45c8f76312",
+        "ID": "707ce637-b464-498d-8e26-988f724fc085",
         "name": "srvabs-app-prod-02-rxp",
         "hostname": "srvabs-app-prod-02-rxp",
         "state": "Up",
         "IP": "10.87.12.40",
         "engine": "e15",
-        "host": "e15-blade9-redvirt13.rncb.ru",
+        "host": "e15-blade9-redvirt07.rncb.ru",
         "cluster": "e15-blade9-test",
         "data_center": "e15-Datacenter",
         "was_migrated": ""
@@ -14957,9 +14958,9 @@
     {
         "ID": "4eebc3e7-6d33-4b67-9d74-a1a0b4b4e4e7",
         "name": "srvabs-k8s-prod-m-1",
-        "hostname": "srvabs-k8s-prod-m-1.ipa.rncb.ru",
+        "hostname": "srvabs-k8s-prod-m-1",
         "state": "Up",
-        "IP": "10.97.6.200",
+        "IP": "172.17.0.10",
         "engine": "e15",
         "host": "e15-redvirt-abs-k8s.rncb.ru",
         "cluster": "e15-abs-k8s-cluster",
@@ -14969,9 +14970,9 @@
     {
         "ID": "4353eb8b-3ed8-4185-a7a6-d53e4a8af646",
         "name": "srvabs-k8s-prod-w-4",
-        "hostname": "srvabs-k8s-prod-w-4.ipa.rncb.ru",
+        "hostname": "srvabs-k8s-prod-w-4",
         "state": "Up",
-        "IP": "10.97.6.201",
+        "IP": "172.17.0.10",
         "engine": "e15",
         "host": "e15-redvirt-abs-k8s.rncb.ru",
         "cluster": "e15-abs-k8s-cluster",
@@ -14981,9 +14982,9 @@
     {
         "ID": "29d8312e-78f1-4715-93e6-675215a14234",
         "name": "srvabs-k8s-prod-w-5",
-        "hostname": "srvabs-k8s-prod-w-5.ipa.rncb.ru",
+        "hostname": "srvabs-k8s-prod-w-5",
         "state": "Up",
-        "IP": "10.97.6.202",
+        "IP": "172.17.0.10",
         "engine": "e15",
         "host": "e15-redvirt-abs-k8s.rncb.ru",
         "cluster": "e15-abs-k8s-cluster",
@@ -14993,9 +14994,9 @@
     {
         "ID": "13eab78c-39ca-422c-8f50-2f142364695b",
         "name": "srvabs-k8s-prod-w-6",
-        "hostname": "srvabs-k8s-prod-w-6.ipa.rncb.ru",
+        "hostname": "srvabs-k8s-prod-w-6",
         "state": "Up",
-        "IP": "10.97.6.203",
+        "IP": "172.17.0.10",
         "engine": "e15",
         "host": "e15-redvirt-abs-k8s.rncb.ru",
         "cluster": "e15-abs-k8s-cluster",
@@ -19890,7 +19891,7 @@
         "name": "nexfs-stor-dc3",
         "hostname": "nexfs-stor-dc3",
         "state": "Up",
-        "IP": "10.96.18.154",
+        "IP": "",
         "engine": "n32",
         "host": "n32-blade1-redvirt14.rncb.ru",
         "cluster": "n32-blade1-test",
@@ -20046,7 +20047,7 @@
         "name": "nvd-qsrv-prod-kf02",
         "hostname": "nvd-qsrv-prod-kf02.ipa.rncb.ru",
         "state": "Up",
-        "IP": "172.25.0.1",
+        "IP": "172.24.0.1",
         "engine": "n32",
         "host": "n32-blade1-redvirt12.rncb.ru",
         "cluster": "n32-blade1-test",
@@ -20624,54 +20625,6 @@
         "was_migrated": ""
     },
     {
-        "ID": "29bd28d7-bfdd-4193-9037-f7bc6aed90d0",
-        "name": "solpinset-app-prod-2-red",
-        "hostname": "solpinset-app-prod-2-red",
-        "state": "Up",
-        "IP": "10.75.6.20",
-        "engine": "n32",
-        "host": "n32-blade1-redvirt07.rncb.ru",
-        "cluster": "n32-Processing",
-        "data_center": "n32-Datacenter-PRC",
-        "was_migrated": ""
-    },
-    {
-        "ID": "270678fd-42e7-4cfe-b86f-8f34670092ed",
-        "name": "solsfp-app-prod-sfraudprev1",
-        "hostname": "solsfp-app-prod-sfraudprev1",
-        "state": "Up",
-        "IP": "10.75.6.18",
-        "engine": "n32",
-        "host": "n32-blade1-redvirt07.rncb.ru",
-        "cluster": "n32-Processing",
-        "data_center": "n32-Datacenter-PRC",
-        "was_migrated": ""
-    },
-    {
-        "ID": "8ff84f33-da94-407c-9f20-1115755eb5ac",
-        "name": "solsfp-app-prod-sfraudprev4",
-        "hostname": "solsfp-app-prod-sfraudprev4",
-        "state": "Up",
-        "IP": "10.75.6.16",
-        "engine": "n32",
-        "host": "n32-blade1-redvirt07.rncb.ru",
-        "cluster": "n32-Processing",
-        "data_center": "n32-Datacenter-PRC",
-        "was_migrated": ""
-    },
-    {
-        "ID": "be516adf-aa39-4f19-952d-067220d2b019",
-        "name": "solsfp-app-prod-sfraudprevdbo0",
-        "hostname": "solsfp-app-prod-sfraudprevdbo0",
-        "state": "Up",
-        "IP": "10.75.6.19",
-        "engine": "n32",
-        "host": "n32-blade1-redvirt07.rncb.ru",
-        "cluster": "n32-Processing",
-        "data_center": "n32-Datacenter-PRC",
-        "was_migrated": ""
-    },
-    {
         "ID": "5b8ece30-b96c-469d-904c-92fcaf945ac4",
         "name": "splunk-app-tst-kafka2",
         "hostname": "splunk-app-tst-kafka2.ipa.rncb.ru",
@@ -20745,9 +20698,9 @@
     {
         "ID": "82d62ee3-a461-4361-864f-32d095ec0a2a",
         "name": "srvabs-k8s-prod-m-3",
-        "hostname": "srvabs-k8s-prod-m-3.ipa.rncb.ru",
+        "hostname": "srvabs-k8s-prod-m-3",
         "state": "Up",
-        "IP": "10.96.28.70",
+        "IP": "172.17.0.10",
         "engine": "n32",
         "host": "n32-blade1-redvirt10.rncb.ru",
         "cluster": "n32-blade1-test",
@@ -21529,7 +21482,7 @@
         "state": "Up",
         "IP": "10.87.14.202",
         "engine": "n32-2",
-        "host": "n32-blade3-redvirt04.rncb.ru",
+        "host": "n32-blade3-redvirt05.rncb.ru",
         "cluster": "n32-blade3-cluster-old",
         "data_center": "n32-Datacenter-old",
         "was_migrated": ""
@@ -21541,7 +21494,7 @@
         "state": "Up",
         "IP": "10.87.14.212",
         "engine": "n32-2",
-        "host": "n32-blade3-redvirt04.rncb.ru",
+        "host": "n32-blade3-redvirt05.rncb.ru",
         "cluster": "n32-blade3-cluster-old",
         "data_center": "n32-Datacenter-old",
         "was_migrated": ""
@@ -22448,7 +22401,7 @@
         "state": "Up",
         "IP": "172.46.0.1",
         "engine": "n32-2",
-        "host": "n32-blade3-redvirt07.rncb.ru",
+        "host": "n32-blade3-redvirt05.rncb.ru",
         "cluster": "n32-blade3-cluster-old",
         "data_center": "n32-Datacenter-old",
         "was_migrated": ""
@@ -22532,7 +22485,7 @@
         "state": "Up",
         "IP": "10.82.244.106",
         "engine": "n32-2",
-        "host": "n32-blade3-redvirt07.rncb.ru",
+        "host": "n32-blade3-redvirt05.rncb.ru",
         "cluster": "n32-blade3-cluster-old",
         "data_center": "n32-Datacenter-old",
         "was_migrated": ""
@@ -24935,7 +24888,7 @@
         "name": "sblan-app-tst-2",
         "hostname": "sblan-app-tst-2",
         "state": "Up",
-        "IP": "10.186.16.137",
+        "IP": "10.82.247.144",
         "engine": "n32-2",
         "host": "n32-blade3-redvirt05.rncb.ru",
         "cluster": "n32-blade3-cluster-old",
@@ -25165,42 +25118,6 @@
         "cluster": "n32-blade3-cluster-old",
         "data_center": "n32-Datacenter-old",
         "was_migrated": "True"
-    },
-    {
-        "ID": "ab9dba1b-39c6-40eb-b142-be899bae29c4",
-        "name": "solsfp-app-prod-sfraudprev1",
-        "hostname": "solsfp-app-prod-sfraudprev1",
-        "state": "Up",
-        "IP": "10.75.6.18",
-        "engine": "n32-2",
-        "host": "n32-blade3-redvirt07.rncb.ru",
-        "cluster": "n32-blade3-cluster-old",
-        "data_center": "n32-Datacenter-old",
-        "was_migrated": ""
-    },
-    {
-        "ID": "065f5ee5-35f8-4266-982d-ebf8c18af772",
-        "name": "solsfp-app-prod-sfraudprev4",
-        "hostname": "solsfp-app-prod-sfraudprev4",
-        "state": "Up",
-        "IP": "10.75.6.16",
-        "engine": "n32-2",
-        "host": "n32-blade3-redvirt02.rncb.ru",
-        "cluster": "n32-blade3-cluster-old",
-        "data_center": "n32-Datacenter-old",
-        "was_migrated": ""
-    },
-    {
-        "ID": "bd947116-50bf-4d78-8ef1-dad709e3f137",
-        "name": "solsfp-app-prod-sfraudprevdbo0",
-        "hostname": "solsfp-app-prod-sfraudprevdbo0",
-        "state": "Up",
-        "IP": "10.75.6.19",
-        "engine": "n32-2",
-        "host": "n32-blade3-redvirt02.rncb.ru",
-        "cluster": "n32-blade3-cluster-old",
-        "data_center": "n32-Datacenter-old",
-        "was_migrated": ""
     },
     {
         "ID": "2e3cb923-0202-4bd4-9f8e-1e2b2d6714a3",
@@ -25475,13 +25392,13 @@
         "was_migrated": ""
     },
     {
-        "ID": "794d9730-bb60-403c-b423-86849aa26f9c",
+        "ID": "e12690b0-915c-48cb-bd34-a197b6b87f0e",
         "name": "srvabs-app-prod-01-rxp",
         "hostname": "srvabs-app-prod-01-rxp",
         "state": "Up",
         "IP": "10.87.12.39",
         "engine": "n32-2",
-        "host": "n32-blade3-redvirt04.rncb.ru",
+        "host": "n32-blade3-redvirt05.rncb.ru",
         "cluster": "n32-blade3-cluster-old",
         "data_center": "n32-Datacenter-old",
         "was_migrated": ""
@@ -27431,7 +27348,7 @@
         "state": "Up",
         "IP": "10.90.248.26",
         "engine": "k45",
-        "host": "k45-blade3-redvirt15.rncb.ru",
+        "host": "k45-blade1-redvirt16.rncb.ru",
         "cluster": "k45-blade3-test",
         "data_center": "k45-Datacenter",
         "was_migrated": ""
@@ -27441,9 +27358,9 @@
         "name": "campus-dbs-prod-ch03",
         "hostname": "campus-dbs-prod-ch03.ipa-dmz.rncb.ru",
         "state": "Up",
-        "IP": "10.90.250.42",
+        "IP": "10.95.43.14",
         "engine": "k45",
-        "host": "k45-blade3-redvirt07.rncb.ru",
+        "host": "k45-blade1-redvirt16.rncb.ru",
         "cluster": "k45-blade3-test",
         "data_center": "k45-Datacenter",
         "was_migrated": ""
@@ -27455,7 +27372,7 @@
         "state": "Up",
         "IP": "10.95.43.19",
         "engine": "k45",
-        "host": "k45-blade3-redvirt15.rncb.ru",
+        "host": "k45-blade1-redvirt04.rncb.ru",
         "cluster": "k45-blade3-test",
         "data_center": "k45-Datacenter",
         "was_migrated": ""
@@ -27467,7 +27384,7 @@
         "state": "Up",
         "IP": "10.90.250.44",
         "engine": "k45",
-        "host": "k45-blade1-redvirt15.rncb.ru",
+        "host": "k45-blade3-redvirt11.rncb.ru",
         "cluster": "k45-blade3-test",
         "data_center": "k45-Datacenter",
         "was_migrated": ""
@@ -27479,7 +27396,7 @@
         "state": "Up",
         "IP": "10.95.43.12",
         "engine": "k45",
-        "host": "k45-blade3-redvirt07.rncb.ru",
+        "host": "k45-blade1-redvirt04.rncb.ru",
         "cluster": "k45-blade3-test",
         "data_center": "k45-Datacenter",
         "was_migrated": ""
@@ -27491,7 +27408,7 @@
         "state": "Up",
         "IP": "10.95.43.13",
         "engine": "k45",
-        "host": "k45-blade3-redvirt16.rncb.ru",
+        "host": "k45-blade3-redvirt14.rncb.ru",
         "cluster": "k45-blade3-test",
         "data_center": "k45-Datacenter",
         "was_migrated": ""
@@ -27503,7 +27420,7 @@
         "state": "Up",
         "IP": "10.95.43.11",
         "engine": "k45",
-        "host": "k45-blade3-redvirt11.rncb.ru",
+        "host": "k45-blade1-redvirt16.rncb.ru",
         "cluster": "k45-blade3-test",
         "data_center": "k45-Datacenter",
         "was_migrated": ""
@@ -27515,7 +27432,7 @@
         "state": "Up",
         "IP": "10.95.43.17",
         "engine": "k45",
-        "host": "k45-blade3-redvirt11.rncb.ru",
+        "host": "k45-blade1-redvirt16.rncb.ru",
         "cluster": "k45-blade3-test",
         "data_center": "k45-Datacenter",
         "was_migrated": ""
@@ -27527,7 +27444,7 @@
         "state": "Up",
         "IP": "10.95.43.20",
         "engine": "k45",
-        "host": "k45-blade3-redvirt16.rncb.ru",
+        "host": "k45-blade1-redvirt16.rncb.ru",
         "cluster": "k45-blade3-test",
         "data_center": "k45-Datacenter",
         "was_migrated": ""
@@ -27539,7 +27456,7 @@
         "state": "Up",
         "IP": "10.95.67.203",
         "engine": "k45",
-        "host": "k45-blade3-redvirt08.rncb.ru",
+        "host": "k45-blade1-redvirt16.rncb.ru",
         "cluster": "k45-blade3-test",
         "data_center": "k45-Datacenter",
         "was_migrated": ""
@@ -27551,7 +27468,7 @@
         "state": "Up",
         "IP": "10.95.65.142",
         "engine": "k45",
-        "host": "k45-blade3-redvirt15.rncb.ru",
+        "host": "k45-blade1-redvirt04.rncb.ru",
         "cluster": "k45-blade3-test",
         "data_center": "k45-Datacenter",
         "was_migrated": ""
@@ -27563,7 +27480,7 @@
         "state": "Up",
         "IP": "10.95.65.144",
         "engine": "k45",
-        "host": "k45-blade3-redvirt15.rncb.ru",
+        "host": "k45-blade1-redvirt04.rncb.ru",
         "cluster": "k45-blade3-test",
         "data_center": "k45-Datacenter",
         "was_migrated": ""
@@ -27575,7 +27492,7 @@
         "state": "Up",
         "IP": "10.95.65.146",
         "engine": "k45",
-        "host": "k45-blade3-redvirt16.rncb.ru",
+        "host": "k45-blade1-redvirt16.rncb.ru",
         "cluster": "k45-blade3-test",
         "data_center": "k45-Datacenter",
         "was_migrated": ""
@@ -27671,7 +27588,7 @@
         "state": "Up",
         "IP": "10.95.43.18",
         "engine": "k45",
-        "host": "k45-blade3-redvirt08.rncb.ru",
+        "host": "k45-blade1-redvirt16.rncb.ru",
         "cluster": "k45-blade3-test",
         "data_center": "k45-Datacenter",
         "was_migrated": ""
@@ -27683,7 +27600,7 @@
         "state": "Up",
         "IP": "10.90.248.24",
         "engine": "k45",
-        "host": "k45-blade1-redvirt11.rncb.ru",
+        "host": "k45-blade1-redvirt16.rncb.ru",
         "cluster": "k45-blade3-test",
         "data_center": "k45-Datacenter",
         "was_migrated": ""
@@ -27695,7 +27612,7 @@
         "state": "Up",
         "IP": "10.95.65.145",
         "engine": "k45",
-        "host": "k45-blade3-redvirt15.rncb.ru",
+        "host": "k45-blade1-redvirt04.rncb.ru",
         "cluster": "k45-blade3-test",
         "data_center": "k45-Datacenter",
         "was_migrated": ""
@@ -28903,7 +28820,7 @@
         "state": "Up",
         "IP": "10.95.83.11",
         "engine": "k45",
-        "host": "k45-blade1-redvirt04.rncb.ru",
+        "host": "k45-blade1-redvirt11.rncb.ru",
         "cluster": "k45-blade3-test",
         "data_center": "k45-Datacenter",
         "was_migrated": ""
@@ -30023,6 +29940,18 @@
         "was_migrated": ""
     },
     {
+        "ID": "fc793002-d3b4-4c1d-839c-f84996af0cc0",
+        "name": "k45-cyber-master",
+        "hostname": "e15-cyber-master",
+        "state": "Up",
+        "IP": "10.105.238.11",
+        "engine": "k45",
+        "host": "k45-blade1-redvirt04.rncb.ru",
+        "cluster": "k45-blade3-test",
+        "data_center": "k45-Datacenter",
+        "was_migrated": ""
+    },
+    {
         "ID": "47b2cf45-46da-47be-8930-fa8f0d4d7431",
         "name": "K45-DHCP",
         "hostname": "K45-DHCP",
@@ -30229,17 +30158,6 @@
         "was_migrated": "True"
     },
     {
-        "ID": "77b87518-58eb-4295-ae5d-49f4927fa5aa",
-        "name": "lauth-dc03",
-        "hostname": null,
-        "state": "Down",
-        "engine": "k45",
-        "host": "",
-        "cluster": "k45-blade3-test",
-        "data_center": "k45-Datacenter",
-        "was_migrated": "True"
-    },
-    {
         "ID": "95c0b73d-2b1b-4c07-9284-31ec03c1d203",
         "name": "lauth-rnnr-tst-ansible",
         "hostname": null,
@@ -30337,7 +30255,7 @@
         "name": "nexfs-stor-dc2",
         "hostname": "nexfs-stor-dc2",
         "state": "Up",
-        "IP": "10.95.62.152",
+        "IP": "",
         "engine": "k45",
         "host": "k45-blade1-redvirt04.rncb.ru",
         "cluster": "k45-blade3-test",
@@ -30610,7 +30528,7 @@
         "name": "nvd-qsrv-prod-kf03",
         "hostname": "nvd-qsrv-prod-kf03.ipa.rncb.ru",
         "state": "Up",
-        "IP": "172.23.0.1",
+        "IP": "172.17.0.1",
         "engine": "k45",
         "host": "k45-blade1-redvirt11.rncb.ru",
         "cluster": "k45-blade3-test",
@@ -30870,7 +30788,7 @@
         "name": "owfront-app-tst-9",
         "hostname": "owfront-app-tst-9.ipa.rncb.ru",
         "state": "Up",
-        "IP": "10.75.255.55",
+        "IP": "10.169.156.45",
         "engine": "k45",
         "host": "k45-blade3-redvirt13.rncb.ru",
         "cluster": "k45-Processing",
@@ -31916,6 +31834,30 @@
         "was_migrated": "True"
     },
     {
+        "ID": "62b1e2fd-9a4a-4ffc-9ed2-ef6844f407b5",
+        "name": "solbrdgmb-app-prod-2-red",
+        "hostname": "solbrdgmb-app-prod-2-red.ipa-dmz.rncb.ru",
+        "state": "Up",
+        "IP": "10.75.134.8",
+        "engine": "k45",
+        "host": "k45-prc-redvirt02.rncb.ru",
+        "cluster": "k45-Processing-OLD",
+        "data_center": "k45-Processing-OLD",
+        "was_migrated": ""
+    },
+    {
+        "ID": "3c17ce07-2f30-4d29-b371-2cb75839f457",
+        "name": "solbrdgmb-app-prod-4-red",
+        "hostname": "solbrdgmb-app-prod-4-red.ipa-dmz.rncb.ru",
+        "state": "Up",
+        "IP": "10.75.134.9",
+        "engine": "k45",
+        "host": "k45-prc-redvirt02.rncb.ru",
+        "cluster": "k45-Processing-OLD",
+        "data_center": "k45-Processing-OLD",
+        "was_migrated": ""
+    },
+    {
         "ID": "6070db58-5c2b-4447-b431-ebf81203bc5d",
         "name": "solbrdgmb-app-prod-mbank5",
         "hostname": "solbrdgmb-app-prod-mbank5.ipa.rncb.ru",
@@ -31951,6 +31893,18 @@
         "was_migrated": "True"
     },
     {
+        "ID": "3aa449b4-3734-4ea9-9008-82d544ec16bc",
+        "name": "solbrdgmb-nlb-prod-2-red",
+        "hostname": "solbrdgmb-nlb-prod-2-red",
+        "state": "Up",
+        "IP": "10.75.6.36",
+        "engine": "k45",
+        "host": "k45-prc-redvirt02.rncb.ru",
+        "cluster": "k45-Processing-OLD",
+        "data_center": "k45-Processing-OLD",
+        "was_migrated": ""
+    },
+    {
         "ID": "0b69d585-a169-4262-83aa-7c107b17403a",
         "name": "solbrdgmb-nlb-tst-nginx-bridge",
         "hostname": "olbrdgmb-nlb-tst-nginx-bridge",
@@ -31961,6 +31915,18 @@
         "cluster": "k45-Processing",
         "data_center": "k45-Datacenter-PRC",
         "was_migrated": "True"
+    },
+    {
+        "ID": "a639329b-73cf-4681-aaad-1bbd25e97f6f",
+        "name": "solpinset-app-prod-2-red",
+        "hostname": "solpinset-app-prod-2-red",
+        "state": "Up",
+        "IP": "10.75.6.20",
+        "engine": "k45",
+        "host": "k45-prc-redvirt02.rncb.ru",
+        "cluster": "k45-Processing-OLD",
+        "data_center": "k45-Processing-OLD",
+        "was_migrated": ""
     },
     {
         "ID": "5b10c71a-d9c5-4229-8acd-17218250ba0c",
@@ -32008,6 +31974,42 @@
         "cluster": "k45-Processing",
         "data_center": "k45-Datacenter-PRC",
         "was_migrated": "True"
+    },
+    {
+        "ID": "fba504bd-2496-42e2-9151-05855f3d50e1",
+        "name": "solsfp-app-prod-sfraudprev1",
+        "hostname": "solsfp-app-prod-sfraudprev1",
+        "state": "Up",
+        "IP": "10.75.6.18",
+        "engine": "k45",
+        "host": "k45-prc-redvirt02.rncb.ru",
+        "cluster": "k45-Processing-OLD",
+        "data_center": "k45-Processing-OLD",
+        "was_migrated": ""
+    },
+    {
+        "ID": "b46ec1b5-df0f-4927-948a-0f2ed501b576",
+        "name": "solsfp-app-prod-sfraudprev4",
+        "hostname": "solsfp-app-prod-sfraudprev4",
+        "state": "Up",
+        "IP": "10.75.6.16",
+        "engine": "k45",
+        "host": "k45-prc-redvirt02.rncb.ru",
+        "cluster": "k45-Processing-OLD",
+        "data_center": "k45-Processing-OLD",
+        "was_migrated": ""
+    },
+    {
+        "ID": "5c1d3d54-aebe-4b3c-9838-9ce7736a2fa5",
+        "name": "solsfp-app-prod-sfraudprevdbo0",
+        "hostname": "solsfp-app-prod-sfraudprevdbo0",
+        "state": "Up",
+        "IP": "10.75.6.19",
+        "engine": "k45",
+        "host": "k45-prc-redvirt02.rncb.ru",
+        "cluster": "k45-Processing-OLD",
+        "data_center": "k45-Processing-OLD",
+        "was_migrated": ""
     },
     {
         "ID": "bab5ae7e-3a9f-484c-821e-cb728a60bd2c",
@@ -32079,6 +32081,30 @@
         "host": "k45-blade3-redvirt12.rncb.ru",
         "cluster": "k45-Processing",
         "data_center": "k45-Datacenter-PRC",
+        "was_migrated": ""
+    },
+    {
+        "ID": "ad464b77-29b2-4340-bba8-c2a8679cb083",
+        "name": "solswitch-app-prod-2-red",
+        "hostname": "solswitch-app-prod-2-red.ipa-dmz.rncb.ru",
+        "state": "Up",
+        "IP": "10.75.6.22",
+        "engine": "k45",
+        "host": "k45-prc-redvirt02.rncb.ru",
+        "cluster": "k45-Processing-OLD",
+        "data_center": "k45-Processing-OLD",
+        "was_migrated": ""
+    },
+    {
+        "ID": "8db28202-52e3-447c-9269-3e2a3667847d",
+        "name": "solswitch-app-prod-3-red",
+        "hostname": "solswitch-app-prod-3-red.ipa-dmz.rncb.ru",
+        "state": "Up",
+        "IP": "10.75.6.23",
+        "engine": "k45",
+        "host": "k45-prc-redvirt02.rncb.ru",
+        "cluster": "k45-Processing-OLD",
+        "data_center": "k45-Processing-OLD",
         "was_migrated": ""
     },
     {
@@ -32203,9 +32229,9 @@
     {
         "ID": "0e699999-6ea5-4c7e-a7ec-994519763b87",
         "name": "srvabs-k8s-prod-m-2",
-        "hostname": "srvabs-k8s-prod-m-2.ipa.rncb.ru",
+        "hostname": "srvabs-k8s-prod-m-2",
         "state": "Up",
-        "IP": "10.95.81.10",
+        "IP": "172.17.0.10",
         "engine": "k45",
         "host": "k45-redvirt-abs-k8s.rncb.ru",
         "cluster": "k45-abs-k8s-cluster",
@@ -32227,9 +32253,9 @@
     {
         "ID": "df9f5d03-165e-460a-9998-521109ac5e0a",
         "name": "srvabs-k8s-prod-w-1",
-        "hostname": "srvabs-k8s-prod-w-1.ipa.rncb.ru",
+        "hostname": "srvabs-k8s-prod-w-1",
         "state": "Up",
-        "IP": "10.95.81.11",
+        "IP": "172.17.0.10",
         "engine": "k45",
         "host": "k45-redvirt-abs-k8s.rncb.ru",
         "cluster": "k45-abs-k8s-cluster",
@@ -32251,9 +32277,9 @@
     {
         "ID": "8ff392ae-82c6-427a-aef4-7cba43b76fe0",
         "name": "srvabs-k8s-prod-w-2",
-        "hostname": "srvabs-k8s-prod-w-2.ipa.rncb.ru",
+        "hostname": "srvabs-k8s-prod-w-2",
         "state": "Up",
-        "IP": "10.95.81.12",
+        "IP": "172.17.0.10",
         "engine": "k45",
         "host": "k45-redvirt-abs-k8s.rncb.ru",
         "cluster": "k45-abs-k8s-cluster",
@@ -32263,9 +32289,9 @@
     {
         "ID": "1cac99d4-e73a-447e-b44f-dfffd431ad2f",
         "name": "srvabs-k8s-prod-w-3",
-        "hostname": "srvabs-k8s-prod-w-3.ipa.rncb.ru",
+        "hostname": "srvabs-k8s-prod-w-3",
         "state": "Up",
-        "IP": "10.95.81.13",
+        "IP": "172.17.0.10",
         "engine": "k45",
         "host": "k45-redvirt-abs-k8s.rncb.ru",
         "cluster": "k45-abs-k8s-cluster",
