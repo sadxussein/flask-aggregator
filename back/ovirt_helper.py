@@ -11,9 +11,11 @@ from . import config as cfg
 
 class OvirtHelper():
     """Class required to perform different actions with oVirt hosted engines."""
+
     def __init__(self, dpc_list=cfg.DPC_LIST, urls_list=cfg.DPC_URLS,
                  username=cfg.USERNAME, password=cfg.PASSWORD
                  ):
+        """Construct default class instance."""
         # TODO: check input data.
         self.__dpc_list = dpc_list
         self.__urls_list = urls_list
@@ -48,7 +50,6 @@ class OvirtHelper():
                 self.__logger.info("Connected to '%s' data processing center.",
                                    dpc)
                 self.__connections[dpc] = connection
-                print(self.__connections)
             except sdk.ConnectionError as e:
                 self.__logger.error("Failed to connect to oVirt for DPC '%s': '%s'. Either cannot resolve server name or server is unreachable.",
                                     dpc,
@@ -59,11 +60,17 @@ class OvirtHelper():
                                     e)
 
     def disconnect_from_engines(self):
-        """Close connections with all engines."""
+        """Close connections with all engines.
+        
+        Closing connections with engines and cleaning up all logger handlers.
+        """
         for dpc in self.__dpc_list:
             self.__logger.info("Closed connection with '%s' data processing center.",
                                dpc)
             self.__connections[dpc].close()
+        for handler in self.__logger.handlers[:]:
+            self.__logger.removeHandler(handler)
+            handler.close()
         self.__connections = {}
 
     def __get_timestamp(self):
@@ -187,7 +194,6 @@ class OvirtHelper():
         
         Takes dictionary as argument, which must contain vm configuration. 
         Example:
-
             ```
             [
                 {
@@ -225,12 +231,13 @@ class OvirtHelper():
                     },
                     "vlan": {
                         "name": "2921-redvt-eqp-test-e15",
-                        "id": 2921
+                        "id": 2921,
+                        "suffix": ""
                     }
                 }
             ]
             ```
-        Returns VM UUID from oVirt if success, -1 otherwise.
+        Returns VM data as dict from oVirt if success, -1 otherwise.
         """
         # Try find VM with current VM name. If VM exists create corresponding
         # log entry and close function.
@@ -244,7 +251,7 @@ class OvirtHelper():
                 name=config["ovirt"]["cluster"]
             ),
             comment=f"{config['meta']['environment']}, {config['meta']['inf_system']}",
-            description=f"Time created: {self.__get_timestamp()}, owner: {config['meta']['owner']}, ELMA task number: {config['meta']['document_num']}",      # TODO: parse owner, it passes full list now
+            description=f"Time created: {self.__get_timestamp()}, owner: {config['meta']['owner']}, ELMA task number: {config['meta']['document_num']}",
             template=sdk.types.Template(
                 name=config["vm"]["template"]
             ),
@@ -281,197 +288,345 @@ class OvirtHelper():
         try:
             vm = vms_service.add(vm, clone=True)
             self.__logger.info("Creating VM '%s'.", vm.name)
+
+            # After creating VM we have to shut it down to apply new hardware and
+            # software options.
+            vm_service = vms_service.vm_service(vm.id)
+            while vm_service.get().status != sdk.types.VmStatus.DOWN:
+                self.__logger.debug("Waiting for VM status set to DOWN (ready for next setup)...")
+                time.sleep(10)
+            self.__logger.info("Created VM %s.", vm.name)
+
+            # Disks operations.
+            self.__extend_vm_root_disk(system_service, vm, vm_service, config)
+            self.__create_vm_extra_disks(system_service, vm, vm_service, config)
+
+            # Network operations.
+            self.__set_vm_network(system_service, vm_service, config)
+
+            # After applying changes VM will be locked, so wait until lockdown is released.
+            while vm_service.get().status != sdk.types.VmStatus.DOWN:
+                self.__logger.debug("Waiting system service to release VM's LOCKED status...")
+                time.sleep(10)
+
+            # Starting VM via CloudInit.
+            vm_service.start()
+
+            # Restrating VM to fix fstab.
+            while vm_service.get().status != sdk.types.VmStatus.UP:
+                self.__logger.debug("Waiting VM to start...")
+                time.sleep(10)
+            # Waiting 60 second for VM to properly start.
+            time.sleep(60)
+            self.__logger.info("Issued VM reset to fix possible fstab malfunction.")
+            vm_service.reset()
+
+            # Finalizing VM.
+            while vm_service.get().status != sdk.types.VmStatus.UP:
+                self.__logger.debug("Waiting VM to start...")
+                time.sleep(10)
+            self.__logger.info("VM '%s' in dpc '%s' created and operational.",
+                        vm.name,
+                        config["ovirt"]["engine"])
+
+            return {"id": vm.id, "name": vm.name, "engine": config["ovirt"]["engine"]} if vm else -1
+
         except sdk.Error as e:
             self.__logger.error("Could not create VM '%s'. Reason: '%s'.",
                                 config["vm"]["name"],
                                 e)
 
+    def __extend_vm_root_disk(self, system_service, vm, vm_service, config):
+        """Extend VM root disk size to one set in config dict."""
+        # Extending root disk to a number set in disk list on vm_config.
+        disk_attachments_service = vm_service.disk_attachments_service()
+        disk_attachments = disk_attachments_service.list()
 
+        # If any disk exist, and there will be only one in the template.
+        self.__logger.info("Resizing disk from template if it is > 30Gb.")
+        if disk_attachments:
+            disk_attachment = disk_attachments[0]
+            disk_service = system_service.disks_service().disk_service(disk_attachment.disk.id)
 
-#         logger.info(f"VM {vm.name} created with ID: {vm.id} in {config['ovirt']['cluster']} cluster.")
-#         logger.info("Now rebooting VM to apply cloud-init and new resource allocation.")
+            # Waiting for disk to be created
+            while disk_service.get().status == sdk.types.DiskStatus.LOCKED:
+                self.__logger.debug("Waiting system service to release disks LOCKED status...")
+                time.sleep(10)
+            for disk_config in config["vm"]["disks"]:
+                if int(disk_config["type"]) == 1:
+                    self.__logger.debug("Root disk detected.")
+                    if disk_config['size'] > 30:
+                        self.__logger.debug("Root disk size from vm config is '%s' which is larger than 30 gb.",
+                                            disk_config['size'])
+                        disk_service.update(
+                            disk=sdk.types.Disk(
+                                # Disk with root partition should always be
+                                # first in the list.
+                                provisioned_size=disk_config["size"] * 2**30,
+                                bootable=True
+                            )
+                        )
 
-#         vm_service = vms_service.vm_service(vm.id)
+                    # Waiting to apply disk changes.
+                    while disk_service.get().status == sdk.types.DiskStatus.LOCKED:
+                        self.__logger.debug("Waiting system service to release disks LOCKED status...")
+                        time.sleep(10)
+
+                    # Setting disk name and label.
+                    disk_service.update(
+                        disk=sdk.types.Disk(
+                            name=f"{vm.name}-root-disk-1",
+                            logical_name="sda"
+                        )
+                    )
+
+                    # Waiting to apply disk changes.
+                    while disk_service.get().status == sdk.types.DiskStatus.LOCKED:
+                        self.__logger.debug("Waiting system service to release disks LOCKED status...")
+                        time.sleep(10)
+                    self.__logger.info("Disk with root partition extended for VM '%s', with ID '%s'.",
+                                       vm.name,
+                                       vm.id)
+
+    def __create_vm_extra_disks(self, system_service, vm, vm_service, config):
+        """Create additional disks for VM, as stated in VM config dict."""
+        disk_attachments_service = vm_service.disk_attachments_service()
+        # Adding disks, if corresponding disk list on vm_config has more than
+        # one element.
+        if len(config["vm"]["disks"]) > 1:
+            disk_index = 1
+            for disk in config["vm"]["disks"]:
+                if int(disk["type"]) != 1:
+
+                    # Creating disk. Disk must be under 8gb, otherwise oVirt
+                    # throws exception.
+                    if disk["size"] > 8192:
+                        disk["size"] = 8192
+                    self.__logger.info("Creating additional disks #%i for VM '%s', with ID '%s'. Disk size: %sGb.",
+                                       disk_index,
+                                       vm.name,
+                                       vm.id,
+                                       disk['size'])
+                    disk_index += 1
+
+                    # Attaching disk to VM.
+                    disk_attachment = disk_attachments_service.add(
+                        sdk.types.DiskAttachment(
+                            disk=sdk.types.Disk(
+                                name=f"{vm.name}-data-disk-{disk_index}",
+                                description=f"Additional disk #{disk_index} for {vm.name}",
+                                format=sdk.types.DiskFormat.COW,
+                                provisioned_size=disk["size"] * 2**30,
+                                storage_domains=[
+                                    sdk.types.StorageDomain(
+                                        name=config["ovirt"]["storage_domain"]
+                                    )
+                                ]
+                            ),
+                            bootable=False,
+                            active=True,
+                            interface=sdk.types.DiskInterface.VIRTIO_SCSI
+                        )
+                    )
+                    disk_service = system_service.disks_service().disk_service(disk_attachment.disk.id)
+
+                    # Waiting to apply disk changes
+                    while disk_service.get().status == sdk.types.DiskStatus.LOCKED:
+                        self.__logger.debug("Waiting system service to release disks LOCKED status...")
+                        time.sleep(10)
+
+                    if disk_attachment:
+                        self.__logger.info("Created additional disk for VM '%s', with ID '%s'.",
+                                           vm.name,
+                                           vm.id)
+                    else:
+                        self.__logger.error("Failed to create disk with root partition for VM '%s', with ID '%s'.",
+                                            vm.name,
+                                            vm.id)
+
+    def __set_vm_network(self, system_service, vm_service, config):
+        """Change VM vNIC (VLAN)."""
+        self.__logger.info("Changing VM vNIC to %s. Searching vNIC profile.",
+                           config['vlan']['name'])
+        vnic_profile_id = self.__get_vnic_profile(system_service, config)
+        if vnic_profile_id:
+            nics_service = vm_service.nics_service()
+            nics = nics_service.list()
+            # Applying vNIC profiles for main nic1 on VM
+            for nic in nics:
+                # All templates will have NIC names 'nic1' as a primary connection
+                if nic.name == 'nic1':
+                    nic_service = nics_service.nic_service(nic.id)
+                    nic_service.update(
+                        sdk.types.Nic(
+                            vnic_profile=sdk.types.VnicProfile(
+                                id=vnic_profile_id
+                            )
+                        )
+                    )
+        else:
+            self.__logger.error("No vNIC with VLAN ID '%s' found!", config['vlan']['id'])
+
+    def __get_vnic_profile(self, system_service, config):
+        """Return vNIC profile ID if exists, -1 otherwise.
         
-#         # After creating VM we have to shut it down to apply new hardware and software options
-#         while vm_service.get().status != sdk.types.VmStatus.DOWN:
-#             logger.debug("Waiting for VM status set to DOWN (ready for next setup)...")
-#             time.sleep(10)
-# # ------------------------------------------------------------- DISKS ---------------------------------------------------------------------------------------------------------
-#         # Extending root disk to a number set in disk list on vm_config
-#         disk_attachments_service = vm_service.disk_attachments_service()
-#         disk_attachments = disk_attachments_service.list()
-#         # If any disk exist, and there will be only one in the template
-#         logger.info("Resizing disk from template if it is > 30Gb.")
-#         if disk_attachments:
-#             disk_attachment = disk_attachments[0]
-#             disk_service = system_service.disks_service().disk_service(disk_attachment.disk.id)
-#             # Waiting for disk to be created
-#             while disk_service.get().status == sdk.types.DiskStatus.LOCKED:
-#                 logger.debug("Waiting system service to release disks LOCKED status...")
-#                 time.sleep(10)
-#             for disk_config in config["vm"]["disks"]:
-#                 if int(disk_config["type"]) == 1:
-#                     logger.debug("Root disk detected.")
-#                     if disk_config['size'] > 30:
-#                         logger.debug(f"Root disk size from vm config is {disk_config['size']} which is larger than 30 gb.")
-#                         disk_service.update(
-#                             disk=sdk.types.Disk(
-#                                 # Disk with root partition should always be first in the list
-#                                 provisioned_size=disk_config["size"] * 2**30,
-#                                 bootable=True                                
-#                             )
-#                         )                    
+        In order to determine if VLAN exists in current data center it is
+        necessary to find corresponding network by vNIC profile.
+        If VLAN exists - return its ID.
+        If VLAN doesn't exist - return -1.
+        """
+        vnic_profiles_service = system_service.vnic_profiles_service()
+        networks_service = system_service.networks_service()
+        vnic_profile_id = None
+        for profile in vnic_profiles_service.list():
+            if profile and profile.network.id:
+                network = networks_service.network_service(profile.network.id).get()
+                data_center_id = self.__get_data_center(system_service, config)
+                if (network
+                    and network.vlan.id == config["vlan"]["id"]
+                    and data_center_id
+                    and network.data_center.id == data_center_id):
+                    vnic_profile_id = profile.id
+                    break
+        return vnic_profile_id
 
-#                     # Waiting to apply disk changes.
-#                     while disk_service.get().status == sdk.types.DiskStatus.LOCKED:
-#                         logger.debug("Waiting system service to release disks LOCKED status...")
-#                         time.sleep(10)
+    def __get_data_center(self, system_service, config):
+        """Return data center ID if cluster set in config exists.
 
-#                     # Setting disk name and label.
-#                     disk_service.update(
-#                         disk=sdk.types.Disk(
-#                             name=f"{vm.name}-root-disk-1",
-#                             logical_name="sda"
-#                         )
-#                     )
+        `None` otherwise.
+        """
+        data_center_id = None
+        clusters_service = system_service.clusters_service()
+        for cluster in clusters_service.list():
+            if cluster.name == config["ovirt"]["cluster"]:
+                data_centers_service = system_service.data_centers_service()
+                data_center = data_centers_service.data_center_service(cluster.data_center.id).get()
+                data_center_id = data_center.id
+        return data_center_id
 
-#                     # Waiting to apply disk changes
-#                     while disk_service.get().status == sdk.types.DiskStatus.LOCKED:
-#                         logger.debug("Waiting system service to release disks LOCKED status...")
-#                         time.sleep(10)
-#                     logger.info(f"Disk with root partition extended for VM '{vm.name}', with ID '{vm.id}'.")
+    def create_vlan(self, config):
+        """Create VLAN.
+        
+        Example JSON, required by functions should be as following:
+            ```
+                [
+                    {
+                        "meta": {
+                            "document_num": "6666",
+                            "inf_system": "Ред Виртуализация",
+                            "owner": "ОИТИ",
+                            "environment": "Тест"
+                        },
+                        "ovirt": {
+                            "engine": "e15-test",
+                            "cluster": "Default",
+                            "storage_domain": "hosted_storage",
+                            "host_nic": "bond0"
+                        },
+                        "vlan": {
+                            "name": "2921-redvt-eqp-test-e15",
+                            "id": 2921,
+                            "suffix": ""
+                        }
+                    }
+                ]
+            ```
+        """
+        system_service = self.__connections[config['ovirt']['engine']].system_service()
 
-#         # Adding disks, if corresponding disk list on vm_config has more than one element                        
-#         if len(config["vm"]["disks"]) > 1:
-#             disk_index = 1
-#             for disk in config["vm"]["disks"]:
-#                 if int(disk["type"]) != 1:
-#                     # Creating disk. Disk must be under 8gb, otherwise oVirt throws exception.
-#                     if disk["size"] > 8192:
-#                         disk["size"] = 8192
-#                     logger.info(f"Creating additional disks #{disk_index} for VM '{vm.name}', with ID '{vm.id}'. Disk size: {disk['size']}Gb.")
-#                     disk_index += 1
+        # Getting data center service. Also getting cluster service and full list of clusters.
+        dcs_service = system_service.data_centers_service()
+        clusters_service = system_service.clusters_service()
+        clusters = clusters_service.list()
 
-#                     # Attaching disk to VM.
-#                     disk_attachment = disk_attachments_service.add(
-#                         sdk.types.DiskAttachment(
-#                             disk=sdk.types.Disk(
-#                                 name=f"{vm.name}-data-disk-{disk_index}",
-#                                 description=f"Additional disk #{disk_index} for {vm.name}",
-#                                 format=sdk.types.DiskFormat.COW,
-#                                 provisioned_size=disk["size"] * 2**30,
-#                                 storage_domains=[
-#                                     sdk.types.StorageDomain(
-#                                         name=config["ovirt"]["storage_domain"]
-#                                     )
-#                                 ]
-#                             ),
-#                             bootable=False,
-#                             active=True,
-#                             interface=sdk.types.DiskInterface.VIRTIO_SCSI
-#                         )                
-#                     )
-#                     disk_service = system_service.disks_service().disk_service(disk_attachment.disk.id)
+        # Defining where to put VLAN, based on cluster in prepared/raw VLAN JSON config.
+        target_dc = None
+        target_cluster = None
+        for cluster in clusters:
+            if cluster.name == config["ovirt"]["cluster"]:
+                target_cluster = cluster
+                target_dc = dcs_service.data_center_service(cluster.data_center.id).get()
+                break
 
-#                     # Waiting to apply disk changes
-#                     while disk_service.get().status == sdk.types.DiskStatus.LOCKED:
-#                         logger.debug("Waiting system service to release disks LOCKED status...")
-#                         time.sleep(10)
+        # Getting target data center's network service. Getting list of all networks
+        # in DC to check if vlans already exist.
+        dc_network_service = dcs_service.service(target_dc.id).networks_service()
+        dc_networks = dc_network_service.list()
+        current_vlan_exists = False
+        for dc_network in dc_networks:
+            if dc_network.vlan and dc_network.vlan.id == config["vlan"]["id"]:
+                current_vlan_exists = True
+                vlan = dc_network
+                self.__logger.error("Network '%s' already exists in '%s' datacenter!",
+                                    config['vlan']['name'],
+                                    target_dc.name)
+                break
 
-#                     if disk_attachment:                                    
-#                         logger.info(f"Created additional disk for VM '{vm.name}', with ID '{vm.id}'.")
-#                     else:
-#                         logger.error(f"Failed to create disk with root partition for VM '{vm.name}', with ID '{vm.id}'.")
-#                         raise Exception(f"[ERR] Failed to create disk with root partition for VM '{vm.name}', with ID '{vm.id}'.")     
-# # ------------------------------------------------------------- NETWORKING ----------------------------------------------------------------------------------------------------
-#         logger.info(f"Changing vNIC to {config['vlan']['name']}.")
-#         # Finding vNIC profile
-#         vnic_profiles_service = system_service.vnic_profiles_service()
-#         vnic_profiles = vnic_profiles_service.list()
-#         networks_service = system_service.networks_service()        
-#         vlan_network = None
+        # Creating VLAN.
+        if not current_vlan_exists:
+            vlan = dc_network_service.add(
+                sdk.types.Network(
+                    name=f"{config['vlan']['id']}{config['vlan']['suffix']}-vlan",
+                    data_center=sdk.types.DataCenter(
+                        id=target_dc.id
+                    ),
+                    comment=config["vlan"]["name"],
+                    description=config["vlan"]["name"],
+                    vlan=sdk.types.Vlan(
+                        id=config["vlan"]["id"]
+                    ),
+                    usages=[sdk.types.NetworkUsage.VM],
+                    required=False
+                )
+            )
 
-#         # Defining to which datacenter VM currently belongs. It is needed to
-#         # determine whick vNIC profile is needed, since there may be vNIC's
-#         # with same VLAN tag in different datacenters.
-#         vm_cluster = system_service.clusters_service().cluster_service(vm.cluster.id).get()
-#         vm_datacenter = system_service.data_centers_service().datacenter_service(vm_cluster.datacenter.id).get()
-#         networks = networks_service.list()
-#         target_network = None
-#         for network in networks:
-#             if network.datacenter and network.datacenter.id == vm_datacenter.id:
-#                 if network.vlan and network.vlan.id == int(config["vlan"]["id"]):
-#                     logger.info(f"Detected network with VLAN id {network.vlan.id} (ID: {network.id}) that fits one of VM.")
-#                     target_network = network
-#                     break
+        # Adding VLAN via cluster, to populate it across all hosts
+        cluster_networks_service = clusters_service.cluster_service(target_cluster.id).networks_service()
+        cluster_networks = cluster_networks_service.list()
+        current_vlan_exists = False
+        for cluster_network in cluster_networks:
+            if cluster_network.vlan.id == config["vlan"]["id"]:
+                current_vlan_exists = True
+                self.__logger.error("Network '%s' already exists in '%s' cluster!",
+                                    config['vlan']['name'],
+                                    target_cluster.name)
 
-#         # for vnic_profile in vnic_profiles:
-#         #     network = networks_service.network_service(vnic_profile.network.id).get()
-#         #     if network.vlan.id == int(config["vlan"]["id"]):
-#         #     # if vnic_profile.name == vm_config['vlan_name'] or f"{vm_config['vlan_id']}" in vnic_profile.name:
-#         #         logger.debug(f"Detected VLAN {vnic_profile.name}, VLAN tag {network.vlan.id} with id {vnic_profile.id} present.")
-#         #         vlan_network = vnic_profile
-#         #         break
+        if not current_vlan_exists:
+            cluster_networks_service.add(
+                sdk.types.Network(
+                    id=vlan.id,
+                    required=False
+                )
+            )
 
-#         # Checking if VLAN exists. If not - create one
-#         if target_network is None:
-#         # if vlan_network == None:
+        # Getting list of all hosts to perform check to define if vlan is already attached to host.
+        hosts_service = system_service.hosts_service()
+        hosts = hosts_service.list()
+        for host in hosts:
 
-#             # If no "cluster" field is defined in incoming JSON script will try and guess
-#             # where to put VLAN. Strongly advised to use this field in JSON, since VLAN
-#             # placement logic can change. Also selecting correct NIC, which also (in a better way)
-#             # should be defined in incoming JSON.
-#             vlan_config = prepare_vlan_config(config, connection)
-            
-#             # Creating VLAN based on JSON config.
-#             create_vlan(vlan_config, connection)
-           
-#             logger.info(f"Network {config['vlan']['name']} with VLAN tag {config['vlan']['id']} (ID: {network.id}) created and attached to all hosts.")
-                   
-#         # For some reason vlan network can have 2 ids, which can lead to inability to add it to VM
-#         # This requires further research TODO
-#         for network in networks:
-#             if network.datacenter and network.datacenter.id == vm_datacenter.id:
-#                 if network.vlan and network.vlan.id == int(config["vlan"]["id"]):
-#                     logger.info(f"Detected network with VLAN id {network.vlan.id} that fits one of VM.")
-#                     target_network = network
-#                     break
-#         # Finding vNIC profile      
-#         vlan_network = None
-#         for vnic_profile in vnic_profiles:
-#             # network = networks_service.network_service(vnic_profile.network.id).get()
-#             if target_network.vlan.id == int(config["vlan"]["id"]):
-#                 vlan_network = vnic_profile
-#                 break
-#         # Getting all NICs on VM
-#         nics_service = vm_service.nics_service()
-#         nics = nics_service.list()
-#         # Applying vNIC profiles for main nic1 on VM
-#         for nic in nics:
-#             # All templates will have NIC names 'nic1' as a primary connection
-#             if nic.name == 'nic1':
-#                 nic_service = nics_service.nic_service(nic.id)
-#                 nic_service.update(
-#                     sdk.types.Nic(
-#                         vnic_profile=sdk.types.VnicProfile(
-#                             id=vlan_network.id
-#                         )
-#                     )
-#                 )
+            # Checking host <-> cluster.
+            host_cluster = self.__connections[config['ovirt']['engine']].follow_link(host.cluster)
+            if host_cluster.name == config["ovirt"]["cluster"]:
+                self.__logger.info("Attaching VLAN to host '%s'.", host.name)
+                host_service = hosts_service.host_service(host.id)
 
-#         # After applying changes VM will be locked, so wait until lockdown is released
-#         while vm_service.get().status != sdk.types.VmStatus.DOWN:
-#                 logger.debug("Waiting system service to release VM's LOCKED status...")
-#                 time.sleep(10)      
-# # ------------------------------------------------------------- STARTING VM ---------------------------------------------------------------------------------------------------                        
-#         # Starting VM via CloudInit
-#         vm_service.start()
-# # ------------------------------------------------------------- RESTARTING VM TO RESET FSTAB ----------------------------------------------------------------------------------
-#         while vm_service.get().status != sdk.types.VmStatus.UP:
-#             logger.debug("Waiting VM to start...")                
-#             time.sleep(10)
-#         # Waiting 60 second for VM to properly start.
-#         time.sleep(60)
-#         logger.debug("Issued VM reset to fix possible fstab malfunction.")
-#         vm_service.reset()
+                # Specific host nics service.
+                nics_service = host_service.nics_service()
+                nics = nics_service.list()
+                current_vlan_exists = False
+                for nic in nics:
+                    if nic.name == config["ovirt"]["host_nic"]:
+                        if not current_vlan_exists:
+                            host_service.setup_networks(
+                                modified_bonds=[],
+                                modified_network_attachments=[
+                                    sdk.types.NetworkAttachment(
+                                        network=sdk.types.Network(id=vlan.id),
+                                        host_nic=sdk.types.HostNic(id=nic.id)
+                                    )
+                                ]
+                            )
+
+        self.__logger.info("Network '%s' created and attached to all hosts.",
+                           config['vlan']['name'])
+

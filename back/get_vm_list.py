@@ -16,8 +16,8 @@ Field list will be extended in the future.
 """
 
 import json
-from ovirt_helper import OvirtHelper
-import config as cfg
+from back.ovirt_helper import OvirtHelper
+from . import config as cfg
 
 if __name__ == "__main__":
     ovirt_helper = OvirtHelper()

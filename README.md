@@ -50,4 +50,19 @@
     }
 ]
 ```
-Передавать через curl, пример команды: `curl -X POST -F "jsonfile=@vm_queries/new/test.json" http://10.105.253.252:6299/create_vm`
+Передавать через curl, пример команды: `curl -X POST -F "jsonfile=@vm_queries/new/test.json" http://10.105.253.252:6299/create_vm`.
+Ключ ovirt -> engine должен коррелировать с содержимым `config.py` или параметрами, передаваемыми в конструктор экземпляра класса `OvirtHelper`. 
+Например, стандартная конфигурация `DPC_LIST` и `DPC_URLS` в `config.py`:
+```
+DPC_LIST = ["e15-test", "e15", "e15-2", "n32", "n32-2", "k45"]
+DPC_URLS = {
+    "e15-test": "https://e15-redvirt-engine-test2.rncb.ru/ovirt-engine/api",
+    "e15": "https://e15-redvirt-engine1.rncb.ru/ovirt-engine/api",
+    "e15-2": "https://e15-redvirt-engine2.rncb.ru/ovirt-engine/api",
+    "n32": "https://n32-redvirt-engine1.rncb.ru/ovirt-engine/api",
+    "n32-2": "https://n32-redvirt-engine2.rncb.ru/ovirt-engine/api",
+    "k45": "https://k45-redvirt-engine1.rncb.ru/ovirt-engine/api"
+}
+```
+# (TBD) utils
+Переписать утилиту для парса excel файла заявки на ВМ из элмы
