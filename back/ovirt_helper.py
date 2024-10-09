@@ -312,8 +312,10 @@ class OvirtHelper():
             ),
             cpu=sdk.types.Cpu(
                 topology=sdk.types.CpuTopology(
-                    cores=config["vm"]["cores"],
-                    sockets=1
+                    # Set CPU topology. If in ELMA document there is > 10
+                    # cores, split them between no more than 2 sockets.
+                    cores=config["vm"]["cores"] if config["vm"]["cores"] <= 10 else config["vm"]["cores"] / 2,
+                    sockets=1 if config["vm"]["cores"] <= 10 else 2
                 )
             ),
             initialization=sdk.types.Initialization(
@@ -471,11 +473,12 @@ class OvirtHelper():
                                     sdk.types.StorageDomain(
                                         name=config["ovirt"]["storage_domain"]
                                     )
-                                ]
+                                ],
+                                sparse=bool(disk["sparse"])
                             ),
                             bootable=False,
                             active=True,
-                            interface=sdk.types.DiskInterface.VIRTIO_SCSI
+                            interface=sdk.types.DiskInterface.VIRTIO_SCSI,
                         )
                     )
                     self.__logger.debug("Created disk_attachment variable (disk #%s)", disk_index)
@@ -556,7 +559,7 @@ class OvirtHelper():
                 data_center_id = data_center.id
         return data_center_id
 
-    def create_vlan(self, config):
+    def create_vlan(self, config):  # TODO: change checking if VLAN exists logic
         """Create VLAN.
         
         Example JSON, required by functions should be as following:
