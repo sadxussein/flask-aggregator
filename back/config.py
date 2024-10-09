@@ -12,4 +12,5 @@ DPC_URLS = {
     "n32-2": "https://n32-redvirt-engine2.rncb.ru/ovirt-engine/api",
     "k45": "https://k45-redvirt-engine1.rncb.ru/ovirt-engine/api"
 }
-BACK_FILES_FOLDER = "files"
+BACK_FILES_FOLDER = "back/files"
+HOST_MANAGEMENT_BONDS = ["bond0.2701", "bond0.1932", "bond0.2721", "bond0.1567"]

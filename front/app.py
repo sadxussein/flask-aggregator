@@ -9,6 +9,7 @@ import threading
 from flask import Flask, render_template, request, jsonify
 
 from back.ovirt_helper import OvirtHelper
+from back.config import BACK_FILES_FOLDER
 
 class FlaskAggregator():
     """Flask-based aggregator class. Used primarily for oVirt interactions."""
@@ -35,8 +36,20 @@ class FlaskAggregator():
         @self.app.route("/ovirt/vm_list")
         def ovirt_vm_list():
             """Show VM list."""
-            vms = self.__load_json()
+            vms = self.__load_json("vm_list.json")
             return render_template("ovirt_vm_list.html", data=vms)
+        
+        @self.app.route("/ovirt/host_list")
+        def ovirt_host_list():
+            """Show host list."""
+            vms = self.__load_json("host_list.json")
+            return render_template("ovirt_host_list.html", data=vms)
+        
+        @self.app.route("/ovirt/cluster_list")
+        def ovirt_cluster_list():
+            """Show host list."""
+            vms = self.__load_json("cluster_list.json")
+            return render_template("ovirt_cluster_list.html", data=vms)
 
         @self.app.route("/ovirt/create_vm", methods=["POST"])
         def ovirt_create_vm():
@@ -114,11 +127,11 @@ class FlaskAggregator():
             else:
                 return jsonify({"error": "File is not a valid JSON."}), 400
 
-    def __load_json(self):
+    def __load_json(self, file_name):
         """Return JSON file data."""
-        with open("back/files/vm_list.json", 'r', encoding="utf-8") as file:
-            configs = json.load(file)
-        return configs
+        with open(f"{BACK_FILES_FOLDER}/{file_name}", 'r', encoding="utf-8") as file:
+            data = json.load(file)
+        return data
 
     def __get_dpc_list(self, configs):
         """Return list of all DPCs to work with.
@@ -184,7 +197,7 @@ class FlaskAggregator():
             result.append(helper.create_vlan(config))
         return result
 
-    def start(self):
+    def start(self):        # TODO: pass parameters for Flask server
         """Start Flask aggregator server."""
         self.app.run(host="0.0.0.0", port="6299", debug=True)
 

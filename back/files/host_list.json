@@ -1,0 +1,634 @@
+[
+    {
+        "ID": "161bce20-f1fb-4c7a-8ca4-92409461fc47",
+        "name": "e15-blade9-redvirt12.rncb.ru",
+        "cluster": "e15-test-cluster",
+        "data_center": "Default",
+        "IP": "10.105.253.222",
+        "engine": "e15-test"
+    },
+    {
+        "ID": "84002ff4-de51-49be-be25-19e6a5c2eb78",
+        "name": "e15-blade5-redvirt01.rncb.ru",
+        "cluster": "Default",
+        "data_center": "Default",
+        "IP": null,
+        "engine": "e15-test2"
+    },
+    {
+        "ID": "3415fe00-b72a-44ed-b651-fc8ef2f82210",
+        "name": "e15-blade5-redvirt05.rncb.ru",
+        "cluster": "Default",
+        "data_center": "Default",
+        "IP": null,
+        "engine": "e15-test2"
+    },
+    {
+        "ID": "f22d53ca-1154-4061-a083-37870c3ba594",
+        "name": "e15-blade2-redvirt06.rncb.ru",
+        "cluster": "e15-blade9-test",
+        "data_center": "e15-Datacenter",
+        "IP": "10.105.253.106",
+        "engine": "e15"
+    },
+    {
+        "ID": "7e3f4fcf-57d9-4946-8a71-f750823e28b4",
+        "name": "e15-blade2-redvirt07.rncb.ru",
+        "cluster": "e15-blade9-test",
+        "data_center": "e15-Datacenter",
+        "IP": "10.105.253.107",
+        "engine": "e15"
+    },
+    {
+        "ID": "f49ef7cb-36f0-4cf0-9cb8-b0a57b53e85e",
+        "name": "e15-blade2-redvirt09.rncb.ru",
+        "cluster": "e15-blade9-test",
+        "data_center": "e15-Datacenter",
+        "IP": "10.105.253.109",
+        "engine": "e15"
+    },
+    {
+        "ID": "37577af4-2c5b-48be-8651-d51d5e62a1f2",
+        "name": "e15-blade2-redvirt13.rncb.ru",
+        "cluster": "e15-blade9-test",
+        "data_center": "e15-Datacenter",
+        "IP": "10.105.253.113",
+        "engine": "e15"
+    },
+    {
+        "ID": "04421dbf-c2f1-41bf-aef5-a1bb612056b9",
+        "name": "e15-blade2-redvirt16.rncb.ru",
+        "cluster": "e15-blade9-test",
+        "data_center": "e15-Datacenter",
+        "IP": "10.105.253.116",
+        "engine": "e15"
+    },
+    {
+        "ID": "7330c710-2801-4caf-b15b-3c8bb627e42d",
+        "name": "e15-blade3-redvirt03.rncb.ru",
+        "cluster": "e15-blade9-test",
+        "data_center": "e15-Datacenter",
+        "IP": "10.105.253.53",
+        "engine": "e15"
+    },
+    {
+        "ID": "2de6bf7b-2bb5-4673-9214-b65d5293ab34",
+        "name": "e15-blade3-redvirt04.rncb.ru",
+        "cluster": "e15-Monitoring",
+        "data_center": "e15-Monitoring",
+        "IP": "10.105.253.54",
+        "engine": "e15"
+    },
+    {
+        "ID": "88419ea6-1cd3-4638-bd82-134153fd2c16",
+        "name": "e15-blade3-redvirt05.rncb.ru",
+        "cluster": "e15-blade9-test",
+        "data_center": "e15-Datacenter",
+        "IP": "10.105.253.55",
+        "engine": "e15"
+    },
+    {
+        "ID": "feab7375-cd53-49e1-981a-04e99e2a78b4",
+        "name": "e15-blade3-redvirt06.rncb.ru",
+        "cluster": "e15-Monitoring",
+        "data_center": "e15-Monitoring",
+        "IP": "10.105.253.56",
+        "engine": "e15"
+    },
+    {
+        "ID": "ec6b847f-752d-4d35-9c5f-73368c10ffc6",
+        "name": "e15-blade3-redvirt14.rncb.ru",
+        "cluster": "e15-blade9-test",
+        "data_center": "e15-Datacenter",
+        "IP": "10.105.253.64",
+        "engine": "e15"
+    },
+    {
+        "ID": "e75e47e9-9052-48e4-a5f5-7a98a28a05bb",
+        "name": "e15-blade3-redvirt16.rncb.ru",
+        "cluster": "e15-blade9-test",
+        "data_center": "e15-Datacenter",
+        "IP": "10.105.253.66",
+        "engine": "e15"
+    },
+    {
+        "ID": "1bc6efa3-a7c2-49fd-822b-58173d812bc1",
+        "name": "e15-blade6-redvirt14.rncb.ru",
+        "cluster": "e15-DBO-cluster",
+        "data_center": "e15-Datacenter",
+        "IP": "10.105.253.174",
+        "engine": "e15"
+    },
+    {
+        "ID": "8002db75-8035-421d-981a-15dd3859ff7a",
+        "name": "e15-blade6-redvirt15.rncb.ru",
+        "cluster": "e15-DBO-cluster",
+        "data_center": "e15-Datacenter",
+        "IP": "10.105.253.175",
+        "engine": "e15"
+    },
+    {
+        "ID": "65af2e45-9fa6-4e0c-ba42-88973cd7a3e6",
+        "name": "e15-blade9-redvirt01.rncb.ru",
+        "cluster": "e15-blade9-test",
+        "data_center": "e15-Datacenter",
+        "IP": "10.105.253.211",
+        "engine": "e15"
+    },
+    {
+        "ID": "9f12d1d4-572a-4d24-aa8a-2373743b10e7",
+        "name": "e15-blade9-redvirt02.rncb.ru",
+        "cluster": "e15-blade9-test",
+        "data_center": "e15-Datacenter",
+        "IP": "10.105.253.212",
+        "engine": "e15"
+    },
+    {
+        "ID": "677b194c-757c-4541-8b50-6b837c61f519",
+        "name": "e15-blade9-redvirt03.rncb.ru",
+        "cluster": "e15-blade9-test",
+        "data_center": "e15-Datacenter",
+        "IP": "10.105.253.213",
+        "engine": "e15"
+    },
+    {
+        "ID": "ad2dfdc5-e638-4821-81af-08f5aeeed9ab",
+        "name": "e15-blade9-redvirt04.rncb.ru",
+        "cluster": "e15-blade9-test",
+        "data_center": "e15-Datacenter",
+        "IP": "10.105.253.214",
+        "engine": "e15"
+    },
+    {
+        "ID": "4f3717a0-7d61-4623-adf7-2d673a868a9f",
+        "name": "e15-blade9-redvirt05.rncb.ru",
+        "cluster": "e15-blade9-test",
+        "data_center": "e15-Datacenter",
+        "IP": "10.105.253.215",
+        "engine": "e15"
+    },
+    {
+        "ID": "eb479965-8cd4-4eaa-a176-054f788bc1af",
+        "name": "e15-blade9-redvirt06.rncb.ru",
+        "cluster": "e15-blade9-test",
+        "data_center": "e15-Datacenter",
+        "IP": "10.105.253.216",
+        "engine": "e15"
+    },
+    {
+        "ID": "b53755c9-ce29-46b4-a3d3-24d60e9b0a5e",
+        "name": "e15-blade9-redvirt07.rncb.ru",
+        "cluster": "e15-blade9-test",
+        "data_center": "e15-Datacenter",
+        "IP": "10.105.253.217",
+        "engine": "e15"
+    },
+    {
+        "ID": "ff986e25-2780-476a-b5e7-bf4362fd1cd1",
+        "name": "e15-blade9-redvirt08.rncb.ru",
+        "cluster": "e15-blade9-test",
+        "data_center": "e15-Datacenter",
+        "IP": "10.105.253.218",
+        "engine": "e15"
+    },
+    {
+        "ID": "80310ebe-004c-437c-a31a-86b4f7cec1f7",
+        "name": "e15-blade9-redvirt09.rncb.ru",
+        "cluster": "e15-blade9-test",
+        "data_center": "e15-Datacenter",
+        "IP": "10.105.253.219",
+        "engine": "e15"
+    },
+    {
+        "ID": "2f9af9d3-ae02-45aa-a18e-1da9d8aba425",
+        "name": "e15-blade9-redvirt10.rncb.ru",
+        "cluster": "e15-cluster-ARM",
+        "data_center": "e15-Datacenter-ARM",
+        "IP": "10.105.253.220",
+        "engine": "e15"
+    },
+    {
+        "ID": "f886661d-2ce5-42c1-8e98-fc0131b72e39",
+        "name": "e15-blade9-redvirt11.rncb.ru",
+        "cluster": "e15-cluster-ARM",
+        "data_center": "e15-Datacenter-ARM",
+        "IP": "10.105.253.221",
+        "engine": "e15"
+    },
+    {
+        "ID": "85e485d1-94b8-4417-98a5-f20479612f40",
+        "name": "e15-blade9-redvirt13.rncb.ru",
+        "cluster": "e15-blade9-test",
+        "data_center": "e15-Datacenter",
+        "IP": "10.105.253.223",
+        "engine": "e15"
+    },
+    {
+        "ID": "a0181a65-ae92-42ae-9f2c-f7da05beacd4",
+        "name": "e15-blade9-redvirt14.rncb.ru",
+        "cluster": "e15-Processing",
+        "data_center": "e15-Datacenter-PRC",
+        "IP": null,
+        "engine": "e15"
+    },
+    {
+        "ID": "41c67225-eab1-4eb6-9bf3-7e7629142bbc",
+        "name": "e15-blade9-redvirt15.rncb.ru",
+        "cluster": "e15-Processing",
+        "data_center": "e15-Datacenter-PRC",
+        "IP": null,
+        "engine": "e15"
+    },
+    {
+        "ID": "4abedd72-0158-4e89-b045-8a78593a2eaa",
+        "name": "e15-blade9-redvirt16.rncb.ru",
+        "cluster": "e15-Processing",
+        "data_center": "e15-Datacenter-PRC",
+        "IP": null,
+        "engine": "e15"
+    },
+    {
+        "ID": "7bb2f273-c6c7-4390-8edb-ea0900d37d92",
+        "name": "e15-prc-redvirt01.rncb.ru",
+        "cluster": "e15-Processing-OLD",
+        "data_center": "e15-Processing-OLD",
+        "IP": null,
+        "engine": "e15"
+    },
+    {
+        "ID": "cb8d51bb-95ab-43f0-9689-4267b0898baa",
+        "name": "e15-prc-redvirt02.rncb.ru",
+        "cluster": "e15-Processing-OLD",
+        "data_center": "e15-Processing-OLD",
+        "IP": null,
+        "engine": "e15"
+    },
+    {
+        "ID": "ce967ba4-4e08-47bc-955a-0c162ffdde67",
+        "name": "e15-redvirt-abs-k8s.rncb.ru",
+        "cluster": "e15-abs-k8s-cluster",
+        "data_center": "e15-abs-k8s",
+        "IP": "10.105.253.18",
+        "engine": "e15"
+    },
+    {
+        "ID": "9ffb87b6-54f2-4b2b-a067-cc79599414e2",
+        "name": "e15-redvirt-nginx-front.rncb.ru",
+        "cluster": "e15-nginx-front-cluster",
+        "data_center": "e15-nginx-front",
+        "IP": "10.105.253.19",
+        "engine": "e15"
+    },
+    {
+        "ID": "b039fa7b-1a2d-487b-8189-060102727190",
+        "name": "e15-blade6-redvirt06.rncb.ru",
+        "cluster": "Default",
+        "data_center": "Default",
+        "IP": "10.105.253.166",
+        "engine": "e15-2"
+    },
+    {
+        "ID": "9d4b15c8-20f8-4127-98b3-156859ba1e68",
+        "name": "e15-blade6-redvirt08.rncb.ru",
+        "cluster": "Default",
+        "data_center": "Default",
+        "IP": "10.105.253.168",
+        "engine": "e15-2"
+    },
+    {
+        "ID": "ad79a832-d445-40ed-ab55-2c55611cf1c8",
+        "name": "e15-blade6-redvirt10.rncb.ru",
+        "cluster": "Default",
+        "data_center": "Default",
+        "IP": "10.105.253.170",
+        "engine": "e15-2"
+    },
+    {
+        "ID": "4437bd7b-cbd0-4dde-8e06-6604f49d00fa",
+        "name": "n32-blade1-redvirt05.rncb.ru",
+        "cluster": "n32-blade1-test",
+        "data_center": "n32-Datacenter",
+        "IP": "10.105.246.105",
+        "engine": "n32"
+    },
+    {
+        "ID": "e3335666-7bd1-4559-9068-b23f50847089",
+        "name": "n32-blade1-redvirt07.rncb.ru",
+        "cluster": "n32-Processing",
+        "data_center": "n32-Datacenter-PRC",
+        "IP": null,
+        "engine": "n32"
+    },
+    {
+        "ID": "c4875242-1aa5-40ea-830c-55a6485f74e9",
+        "name": "n32-blade1-redvirt08.rncb.ru",
+        "cluster": "n32-Processing",
+        "data_center": "n32-Datacenter-PRC",
+        "IP": null,
+        "engine": "n32"
+    },
+    {
+        "ID": "67394d4f-709a-4599-ac1c-74a4baa04d40",
+        "name": "n32-blade1-redvirt09.rncb.ru",
+        "cluster": "n32-blade1-test",
+        "data_center": "n32-Datacenter",
+        "IP": "10.105.246.109",
+        "engine": "n32"
+    },
+    {
+        "ID": "7ca62921-c274-4da0-b3e3-c1e4a057198e",
+        "name": "n32-blade1-redvirt10.rncb.ru",
+        "cluster": "n32-blade1-test",
+        "data_center": "n32-Datacenter",
+        "IP": "10.105.246.110",
+        "engine": "n32"
+    },
+    {
+        "ID": "effee4e2-f749-4c75-8252-f39fd2d51ce5",
+        "name": "n32-blade1-redvirt12.rncb.ru",
+        "cluster": "n32-blade1-test",
+        "data_center": "n32-Datacenter",
+        "IP": "10.105.246.112",
+        "engine": "n32"
+    },
+    {
+        "ID": "195513c6-7a02-4e3a-9969-78d5166375ea",
+        "name": "n32-blade1-redvirt14.rncb.ru",
+        "cluster": "n32-blade1-test",
+        "data_center": "n32-Datacenter",
+        "IP": "10.105.246.114",
+        "engine": "n32"
+    },
+    {
+        "ID": "a66a9535-c244-4178-8f56-018f0c2e2c7e",
+        "name": "n32-blade1-redvirt15.rncb.ru",
+        "cluster": "n32-blade1-test",
+        "data_center": "n32-Datacenter",
+        "IP": "10.105.246.115",
+        "engine": "n32"
+    },
+    {
+        "ID": "a527bdb9-ee63-4e68-9b49-0e52a23dd7f3",
+        "name": "n32-redvirt-nginx-front.rncb.ru",
+        "cluster": "n32-nginx-front-cluster",
+        "data_center": "n32-nginx-front",
+        "IP": "10.105.246.19",
+        "engine": "n32"
+    },
+    {
+        "ID": "2471f684-1fdd-43c0-b4d8-78a0c86f5139",
+        "name": "n32-redvirt-splunk-01.rncb.ru",
+        "cluster": "n32-splunk-01-cluster",
+        "data_center": "n32-splunk-01",
+        "IP": "10.105.246.11",
+        "engine": "n32"
+    },
+    {
+        "ID": "f92dc7ea-9c6d-4500-bcea-7d275cd90bda",
+        "name": "n32-redvirt-splunk-02.rncb.ru",
+        "cluster": "n32-splunk-02-cluster",
+        "data_center": "n32-splunk-02",
+        "IP": "10.105.246.12",
+        "engine": "n32"
+    },
+    {
+        "ID": "5c1b0320-72cc-44c5-b254-8dfa2f96852a",
+        "name": "n32-blade3-redvirt01.rncb.ru",
+        "cluster": "n32-blade3-cluster-old",
+        "data_center": "n32-Datacenter-old",
+        "IP": "10.105.251.51",
+        "engine": "n32-2"
+    },
+    {
+        "ID": "f7f93e7a-c497-4598-ba45-6aec9ee2ee85",
+        "name": "n32-blade3-redvirt02.rncb.ru",
+        "cluster": "n32-blade3-cluster-old",
+        "data_center": "n32-Datacenter-old",
+        "IP": "10.105.251.52",
+        "engine": "n32-2"
+    },
+    {
+        "ID": "13dc41a6-b08a-40c5-b509-33244a07c149",
+        "name": "n32-blade3-redvirt03.rncb.ru",
+        "cluster": "n32-blade3-cluster-old",
+        "data_center": "n32-Datacenter-old",
+        "IP": "10.105.251.53",
+        "engine": "n32-2"
+    },
+    {
+        "ID": "edfda546-571e-40a3-b87f-c5857ce35473",
+        "name": "n32-blade3-redvirt04.rncb.ru",
+        "cluster": "n32-blade3-cluster-old",
+        "data_center": "n32-Datacenter-old",
+        "IP": "10.105.251.54",
+        "engine": "n32-2"
+    },
+    {
+        "ID": "e1196f87-284d-4740-944d-a4c508725d9a",
+        "name": "n32-blade3-redvirt05.rncb.ru",
+        "cluster": "n32-blade3-cluster-old",
+        "data_center": "n32-Datacenter-old",
+        "IP": "10.105.251.55",
+        "engine": "n32-2"
+    },
+    {
+        "ID": "96493dc5-4fac-44f7-91fe-d2185bbebb68",
+        "name": "n32-blade3-redvirt06.rncb.ru",
+        "cluster": "n32-blade3-cluster-old",
+        "data_center": "n32-Datacenter-old",
+        "IP": "10.105.251.56",
+        "engine": "n32-2"
+    },
+    {
+        "ID": "a79243a6-5158-43b3-9d1d-fb38dc935745",
+        "name": "n32-blade3-redvirt07.rncb.ru",
+        "cluster": "n32-blade3-cluster-old",
+        "data_center": "n32-Datacenter-old",
+        "IP": "10.105.251.57",
+        "engine": "n32-2"
+    },
+    {
+        "ID": "62134b0e-674b-47a1-927c-47b14defb5f2",
+        "name": "n32-blade3-redvirt12.rncb.ru",
+        "cluster": "n32-Monitoring",
+        "data_center": "n32-Monitoring",
+        "IP": "10.105.251.62",
+        "engine": "n32-2"
+    },
+    {
+        "ID": "bf247c1c-6a4a-4b44-80cf-e0d25b67625f",
+        "name": "n32-blade3-redvirt13.rncb.ru",
+        "cluster": "n32-Monitoring",
+        "data_center": "n32-Monitoring",
+        "IP": "10.105.251.63",
+        "engine": "n32-2"
+    },
+    {
+        "ID": "31c8bd83-7c3a-4e38-a507-9e6109d85d45",
+        "name": "n32-blade3-redvirt14.rncb.ru",
+        "cluster": "n32-DBO-cluster",
+        "data_center": "n32-Datacenter-old",
+        "IP": "10.105.251.64",
+        "engine": "n32-2"
+    },
+    {
+        "ID": "c5f0afed-e3b9-47a5-bf93-b378ceb60d51",
+        "name": "n32-blade3-redvirt15.rncb.ru",
+        "cluster": "n32-DBO-cluster",
+        "data_center": "n32-Datacenter-old",
+        "IP": "10.105.251.65",
+        "engine": "n32-2"
+    },
+    {
+        "ID": "8ddfefaf-f6c0-470d-a361-464e4864f5be",
+        "name": "n32-blade3-redvirt16.rncb.ru",
+        "cluster": "n32-DBO-cluster",
+        "data_center": "n32-Datacenter-old",
+        "IP": "10.105.251.66",
+        "engine": "n32-2"
+    },
+    {
+        "ID": "349d90ea-b1a6-4be6-889e-103dc96c276e",
+        "name": "k45-blade1-redvirt04.rncb.ru",
+        "cluster": "k45-blade3-test",
+        "data_center": "k45-Datacenter",
+        "IP": "10.105.239.24",
+        "engine": "k45"
+    },
+    {
+        "ID": "365cd9bc-a0c5-4527-b973-ba400133ec42",
+        "name": "k45-blade1-redvirt05.rncb.ru",
+        "cluster": "k45-blade3-test",
+        "data_center": "k45-Datacenter",
+        "IP": "10.105.239.25",
+        "engine": "k45"
+    },
+    {
+        "ID": "f94d67e9-d63c-4a51-b233-4ec86657c973",
+        "name": "k45-blade1-redvirt11.rncb.ru",
+        "cluster": "k45-blade3-test",
+        "data_center": "k45-Datacenter",
+        "IP": "10.105.239.31",
+        "engine": "k45"
+    },
+    {
+        "ID": "57d7b015-a50a-4d3a-8fd7-586e39d4ed1a",
+        "name": "k45-blade1-redvirt15.rncb.ru",
+        "cluster": "k45-blade3-test",
+        "data_center": "k45-Datacenter",
+        "IP": "10.105.239.35",
+        "engine": "k45"
+    },
+    {
+        "ID": "98c2dcea-30bd-4085-908d-db9591a92bae",
+        "name": "k45-blade1-redvirt16.rncb.ru",
+        "cluster": "k45-blade3-test",
+        "data_center": "k45-Datacenter",
+        "IP": "10.105.239.36",
+        "engine": "k45"
+    },
+    {
+        "ID": "05c5279c-6670-4c12-ae83-8afeea1238c3",
+        "name": "k45-blade3-redvirt05.rncb.ru",
+        "cluster": "k45-blade3-test",
+        "data_center": "k45-Datacenter",
+        "IP": "10.105.239.105",
+        "engine": "k45"
+    },
+    {
+        "ID": "12e4afdb-92c8-447f-95d9-f606261ca6b6",
+        "name": "k45-blade3-redvirt06.rncb.ru",
+        "cluster": "k45-Processing",
+        "data_center": "k45-Datacenter-PRC",
+        "IP": null,
+        "engine": "k45"
+    },
+    {
+        "ID": "e6303cde-50cb-4234-921b-cb697cb96875",
+        "name": "k45-blade3-redvirt07.rncb.ru",
+        "cluster": "k45-blade3-test",
+        "data_center": "k45-Datacenter",
+        "IP": "10.105.239.107",
+        "engine": "k45"
+    },
+    {
+        "ID": "38dc87b3-f2df-4b8d-b3ee-4840f7274418",
+        "name": "k45-blade3-redvirt08.rncb.ru",
+        "cluster": "k45-blade3-test",
+        "data_center": "k45-Datacenter",
+        "IP": "10.105.239.108",
+        "engine": "k45"
+    },
+    {
+        "ID": "8daa5201-0b10-4298-81a6-13ae02626e57",
+        "name": "k45-blade3-redvirt11.rncb.ru",
+        "cluster": "k45-blade3-test",
+        "data_center": "k45-Datacenter",
+        "IP": "10.105.239.111",
+        "engine": "k45"
+    },
+    {
+        "ID": "b555d61a-61e1-44c6-9928-637d43ac6f61",
+        "name": "k45-blade3-redvirt12.rncb.ru",
+        "cluster": "k45-Processing",
+        "data_center": "k45-Datacenter-PRC",
+        "IP": null,
+        "engine": "k45"
+    },
+    {
+        "ID": "efe3a24b-bef0-4ecb-ad96-3b39a8333d28",
+        "name": "k45-blade3-redvirt13.rncb.ru",
+        "cluster": "k45-Processing",
+        "data_center": "k45-Datacenter-PRC",
+        "IP": null,
+        "engine": "k45"
+    },
+    {
+        "ID": "844e905e-5c5e-4f9c-b896-ddf9e36593d6",
+        "name": "k45-blade3-redvirt14.rncb.ru",
+        "cluster": "k45-blade3-test",
+        "data_center": "k45-Datacenter",
+        "IP": "10.105.239.114",
+        "engine": "k45"
+    },
+    {
+        "ID": "0069a378-8b26-4f8f-8741-7a3b5521b133",
+        "name": "k45-blade3-redvirt15.rncb.ru",
+        "cluster": "k45-blade3-test",
+        "data_center": "k45-Datacenter",
+        "IP": "10.105.239.115",
+        "engine": "k45"
+    },
+    {
+        "ID": "1fca09e6-b721-4290-8bd2-cea5383cd9c8",
+        "name": "k45-blade3-redvirt16.rncb.ru",
+        "cluster": "k45-blade3-test",
+        "data_center": "k45-Datacenter",
+        "IP": "10.105.239.116",
+        "engine": "k45"
+    },
+    {
+        "ID": "601b962d-6abf-4793-b467-58f7c95ed014",
+        "name": "k45-prc-redvirt01.rncb.ru",
+        "cluster": "k45-Processing-OLD",
+        "data_center": "k45-Processing-OLD",
+        "IP": null,
+        "engine": "k45"
+    },
+    {
+        "ID": "bea6dc86-cead-45ff-8dcf-985153e203ea",
+        "name": "k45-prc-redvirt02.rncb.ru",
+        "cluster": "k45-Processing-OLD",
+        "data_center": "k45-Processing-OLD",
+        "IP": null,
+        "engine": "k45"
+    },
+    {
+        "ID": "460de0f9-3129-4b69-8271-ddedf7789e64",
+        "name": "k45-redvirt-abs-k8s.rncb.ru",
+        "cluster": "k45-abs-k8s-cluster",
+        "data_center": "k45-abs-k8s",
+        "IP": "10.105.239.18",
+        "engine": "k45"
+    }
+]

@@ -32,7 +32,8 @@
                 {
                     "size": 40,
                     "type": 1,
-                    "mount_point": "/"
+                    "mount_point": "/",
+                    "sparse": "true"
                 }
             ],
             "template": "template-packer-redos8-03092024",
@@ -45,12 +46,13 @@
         },
         "vlan": {
             "name": "2921-redvt-eqp-test-e15",
-            "id": 2921
+            "id": 2921,
+            "suffix": ""
         }
     }
 ]
 ```
-Передавать через curl, пример команды: `curl -X POST -F "jsonfile=@vm_queries/new/test.json" http://10.105.253.252:6299/create_vm`.
+Передавать через curl, пример команды: `curl -X POST -F "jsonfile=@vm_queries/new/test.json" http://10.105.253.252:6299/ovirt/create_vm`.
 Ключ ovirt -> engine должен коррелировать с содержимым `config.py` или параметрами, передаваемыми в конструктор экземпляра класса `OvirtHelper`. 
 Например, стандартная конфигурация `DPC_LIST` и `DPC_URLS` в `config.py`:
 ```

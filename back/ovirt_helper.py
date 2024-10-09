@@ -77,6 +77,55 @@ class OvirtHelper():
         """Return current time. Primarily used for VMs."""
         return time.strftime("%Y.%d.%m-%H:%M:%S", time.localtime(time.time()))
 
+    def get_cluster_list(self):
+        """Get cluster ID and name list.
+    
+        Returns:
+            cluster list (dict): List of following parameters:
+            'ID', 'name', 'engine'.
+        """
+        result = []
+        for dpc, connection in self.__connections.items():
+            system_service = connection.system_service()
+            clusters_service = system_service.clusters_service()
+            clusters = clusters_service.list()
+            for cluster in clusters:
+                result.append({"name": cluster.name, "ID": cluster.id, "engine": dpc})
+        return result
+
+    def get_host_list(self):
+        """Get host ID, name, cluster and IP list.
+        
+        Returns:
+            host list (dict): List of following parameters:
+            'ID', 'name', 'cluster', 'IP', 'engine'.
+        """
+        result = []
+        for dpc, connection in self.__connections.items():
+            system_service = connection.system_service()
+            hosts_service = system_service.hosts_service()
+            hosts = hosts_service.list()
+            clusters_service = system_service.clusters_service()
+            data_centers_service = system_service.data_centers_service()
+            for host in hosts:
+                cluster = clusters_service.cluster_service(host.cluster.id).get()
+                data_center = data_centers_service.data_center_service(cluster.data_center.id).get()
+                host_service = hosts_service.host_service(host.id)
+                nics_service = host_service.nics_service()
+                nics = nics_service.list()
+                ip = None
+                for nic in nics:
+                    if nic.name in cfg.HOST_MANAGEMENT_BONDS:
+                        if nic.ip and nic.ip.address:
+                            ip = nic.ip.address
+                result.append({"ID": host.id,
+                               "name": host.name, 
+                               "cluster": cluster.name, 
+                               "data_center": data_center.name,
+                               "IP": ip,
+                               "engine": dpc})
+        return result
+
     def get_vm_list(self):
         """Get VM list as dictionary.
         
@@ -218,7 +267,8 @@ class OvirtHelper():
                             {
                                 "size": 40,
                                 "type": 1,
-                                "mount_point": "/"
+                                "mount_point": "/",
+                                "sparse": "true"
                             }
                         ],
                         "template": "template-packer-redos8-03092024",
@@ -428,7 +478,9 @@ class OvirtHelper():
                             interface=sdk.types.DiskInterface.VIRTIO_SCSI
                         )
                     )
+                    self.__logger.debug("Created disk_attachment variable (disk #%s)", disk_index)
                     disk_service = system_service.disks_service().disk_service(disk_attachment.disk.id)
+                    self.__logger.debug("Found disk_attachment service (disk #%s)", disk_index)
 
                     # Waiting to apply disk changes
                     while disk_service.get().status == sdk.types.DiskStatus.LOCKED:
