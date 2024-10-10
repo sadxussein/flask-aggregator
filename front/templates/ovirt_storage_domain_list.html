@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        
+        <title>oVirt VM list</title>
+
+        <link rel="stylesheet" href="{{ url_for('static', filename='css/jquery.dataTables.min.css') }}">
+
+        <script src="{{ url_for('static', filename='js/jquery-3.6.0.min.js') }}"></script>
+        <script src="{{ url_for('static', filename='js/jquery.dataTables.min.js') }}"></script>
+    </head>
+    <body>
+        <div class="container">
+            <table id="ovirt_storage_domain_list" class="display">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>name</th>
+                        <th>engine</th>
+                        <th>space_available</th>
+                        <th>space_used</th>
+                        <th>space_committed</th>
+                        <th>space_total</th>
+                        <th>space_overprovisioning</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in data %}
+                    <tr>
+                        <th>{{ item.ID }}</th>
+                        <th>{{ item.name }}</th>
+                        <th>{{ item.engine }}</th>    
+                        <th>{{ item.space_available }}</th>
+                        <th>{{ item.space_used }}</th>
+                        <th>{{ item.space_committed }}</th>
+                        <th>{{ item.space_total }}</th>
+                        <th>{{ item.space_overprovisioning }}</th>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <script>
+            $(document).ready(function() {
+                $('#ovirt_storage_domain_list').DataTable({
+                    initComplete: function() {
+                        this.api().columns().every(function () {
+                            var column = this;
+                            var select = $('<select><option value=""></option></select>')
+                                .appendTo($(column.footer()).empty())
+                                .on('change', function() {
+                                    var val = $.fn.dataTable.util.escapeRegex(
+                                        $(this).val()
+                                    );
+                                    column
+                                        .search(val ? '^' + val + '$' : '', true, false)
+                                        .draw();
+                                });
+                            column.data().unique().sort().each(function (d, j) {
+                                select.append('<option value"' + d + '">' + d + '</option>')
+                            });
+                        });
+                    }
+                });
+            });
+        </script>
+    </body>
+</html>

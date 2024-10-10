@@ -14,3 +14,6 @@ DPC_URLS = {
 }
 BACK_FILES_FOLDER = "back/files"
 HOST_MANAGEMENT_BONDS = ["bond0.2701", "bond0.1932", "bond0.2721", "bond0.1567"]
+
+# List of storage domains to be avoided in data gathering.
+STORAGE_DOMAIN_EXCEPTIONS = ["ovirt-image-repository"]

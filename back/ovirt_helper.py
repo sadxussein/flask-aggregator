@@ -77,6 +77,33 @@ class OvirtHelper():
         """Return current time. Primarily used for VMs."""
         return time.strftime("%Y.%d.%m-%H:%M:%S", time.localtime(time.time()))
 
+    def get_storage_domain_list(self):
+        """Get storage domain information from all engines.
+
+        Returns:
+            storage domain list (dict): List of following parameters:
+            'ID', 'name', 'engine', 'space_available', 'space_used', 
+            'space_committed', 'space_total' 'space_overprovisioning'.
+        """
+        result = []
+        for dpc, connection in self.__connections.items():
+            system_service = connection.system_service()
+            storage_domains_service = system_service.storage_domains_service()
+            for domain in storage_domains_service.list():
+                if domain.name not in cfg.STORAGE_DOMAIN_EXCEPTIONS:
+                    result.append({
+                        "ID": domain.id,
+                        "name": domain.name,
+                        "engine": dpc,
+                        "space_available": domain.available / (1024 ** 3),
+                        "space_used": domain.used / (1024 ** 3),
+                        "space_committed": domain.committed / (1024 ** 3),
+                        "space_total": domain.available / (1024 ** 3) + domain.used / (1024 ** 3),
+                        "space_overprovisioning": int((domain.committed * 100)
+                                                / (domain.available + domain.used))
+                    })
+        return result
+
     def get_cluster_list(self):
         """Get cluster ID and name list.
     

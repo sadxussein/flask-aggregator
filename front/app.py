@@ -47,9 +47,15 @@ class FlaskAggregator():
 
         @self.app.route("/ovirt/cluster_list")
         def ovirt_cluster_list():
-            """Show host list."""
+            """Show cluster list."""
             vms = self.__load_json("cluster_list.json")
             return render_template("ovirt_cluster_list.html", data=vms)
+        
+        @self.app.route("/ovirt/storage_domain_list")
+        def ovirt_storage_domain_list():
+            """Show storage domain list."""
+            vms = self.__load_json("storage_domain_list.json")
+            return render_template("ovirt_storage_domain_list.html", data=vms)
 
         @self.app.route("/ovirt/create_vm", methods=["POST"])
         def ovirt_create_vm():
