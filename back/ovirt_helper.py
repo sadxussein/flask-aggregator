@@ -268,7 +268,7 @@ class OvirtHelper():
                                 "size": 40,
                                 "type": 1,
                                 "mount_point": "/",
-                                "sparse": "true"
+                                "sparse": 0     # where 0 is false, 1 is true
                             }
                         ],
                         "template": "template-packer-redos8-03092024",
@@ -467,7 +467,7 @@ class OvirtHelper():
                             disk=sdk.types.Disk(
                                 name=f"{vm.name}-data-disk-{disk_index}",
                                 description=f"Additional disk #{disk_index} for {vm.name}",
-                                format=sdk.types.DiskFormat.COW,
+                                format=sdk.types.DiskFormat.COW if bool(disk["sparse"]) else sdk.types.DiskFormat.RAW,
                                 provisioned_size=disk["size"] * 2**30,
                                 storage_domains=[
                                     sdk.types.StorageDomain(

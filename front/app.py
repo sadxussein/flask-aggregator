@@ -25,7 +25,7 @@ class FlaskAggregator():
             return '''
                 <h1>Country home, take me home...</h1>
             '''
-        
+
         @self.app.route("/ovirt")
         def ovirt_index():
             """oVirt index page."""
@@ -38,13 +38,13 @@ class FlaskAggregator():
             """Show VM list."""
             vms = self.__load_json("vm_list.json")
             return render_template("ovirt_vm_list.html", data=vms)
-        
+
         @self.app.route("/ovirt/host_list")
         def ovirt_host_list():
             """Show host list."""
             vms = self.__load_json("host_list.json")
             return render_template("ovirt_host_list.html", data=vms)
-        
+
         @self.app.route("/ovirt/cluster_list")
         def ovirt_cluster_list():
             """Show host list."""

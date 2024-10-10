@@ -1,13 +1,20 @@
 # Функциональный агрегатор для виртуализаций ОИТИ
+## Настройка
+1. Положить содержимое в /usr/local/bin/flask_aggregator
+2. Поставить в crontab геттеры по вкусу
+3. Запустить приложение из корня flask_aggregator через `python3 -m front.app`
 ## back
 Класс `OvirtHelper` в `ovirt_helper.py` - для работы в oVirt. Основной функционал:
 1. `get_vm_list` - получает список ВМ в виде словаря из всех энжинов
-2. `create_vm` - создание ВМ
+2. `get_host_list` - получает список хостов в виде словаря из всех энжинов
+3. `get_cluster_list` - получает список кластеров в виде словаря из всех энжинов
+4. `create_vm` - создание ВМ
+5. `create_vlan` - создание VLAN
+Standalone геттеры нужны для выгрузки в JSON результатов геттеров класса `OvirtHelper`.
 ## front
 Класс `FlaskAggregator` в `app.py` - сервер фласка, вебморда для взаимодействий с виртуализациями. Основной функционал:
 1. endpoint `/` - пустая индекс страница
-2. endpoint `/ovirt_vm_list` - страница содержащая список всех вм с фильтром
-3. endpoint `/create_vm` (POST only) - эндпоинт для передачи JSON файла с конфигурациями создаваемых вм. Пример JSON:
+2. endpoint `/ovirt/create_vm` (POST only) - эндпоинт для передачи JSON файла с конфигурациями создаваемых вм. Пример JSON:
 ```
 [
     {
@@ -33,7 +40,7 @@
                     "size": 40,
                     "type": 1,
                     "mount_point": "/",
-                    "sparse": "true"
+                    "sparse": 0     # where 0 is false, 1 is true
                 }
             ],
             "template": "template-packer-redos8-03092024",
@@ -66,5 +73,31 @@ DPC_URLS = {
     "k45": "https://k45-redvirt-engine1.rncb.ru/ovirt-engine/api"
 }
 ```
-# (TBD) utils
-Переписать утилиту для парса excel файла заявки на ВМ из элмы
+3. endpoint `/ovirt/create_vlan`: создание VLAN. Пример JSON:
+```
+[
+    {
+        "meta": {
+            "document_num": "6666",
+            "inf_system": "Ред Виртуализация",
+            "owner": "ОИТИ",
+            "environment": "Тест"
+        },
+        "ovirt": {
+            "engine": "e15-test",
+            "cluster": "Default",
+            "storage_domain": "hosted_storage",
+            "host_nic": "bond0"
+        },
+        "vlan": {
+            "name": "2921-redvt-eqp-test-e15",
+            "id": 2921,
+            "suffix": ""
+        }
+    }
+]
+```
+Та же самая конструкция как в `create_vm`, только без ключа `vm`.
+4. endpoint `/ovirt/vm_list` - список ВМ
+5. endpoint `/ovirt/host_list` - список гипервизоров
+6. endpoint `/ovirt/cluster_list` - список кластеров
