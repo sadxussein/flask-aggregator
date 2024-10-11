@@ -22,9 +22,7 @@ class FlaskAggregator():
         @self.app.route('/')
         def index():
             """Show index page."""
-            return '''
-                <p>Country home, take me home...</p>
-            '''
+            return render_template("index.html")
 
         @self.app.route("/ovirt")
         def ovirt_index():
@@ -36,32 +34,32 @@ class FlaskAggregator():
         @self.app.route("/ovirt/vm_list")
         def ovirt_vm_list():
             """Show VM list."""
-            vms = self.__load_json("vm_list.json")
-            return render_template("ovirt_vm_list.html", data=vms)
+            return render_template("ovirt_vm_list.html",
+                                   data=self.__load_json("vm_list.json"))
 
         @self.app.route("/ovirt/host_list")
         def ovirt_host_list():
             """Show host list."""
-            vms = self.__load_json("host_list.json")
-            return render_template("ovirt_host_list.html", data=vms)
+            return render_template("ovirt_host_list.html",
+                                   data=self.__load_json("host_list.json"))
 
         @self.app.route("/ovirt/cluster_list")
         def ovirt_cluster_list():
             """Show cluster list."""
-            vms = self.__load_json("cluster_list.json")
-            return render_template("ovirt_cluster_list.html", data=vms)
+            return render_template("ovirt_cluster_list.html",
+                                   data=self.__load_json("cluster_list.json"))
 
         @self.app.route("/ovirt/storage_domain_list")
         def ovirt_storage_domain_list():
             """Show storage domain list."""
-            vms = self.__load_json("storage_domain_list.json")
-            return render_template("ovirt_storage_domain_list.html", data=vms)
+            return render_template("ovirt_storage_domain_list.html",
+                                   data=self.__load_json("storage_domain_list.json"))
 
         @self.app.route("/ovirt/data_center_list")
         def ovirt_data_center_list():
             """Show storage domain list."""
-            vms = self.__load_json("data_center_list.json")
-            return render_template("ovirt_data_center_list.html", data=vms)
+            return render_template("ovirt_data_center_list.html",
+                                   data=self.__load_json("data_center_list.json"))
 
         @self.app.route("/ovirt/create_vm", methods=["POST"])
         def ovirt_create_vm():
