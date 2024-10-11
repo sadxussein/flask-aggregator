@@ -77,6 +77,23 @@ class OvirtHelper():
         """Return current time. Primarily used for VMs."""
         return time.strftime("%Y.%d.%m-%H:%M:%S", time.localtime(time.time()))
 
+    def get_data_center_list(self):
+        """Get data center information from all engines.
+        
+        Returns:
+            data center list (dict): List of following parameters:
+            'ID', 'name', 'engine'.
+        """
+        result = []
+        for dpc, connection in self.__connections.items():
+            for data_center in connection.system_service().data_centers_service().list():
+                result.append({
+                    "ID": data_center.id,
+                    "name": data_center.name,
+                    "engine": dpc
+                })
+        return result
+
     def get_storage_domain_list(self):
         """Get storage domain information from all engines.
 

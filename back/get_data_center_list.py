@@ -1,4 +1,4 @@
-"""Get cluster information.
+"""Get data center information.
 
 Current field list:
 name
@@ -15,7 +15,7 @@ from . import config as cfg
 if __name__ == "__main__":
     ovirt_helper = OvirtHelper()
     ovirt_helper.connect_to_engines()
-    cluster_list = ovirt_helper.get_cluster_list()
+    data_center_list = ovirt_helper.get_data_center_list()
     ovirt_helper.disconnect_from_engines()
-    with open(f"{cfg.BACK_FILES_FOLDER}/cluster_list.json", 'w', encoding="utf-8") as file:
-        json.dump(cluster_list, file, indent=4)
+    with open(f"{cfg.BACK_FILES_FOLDER}/data_center_list.json", 'w', encoding="utf-8") as file:
+        json.dump(data_center_list, file, indent=4)

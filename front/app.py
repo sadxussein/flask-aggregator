@@ -23,7 +23,7 @@ class FlaskAggregator():
         def index():
             """Show index page."""
             return '''
-                <h1>Country home, take me home...</h1>
+                <p>Country home, take me home...</p>
             '''
 
         @self.app.route("/ovirt")
@@ -50,12 +50,18 @@ class FlaskAggregator():
             """Show cluster list."""
             vms = self.__load_json("cluster_list.json")
             return render_template("ovirt_cluster_list.html", data=vms)
-        
+
         @self.app.route("/ovirt/storage_domain_list")
         def ovirt_storage_domain_list():
             """Show storage domain list."""
             vms = self.__load_json("storage_domain_list.json")
             return render_template("ovirt_storage_domain_list.html", data=vms)
+
+        @self.app.route("/ovirt/data_center_list")
+        def ovirt_data_center_list():
+            """Show storage domain list."""
+            vms = self.__load_json("data_center_list.json")
+            return render_template("ovirt_data_center_list.html", data=vms)
 
         @self.app.route("/ovirt/create_vm", methods=["POST"])
         def ovirt_create_vm():
@@ -206,7 +212,6 @@ class FlaskAggregator():
     def start(self):        # TODO: pass parameters for Flask server
         """Start Flask aggregator server."""
         self.app.run(host="0.0.0.0", port="6299", debug=True)
-
 
 if __name__ == "__main__":
     flask_aggregator = FlaskAggregator()
