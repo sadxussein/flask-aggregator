@@ -208,16 +208,10 @@ class OvirtHelper():
                 # and old processing clusters.
                 if "dbo-" in config["vm"]["name"]:
                     config["ovirt"]["cluster"], config["ovirt"]["data_center"] = self.__get_vm_cluster_and_data_center("dbo", config, clusters)
-                    # config["ovirt"]["cluster"] = next((cluster["name"] for cluster in clusters if "dbo" in cluster["name"].lower() and config["ovirt"]["engine"] == cluster["engine"]), None)
-                    # config["ovirt"]["data_center"] = next((cluster["data_center"] for cluster in clusters if "dbo" in cluster["name"].lower() and config["ovirt"]["engine"] == cluster["engine"]), None)
                 elif "prc" in config["vlan"]["name"].lower() and config["vlan"]["id"] not in cfg.OLD_PROCESSING_VLANS:
                     config["ovirt"]["cluster"], config["ovirt"]["data_center"] = self.__get_vm_cluster_and_data_center("Processing", config, clusters)
-                    # config["ovirt"]["cluster"] =  next((cluster["name"] for cluster in clusters if "Processing" in cluster["name"] and config["ovirt"]["engine"] == cluster["engine"]), None)
-                    # config["ovirt"]["data_center"] =  next((cluster["data_center"] for cluster in clusters if "Processing" in cluster["name"] and config["ovirt"]["engine"] == cluster["engine"]), None)
                 elif config["vlan"]["id"] in cfg.OLD_PROCESSING_VLANS:
                     config["ovirt"]["cluster"], config["ovirt"]["data_center"] = self.__get_vm_cluster_and_data_center("Processing-OLD", config, clusters)
-                    # config["ovirt"]["cluster"] =  next((cluster["name"] for cluster in clusters if "Processing-OLD" in cluster["name"] and config["ovirt"]["engine"] == cluster["engine"]), None)
-                    # config["ovirt"]["data_center"] = next((cluster["data_center"] for cluster in clusters if "Processing-OLD" in cluster["name"] and config["ovirt"]["engine"] == cluster["engine"]), None)
                 # If no logic is viable for any cluster we set default one
                 # (always with "The default server cluster" in its
                 # description).
@@ -243,41 +237,11 @@ class OvirtHelper():
                 else:
                     config["ovirt"]["host_nic"] = "bond0"
 
-                config["ovirt"]["storage_domain"] = None
-                max_percent_left = 0
-                for sd in storage_domains:
-                    for cluster in clusters:
-                        if (sd["data_center"] == config["ovirt"]["data_center"]
-                            and cluster["data_center"] == config["ovirt"]["data_center"]
-                            and sd["percent_left"] > max_percent_left
-                            and sd["name"] != "hosted_storage"):
-                            config["ovirt"]["storage_domain"] = sd["name"]
-
-                # if config["ovirt"]["engine"] == "e15":
-                #     if config["ovirt"]["cluster"] == "e15-Processing":
-                #         config["ovirt"]["storage_domain"] = "E15-DEPO3-REDPRC1"
-                #     elif config["ovirt"]["cluster"] == "e15-Processing-OLD":
-                #         config["ovirt"]["storage_domain"] = "E15-AF250S3-4-PRC-OLD1"
-                #     elif config["ovirt"]["cluster"] == "e15-cluster-ARM":
-                #         config["ovirt"]["storage_domain"] =  "E15-AF250S3-4-REDARM1"
-                #     else:
-                #         config["ovirt"]["storage_domain"] =  "E15-DEPO3-REDDS3"
-                # elif config["ovirt"]["engine"] == "n32":
-                #     if config["ovirt"]["cluster"] == "n32-Processing":
-                #         config["ovirt"]["storage_domain"] =  "N32-AF250S1-REDPRC1"
-                #     else:
-                #         config["ovirt"]["storage_domain"] =  "N32-AF250S1-REDDS1"
-                # elif config["ovirt"]["engine"] == "n32-2":
-                #     config["ovirt"]["storage_domain"] =  "N32-TATLIN-REDDS1"
-                # elif config["ovirt"]["engine"] == "k45":
-                #     if config["ovirt"]["cluster"] == "k45-Processing":
-                #         config["ovirt"]["storage_domain"] =  "K45-AF250S3-REDPRC1"
-                #     else:
-                #         config["ovirt"]["storage_domain"] =  "K45-AF250S3-REDDS2"
+                config["ovirt"]["storage_domain"] = self.__get_vm_storage_domain(config)
 
                 template_prefix = ''
                 for dc in data_centers:
-                    if dc["name"] == config["ovirt"]["data_center"]:
+                    if dc["name"] == config["ovirt"]["data_center"] and dc["comment"] is not None:
                         template_prefix = f"_{dc['comment']}"
 
                 if config["vm"]["os"] == "RedOS 8":
@@ -291,11 +255,47 @@ class OvirtHelper():
         return result
 
     def __get_vm_cluster_and_data_center(self, target, config, clusters):
-        """Get VM both cluster and data center."""
+        """Get VM both cluster and data center.
+        
+        'target' here is a definitive part of cluster name, e.g. 'dbo' in
+        'e15-DBO-cluster'.
+        """
         result = (None, None)
         for cluster in clusters:
             if target in cluster["name"].lower() and config["ovirt"]["engine"] == cluster["engine"]:
                 result = (cluster["name"], cluster["data_center"])
+        return result
+
+    def __get_vm_storage_domain(self, config):
+        """Define on which storage VM should be put.
+        
+        Hard-coded logic, since defining which storage is preferable at any
+        given moment is complicated even for living people.
+        """
+        result = None
+        if config["ovirt"]["engine"] == "e15":
+            if config["ovirt"]["cluster"] == "e15-Processing":
+                result = "E15-DEPO4-REDPRC1"
+            elif config["ovirt"]["cluster"] == "e15-Processing-OLD":
+                result = "E15-AF250S3-4-PRC-OLD1"
+            else:
+                result =  "E15-DEPO4-REDDS2"
+        if config["ovirt"]["engine"] == "e15-2":
+            result = "E15-DEPO4-RED2-DS1"
+        elif config["ovirt"]["engine"] == "n32":
+            if config["ovirt"]["cluster"] == "n32-Processing":
+                result = "N32-AF250S1-REDPRC1"
+            else:
+                result = "N32-AF250S3-REDDS2"
+        elif config["ovirt"]["engine"] == "n32-2":
+            result = "N32-TATLIN-REDDS2"
+        elif config["ovirt"]["engine"] == "k45":
+            if config["ovirt"]["cluster"] == "k45-Processing":
+                result = "K45-AF250S3-REDPRC2"
+            elif config["ovirt"]["cluster"] == "k45-Processing-OLD":
+                result = "K45-AF250S3-PRC-OLD1"
+            else:
+                result = "K45-AF250S3-REDDS2"
         return result
 
     def get_data_center_list(self):
@@ -371,7 +371,7 @@ class OvirtHelper():
             system_service = connection.system_service()
             data_centers_service = system_service.data_centers_service()
             clusters_service = system_service.clusters_service()
-            clusters = clusters_service.list()            
+            clusters = clusters_service.list()
             for cluster in clusters:
                 data_center = data_centers_service.data_center_service(cluster.data_center.id).get()
                 result.append({"name": cluster.name, "ID": cluster.id,
