@@ -5,8 +5,11 @@ __author__ = "xussein"
 
 import logging
 import time
+import re
+import ipaddress
 
 import ovirtsdk4 as sdk
+import pandas as pd
 from . import config as cfg
 
 class OvirtHelper():
@@ -75,16 +78,239 @@ class OvirtHelper():
 
     # TODO: check if necessary. Might be redundant. Could get creation
     # time from vm_service.
-    def __get_timestamp(self):      
+    def __get_timestamp(self):
         """Return current time. Primarily used for VMs."""
         return time.strftime("%Y.%d.%m-%H:%M:%S", time.localtime(time.time()))
+
+    def get_vm_configs_from_excel(self, excel_file):
+        """Parse ELMA excel file and return valid JSON VM config file."""
+        result = []
+
+        # TODO: need to check if result files exist for these functions.
+        storage_domains = self.get_storage_domain_list()
+        data_centers = self.get_data_center_list()
+        clusters = self.get_cluster_list()
+
+        # Get VM info from excel file. Skip first two rows, which contain
+        # meta information about VM.
+        df_vm_meta = pd.read_excel(excel_file, nrows=2, header=None)
+
+        # Skipping first 4 rows, containing VM meta, only loading main info
+        # about VM. Transforming it to become vertical and dropping header
+        # at first line.
+        df_vm_config = pd.read_excel(excel_file, skiprows=4)
+        df_vm_config = df_vm_config.T
+        df_vm_config = df_vm_config.drop(df_vm_config.index[0])
+
+        # DEBUG. TODO: remove.
+        pd.set_option("display.max_columns", None)
+        print(df_vm_config)
+
+        # Loop through all lines in data frame.
+        for row in df_vm_config.itertuples():
+            config = {"meta": {}, "ovirt": {}, "vm": {}, "vlan": {}}
+
+            # Setting up file ID number (elma ID "3185" from "Заявка ВМ-3185
+            # в BPMSoft Маркетинг.xlsx").
+            document_num = re.match(r'^\D*(\d+)', excel_file)
+            if document_num:
+                config["meta"]["document_num"] = document_num.group(1)
+            if not pd.isnull(row[1]):
+                config["meta"]["inf_system"] = df_vm_meta.iat[0, 1]
+                config["meta"]["owner"] = df_vm_meta.iat[1, 1]
+
+                # From here and on we keep working with rows of data from
+                # data frame. Rows are placed in following order in data
+                # frame: (1) vm name, (2) vm hostname, (3) cpu number, (4)
+                # memory size, (5) disks and mount points, (6) environment,
+                # (7) OS, (8) backup flag (not used), (9) SRM protect flag
+                # (not used), (10) crimea domain flag (not used), (11) admins
+                # (not used), (12) DPC, (13) VLAN name, (14) VLAN id, (15)
+                # subnet, (16) IP, (17) expiration date (not used), (18)
+                # FreeIPA flag (not used), (19) comment (not used). So, rows
+                # used are 0-6, 11-15. And as in Pandas itertuples rows are
+                # counted from 1 we add +1 to their number.
+                config["meta"]["environment"] = row[6]
+
+                if "ЦОД Элеваторная 15 РЕД" in row[12]:
+                    # Checking environment. If VM should be productive it goes
+                    # to e15-2, otherwise e15.
+                    if row[6] == "Продуктив" and not "dbo-" in row[1]:
+                        config["ovirt"]["engine"] = "e15-2"
+                    else:
+                        config["ovirt"]["engine"] = "e15"
+                elif "ЦОД Набережная 32 РЕД" in row[12]:
+                    # Here we have to check VLAN. If VLAN is in old network
+                    # (N32_NEW_CIRCUIT_VLAN_SET), send VM to n32-2, n32
+                    # otherwise.
+                    if int(row[14]) in cfg.N32_NEW_CIRCUIT_VLAN_SET:
+                        config["ovirt"]["engine"] = "n32-2"
+                    else:
+                        config["ovirt"]["engine"] = "n32"
+                elif "ЦОД Козлова 45 РЕД" in row[12]:
+                    config["ovirt"]["engine"] = "k45"
+                else:
+                    # Set to none so that parser would throw an exception.
+                    config["ovirt"]["engine"] = None
+
+                config["vm"]["name"] = row[1]
+                config["vm"]["hostname"] = row[2]
+                config["vm"]["cores"] = row[3]
+                config["vm"]["memory"] = row[4]
+
+                # Searching for disks is a bit complicated. We are looking
+                # for a string looking like 'Root|/|70\nOther|swap|16' or
+                # 'Root|/|50\nOther|swap|16\nOther|/app|280'. So regex is
+                # quite a choice for parsing each disk.
+                disks_pattern = re.compile(r"(\w+)\|([\/]?.*)\|(\d+)")
+                disks = disks_pattern.finditer(row[5])
+                config["vm"]["disks"] = []
+                if disks:
+                    for disk in disks:
+                        if str(disk.group(1)) == "Root":
+                            disk_type = 1
+                        else:
+                            disk_type = 2
+                        # Making sparse disks by default.
+                        config["vm"]["disks"].append({"size": int(disk.group(3)),
+                                                  "type": disk_type,
+                                                  "mount_point": disk.group(2),
+                                                  "sparse": 1})
+                config["vm"]["os"] = row[7]
+                if config["vm"]["os"] == "RedOS 8":
+                    config["vm"]["nic_name"] = "enp1s0"
+                elif config["vm"]["os"] == "RedOS7.3":
+                    config["vm"]["nic_name"] = "ens3"
+                elif config["vm"]["os"] == "Астра Линукс 1.7 Воронеж":
+                    config["vm"]["nic_name"] = "eth0"
+                network = ipaddress.IPv4Network(row[15], strict=False)
+                network_address = network.network_address
+                config["vm"]["gateway"] = f"{network_address + 1}"
+                config["vm"]["netmask"] = f"{network.netmask}"
+                config["vm"]["address"] = row[16]
+
+                # These two are set to some default values, but certain logic
+                # could be applied also.
+                config["vm"]["dns_servers"] = "10.82.254.32 10.82.254.31"
+                config["vm"]["search_domain"] = "crimea.rncb.ru"
+
+                config["vlan"]["name"] = row[13]
+                config["vlan"]["id"] = row[14]
+                if "prc" in row[13].lower():
+                    config["vlan"]["suffix"] = "-prc"
+                elif config["vlan"]["id"] in cfg.DBO_VLANS:
+                    config["vlan"]["suffix"] = "-dbo"
+                else:
+                    config["vlan"]["suffix"] = ''
+
+                # Now to setup values which depend on other values.
+                # Defining cluster. So far we have logic for DBO, processing
+                # and old processing clusters.
+                if "dbo-" in config["vm"]["name"]:
+                    config["ovirt"]["cluster"], config["ovirt"]["data_center"] = self.__get_vm_cluster_and_data_center("dbo", config, clusters)
+                    # config["ovirt"]["cluster"] = next((cluster["name"] for cluster in clusters if "dbo" in cluster["name"].lower() and config["ovirt"]["engine"] == cluster["engine"]), None)
+                    # config["ovirt"]["data_center"] = next((cluster["data_center"] for cluster in clusters if "dbo" in cluster["name"].lower() and config["ovirt"]["engine"] == cluster["engine"]), None)
+                elif "prc" in config["vlan"]["name"].lower() and config["vlan"]["id"] not in cfg.OLD_PROCESSING_VLANS:
+                    config["ovirt"]["cluster"], config["ovirt"]["data_center"] = self.__get_vm_cluster_and_data_center("Processing", config, clusters)
+                    # config["ovirt"]["cluster"] =  next((cluster["name"] for cluster in clusters if "Processing" in cluster["name"] and config["ovirt"]["engine"] == cluster["engine"]), None)
+                    # config["ovirt"]["data_center"] =  next((cluster["data_center"] for cluster in clusters if "Processing" in cluster["name"] and config["ovirt"]["engine"] == cluster["engine"]), None)
+                elif config["vlan"]["id"] in cfg.OLD_PROCESSING_VLANS:
+                    config["ovirt"]["cluster"], config["ovirt"]["data_center"] = self.__get_vm_cluster_and_data_center("Processing-OLD", config, clusters)
+                    # config["ovirt"]["cluster"] =  next((cluster["name"] for cluster in clusters if "Processing-OLD" in cluster["name"] and config["ovirt"]["engine"] == cluster["engine"]), None)
+                    # config["ovirt"]["data_center"] = next((cluster["data_center"] for cluster in clusters if "Processing-OLD" in cluster["name"] and config["ovirt"]["engine"] == cluster["engine"]), None)
+                # If no logic is viable for any cluster we set default one
+                # (always with "The default server cluster" in its
+                # description).
+                else:
+                    config["ovirt"]["cluster"] = next((cluster["name"] for cluster in clusters if "The default server cluster" in cluster["description"] and config["ovirt"]["engine"] == cluster["engine"]), None)
+                    config["ovirt"]["data_center"] = next((cluster["data_center"] for cluster in clusters if "The default server cluster" in cluster["description"] and config["ovirt"]["engine"] == cluster["engine"]), None)
+
+                # Setting up host (hypervisor) NIC.
+                if config["vlan"]["id"] in cfg.DBO_VLANS:
+                    if config["ovirt"]["engine"] == "e15":
+                        if config["vlan"]["id"] % 2 == 0:
+                            config["ovirt"]["host_nic"] = "ens51"
+                        else:
+                            config["ovirt"]["host_nic"] = "ens52"
+                    elif config["ovirt"]["engine"] == "n32-2":
+                        if config["vlan"]["id"] % 2 == 1:
+                            config["ovirt"]["host_nic"] = "ens51"
+                        else:
+                            config["ovirt"]["host_nic"] = "ens52"
+                elif (config["vlan"]["id"] in cfg.OLD_PROCESSING_VLANS and
+                      (config["ovirt"]["engine"] in ["e15", "k45"])):
+                    config["ovirt"]["host_nic"] = "bond1"
+                else:
+                    config["ovirt"]["host_nic"] = "bond0"
+
+                config["ovirt"]["storage_domain"] = None
+                max_percent_left = 0
+                for sd in storage_domains:
+                    for cluster in clusters:
+                        if (sd["data_center"] == config["ovirt"]["data_center"]
+                            and cluster["data_center"] == config["ovirt"]["data_center"]
+                            and sd["percent_left"] > max_percent_left
+                            and sd["name"] != "hosted_storage"):
+                            config["ovirt"]["storage_domain"] = sd["name"]
+
+                # if config["ovirt"]["engine"] == "e15":
+                #     if config["ovirt"]["cluster"] == "e15-Processing":
+                #         config["ovirt"]["storage_domain"] = "E15-DEPO3-REDPRC1"
+                #     elif config["ovirt"]["cluster"] == "e15-Processing-OLD":
+                #         config["ovirt"]["storage_domain"] = "E15-AF250S3-4-PRC-OLD1"
+                #     elif config["ovirt"]["cluster"] == "e15-cluster-ARM":
+                #         config["ovirt"]["storage_domain"] =  "E15-AF250S3-4-REDARM1"
+                #     else:
+                #         config["ovirt"]["storage_domain"] =  "E15-DEPO3-REDDS3"
+                # elif config["ovirt"]["engine"] == "n32":
+                #     if config["ovirt"]["cluster"] == "n32-Processing":
+                #         config["ovirt"]["storage_domain"] =  "N32-AF250S1-REDPRC1"
+                #     else:
+                #         config["ovirt"]["storage_domain"] =  "N32-AF250S1-REDDS1"
+                # elif config["ovirt"]["engine"] == "n32-2":
+                #     config["ovirt"]["storage_domain"] =  "N32-TATLIN-REDDS1"
+                # elif config["ovirt"]["engine"] == "k45":
+                #     if config["ovirt"]["cluster"] == "k45-Processing":
+                #         config["ovirt"]["storage_domain"] =  "K45-AF250S3-REDPRC1"
+                #     else:
+                #         config["ovirt"]["storage_domain"] =  "K45-AF250S3-REDDS2"
+
+                template_prefix = ''
+                for dc in data_centers:
+                    if dc["name"] == config["ovirt"]["data_center"]:
+                        template_prefix = f"_{dc['comment']}"
+
+                if config["vm"]["os"] == "RedOS 8":
+                    config["vm"]["template"] = "template-packer-redos8-03092024" + template_prefix
+                elif config["vm"]["os"] == "RedOS7.3":
+                    config["vm"]["template"] = "template-redos7-29072024" + template_prefix
+                elif config["vm"]["os"] == "Астра Линукс 1.7 Воронеж":
+                    config["vm"]["template"] = "template-packer-astra-04092024" + template_prefix
+
+                result.append(config)
+        return result
+
+    def __get_vm_cluster_and_data_center(self, target, config, clusters):
+        """Get VM both cluster and data center."""
+        result = (None, None)
+        for cluster in clusters:
+            if target in cluster["name"].lower() and config["ovirt"]["engine"] == cluster["engine"]:
+                result = (cluster["name"], cluster["data_center"])
+        return result
 
     def get_data_center_list(self):
         """Get data center information from all engines.
         
         Returns:
             data center list (dict): List of following parameters:
-            'ID', 'name', 'engine'.
+            'ID', 'name', 'engine', 'comment'.
+
+        Field 'comment' is quite important for selecting proper template
+        for VM. The currenct list of comments is: 'K8S', 'PRC' (processing), 
+        'PRC_OLD' (old network processing), 'MON' (monitoring), 'NGX' (front
+        nginx), 'ARM' (or VDI), 'SPK_01' and 'SPK_02' (splunk). These values
+        define which template to choose, as each corresponding template ends
+        with this tag in its name, e.g. 'template_PRC_OLD'.
         """
         result = []
         for dpc, connection in self.__connections.items():
@@ -92,7 +318,8 @@ class OvirtHelper():
                 result.append({
                     "ID": data_center.id,
                     "name": data_center.name,
-                    "engine": dpc
+                    "engine": dpc,
+                    "comment": data_center.comment
                 })
         return result
 
@@ -101,19 +328,25 @@ class OvirtHelper():
 
         Returns:
             storage domain list (dict): List of following parameters:
-            'ID', 'name', 'engine', 'available', 'used', 
+            'ID', 'name', 'engine', 'data_center', 'available', 'used', 
             'committed', 'total', 'percent_left', 'overprovisioning'.
         """
         result = []
         for dpc, connection in self.__connections.items():
             system_service = connection.system_service()
+            data_centers_service = system_service.data_centers_service()
             storage_domains_service = system_service.storage_domains_service()
             for domain in storage_domains_service.list():
                 if domain.name not in cfg.STORAGE_DOMAIN_EXCEPTIONS:
+                    data_centers = set()
+                    for dc in domain.data_centers:
+                        data_center = data_centers_service.data_center_service(dc.id).get()
+                        data_centers.add(data_center.name)
                     result.append({
                         "ID": domain.id,
                         "name": domain.name,
                         "engine": dpc,
+                        "data_center": ' '.join(data_centers),
                         "available": domain.available / (1024 ** 3),
                         "used": domain.used / (1024 ** 3),
                         "committed": domain.committed / (1024 ** 3),
@@ -131,15 +364,19 @@ class OvirtHelper():
     
         Returns:
             cluster list (dict): List of following parameters:
-            'ID', 'name', 'engine'.
+            'ID', 'name', 'engine', 'description'.
         """
         result = []
         for dpc, connection in self.__connections.items():
             system_service = connection.system_service()
+            data_centers_service = system_service.data_centers_service()
             clusters_service = system_service.clusters_service()
-            clusters = clusters_service.list()
+            clusters = clusters_service.list()            
             for cluster in clusters:
-                result.append({"name": cluster.name, "ID": cluster.id, "engine": dpc})
+                data_center = data_centers_service.data_center_service(cluster.data_center.id).get()
+                result.append({"name": cluster.name, "ID": cluster.id,
+                               "engine": dpc, "description": cluster.description,
+                               "data_center": data_center.name})
         return result
 
     def get_host_list(self):
@@ -301,6 +538,7 @@ class OvirtHelper():
                     },
                     "ovirt": {
                         "engine": "e15-test",
+                        "data_center": "e15-Datacenter",
                         "cluster": "Default",
                         "storage_domain": "hosted_storage",
                         "host_nic": "bond0"
@@ -324,7 +562,8 @@ class OvirtHelper():
                         "gateway": "10.105.249.1",
                         "netmask": "255.255.255.192",
                         "address": "10.105.249.51",
-                        "dns_servers": "10.82.254.32 10.82.254.31"
+                        "dns_servers": "10.82.254.32 10.82.254.31",
+                        "search_domain": "crimea.rncb.ru"
                     },
                     "vlan": {
                         "name": "2921-redvt-eqp-test-e15",
@@ -731,4 +970,3 @@ class OvirtHelper():
 
         self.__logger.info("Network '%s' created and attached to all hosts.",
                            config['vlan']['name'])
-
