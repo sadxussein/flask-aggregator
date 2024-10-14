@@ -73,7 +73,9 @@ class OvirtHelper():
             handler.close()
         self.__connections = {}
 
-    def __get_timestamp(self):
+    # TODO: check if necessary. Might be redundant. Could get creation
+    # time from vm_service.
+    def __get_timestamp(self):      
         """Return current time. Primarily used for VMs."""
         return time.strftime("%Y.%d.%m-%H:%M:%S", time.localtime(time.time()))
 
@@ -99,8 +101,8 @@ class OvirtHelper():
 
         Returns:
             storage domain list (dict): List of following parameters:
-            'ID', 'name', 'engine', 'space_available', 'space_used', 
-            'space_committed', 'space_total' 'space_overprovisioning'.
+            'ID', 'name', 'engine', 'available', 'used', 
+            'committed', 'total', 'percent_left', 'overprovisioning'.
         """
         result = []
         for dpc, connection in self.__connections.items():
@@ -112,11 +114,14 @@ class OvirtHelper():
                         "ID": domain.id,
                         "name": domain.name,
                         "engine": dpc,
-                        "space_available": domain.available / (1024 ** 3),
-                        "space_used": domain.used / (1024 ** 3),
-                        "space_committed": domain.committed / (1024 ** 3),
-                        "space_total": domain.available / (1024 ** 3) + domain.used / (1024 ** 3),
-                        "space_overprovisioning": int((domain.committed * 100)
+                        "available": domain.available / (1024 ** 3),
+                        "used": domain.used / (1024 ** 3),
+                        "committed": domain.committed / (1024 ** 3),
+                        "total": domain.available / (1024 ** 3) 
+                                 + domain.used / (1024 ** 3),
+                        "percent_left": 100 - int(((100 * domain.used) 
+                                        / (domain.available + domain.used))),
+                        "overprovisioning": int((domain.committed * 100)
                                                 / (domain.available + domain.used))
                     })
         return result
@@ -174,29 +179,16 @@ class OvirtHelper():
         """Get VM list as dictionary.
         
         Returns:
-            dict: List of all VMs from oVirt as dictionary.
+            host list (dict): List of following parameters:
+            'ID', 'name', 'hostname', 'state', 'engine', 'host',
+            'cluster', 'data_center', 'was_migrated', 'total_space',
+            'storage_domains'.
 
         Function connects to every oVirt engine passed to class instance file 
         and returns data from all VMs as dictionary.
-
-        Current field list:
-
-            ID
-            name
-            hostname
-            state
-            IP
-            engine
-            host
-            cluster
-            data_center
-            was_migrated
-
         Field list will be extended in the future.
         """
         result = []
-
-        # self.__connect_to_engines()
 
         for dpc, connection in self.__connections.items():
             # Main service
@@ -275,10 +267,21 @@ class OvirtHelper():
                 else:
                     vm_data["was_migrated"] = ""
 
-                print(list(vm_data.values()))
-                result.append(vm_data)
+                # Calculating VM total disks usage and storage domains.
+                vm_data["total_space"] = 0
+                vm_data["storage_domains"] = set()
+                disc_attachments = vm_service.disk_attachments_service().list()
+                if disc_attachments:
+                    for disk_attachment in disc_attachments:
+                        disk = system_service.disks_service().disk_service(disk_attachment.disk.id).get()
+                        if disk:    # TODO: check questionable logic below.
+                            vm_data["total_space"] = vm_data["total_space"] + disk.total_size / 1024 ** 3
+                            for sd in disk.storage_domains:
+                                storage_domain = system_service.storage_domains_service().storage_domain_service(sd.id).get()
+                                vm_data["storage_domains"].add(storage_domain.name)
+                vm_data["storage_domains"] = '\n'.join(vm_data["storage_domains"])
 
-        # self.__disconnect_from_engines()
+                result.append(vm_data)
 
         return result
 
@@ -358,7 +361,7 @@ class OvirtHelper():
                 topology=sdk.types.CpuTopology(
                     # Set CPU topology. If in ELMA document there is > 10
                     # cores, split them between no more than 2 sockets.
-                    cores=config["vm"]["cores"] if config["vm"]["cores"] <= 10 else config["vm"]["cores"] / 2,
+                    cores=int(config["vm"]["cores"]) if int(config["vm"]["cores"]) <= 10 else int(config["vm"]["cores"] / 2),
                     sockets=1 if config["vm"]["cores"] <= 10 else 2
                 )
             ),

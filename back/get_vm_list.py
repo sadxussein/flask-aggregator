@@ -1,18 +1,6 @@
 """Get VM list from oVirt. Saves resulting VM list as JSON file.
 
-Current field list:
-    ID
-    name
-    hostname
-    state    
-    IP
-    engine
-    host
-    cluster
-    data_center
-    was_migrated
-
-Field list will be extended in the future.
+See get_vm_list description.
 """
 
 import json

@@ -19,11 +19,12 @@
                         <th>ID</th>
                         <th>name</th>
                         <th>engine</th>
-                        <th>space_available</th>
-                        <th>space_used</th>
-                        <th>space_committed</th>
-                        <th>space_total</th>
-                        <th>space_overprovisioning</th>
+                        <th>available</th>
+                        <th>used</th>
+                        <th>committed</th>
+                        <th>total</th>
+                        <th>percent_left</th>
+                        <th>overprovisioning</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -32,11 +33,12 @@
                         <th>{{ item.ID }}</th>
                         <th>{{ item.name }}</th>
                         <th>{{ item.engine }}</th>    
-                        <th>{{ item.space_available }}</th>
-                        <th>{{ item.space_used }}</th>
-                        <th>{{ item.space_committed }}</th>
-                        <th>{{ item.space_total }}</th>
-                        <th>{{ item.space_overprovisioning }}</th>
+                        <th>{{ item.available }}</th>
+                        <th>{{ item.used }}</th>
+                        <th>{{ item.committed }}</th>
+                        <th>{{ item.total }}</th>
+                        <th>{{ item.percent_left }}</th>
+                        <th>{{ item.overprovisioning }}</th>
                     </tr>
                     {% endfor %}
                 </tbody>

@@ -26,6 +26,8 @@
                         <th>cluster</th>
                         <th>datacenter</th>
                         <th>was_migrated</th>
+                        <th>total_space</th>
+                        <th>storage_domains</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -40,7 +42,9 @@
                         <th>{{ item.host }}</th>
                         <th>{{ item.cluster }}</th>
                         <th>{{ item.data_center }}</th>
-                        <th>{{ item.was_migrated }}</th>                
+                        <th>{{ item.was_migrated }}</th> 
+                        <th>{{ item.total_space }}</th>
+                        <th>{{ item.storage_domains }}</th>               
                     </tr>
                     {% endfor %}
                 </tbody>
