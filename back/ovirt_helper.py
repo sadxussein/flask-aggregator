@@ -7,6 +7,7 @@ import logging
 import time
 import re
 import ipaddress
+import json
 
 import ovirtsdk4 as sdk
 import pandas as pd
@@ -87,7 +88,6 @@ class OvirtHelper():
         result = []
 
         # TODO: need to check if result files exist for these functions.
-        storage_domains = self.get_storage_domain_list()
         data_centers = self.get_data_center_list()
         clusters = self.get_cluster_list()
 
@@ -103,8 +103,8 @@ class OvirtHelper():
         df_vm_config = df_vm_config.drop(df_vm_config.index[0])
 
         # DEBUG. TODO: remove.
-        pd.set_option("display.max_columns", None)
-        print(df_vm_config)
+        # pd.set_option("display.max_columns", None)
+        # print(df_vm_config)
 
         # Loop through all lines in data frame.
         for row in df_vm_config.itertuples():
@@ -135,7 +135,10 @@ class OvirtHelper():
                 if "ЦОД Элеваторная 15 РЕД" in row[12]:
                     # Checking environment. If VM should be productive it goes
                     # to e15-2, otherwise e15.
-                    if row[6] == "Продуктив" and not "dbo-" in row[1]:
+                    if (row[6] == "Продуктив"
+                        and not "dbo-" in row[1]
+                        and row[14] not in cfg.OLD_PROCESSING_VLANS
+                        and "prc" not in row[13]):
                         config["ovirt"]["engine"] = "e15-2"
                     else:
                         config["ovirt"]["engine"] = "e15"
@@ -262,7 +265,7 @@ class OvirtHelper():
         """
         result = (None, None)
         for cluster in clusters:
-            if target in cluster["name"].lower() and config["ovirt"]["engine"] == cluster["engine"]:
+            if target.lower() in cluster["name"].lower() and config["ovirt"]["engine"] == cluster["engine"]:
                 result = (cluster["name"], cluster["data_center"])
         return result
 
@@ -297,6 +300,20 @@ class OvirtHelper():
             else:
                 result = "K45-AF250S3-REDDS2"
         return result
+
+    def save_vm_configs_json(self, excel_file):
+        """Save parsed VM configs from excel file."""
+        vm_configs = self.get_vm_configs_from_excel(excel_file)
+        json_file = vm_configs[0]["meta"]["document_num"]
+        with open(f"{cfg.BACK_FILES_FOLDER}/json/vm{json_file}.json", 'w', encoding="utf-8") as file:
+            json.dump(vm_configs, file, indent=4, ensure_ascii=False)
+
+    def get_ansible_meta(self, excel_file):
+        """Generate ansible playbooks and inventories for VM tuning and
+        FreeIPA accessing."""
+        pass
+        # with open()
+
 
     def get_data_center_list(self):
         """Get data center information from all engines.
