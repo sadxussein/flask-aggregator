@@ -8,6 +8,8 @@ import time
 import re
 import ipaddress
 import json
+import yaml
+import os
 
 import ovirtsdk4 as sdk
 import pandas as pd
@@ -132,7 +134,7 @@ class OvirtHelper():
                 # counted from 1 we add +1 to their number.
                 config["meta"]["environment"] = row[6]
 
-                if "ЦОД Элеваторная 15 РЕД" in row[12]:
+                if "15" in row[12]:
                     # Checking environment. If VM should be productive it goes
                     # to e15-2, otherwise e15.
                     if (row[6] == "Продуктив"
@@ -142,15 +144,15 @@ class OvirtHelper():
                         config["ovirt"]["engine"] = "e15-2"
                     else:
                         config["ovirt"]["engine"] = "e15"
-                elif "ЦОД Набережная 32 РЕД" in row[12]:
+                elif "32" in row[12]:
                     # Here we have to check VLAN. If VLAN is in old network
                     # (N32_NEW_CIRCUIT_VLAN_SET), send VM to n32-2, n32
                     # otherwise.
                     if int(row[14]) in cfg.N32_NEW_CIRCUIT_VLAN_SET:
-                        config["ovirt"]["engine"] = "n32-2"
-                    else:
                         config["ovirt"]["engine"] = "n32"
-                elif "ЦОД Козлова 45 РЕД" in row[12]:
+                    else:
+                        config["ovirt"]["engine"] = "n32-2"
+                elif "45" in row[12]:
                     config["ovirt"]["engine"] = "k45"
                 else:
                     # Set to none so that parser would throw an exception.
@@ -301,19 +303,72 @@ class OvirtHelper():
                 result = "K45-AF250S3-REDDS2"
         return result
 
-    def save_vm_configs_json(self, excel_file):
+    def save_vm_configs(self, excel_file):
         """Save parsed VM configs from excel file."""
         vm_configs = self.get_vm_configs_from_excel(excel_file)
         json_file = vm_configs[0]["meta"]["document_num"]
+        self.__get_ansible_meta(vm_configs, json_file)
         with open(f"{cfg.BACK_FILES_FOLDER}/json/vm{json_file}.json", 'w', encoding="utf-8") as file:
             json.dump(vm_configs, file, indent=4, ensure_ascii=False)
 
-    def get_ansible_meta(self, excel_file):
+    def __get_ansible_meta(self, configs, document_num):  # TODO: fix long lines
         """Generate ansible playbooks and inventories for VM tuning and
         FreeIPA accessing."""
-        pass
-        # with open()
+        default_inventory = {"all": {"hosts": {}}}
+        ipa_inventory_internal = {
+            "all": {
+                "vars": {
+                    "free_ipa": "yes",
+                    "ipa_client_state": "present",
+                    "ipa_host": "yes"
+                },
+                "hosts": {}
+            }
+        }
+        ipa_inventory_dmz = {
+            "ipa_dmz": {
+                "vars": {
+                    "free_ipa": "yes",
+                    "ipa_client_state": "present",
+                    "ipa_host": "yes"
+                },
+                "hosts": {}
+            }
+        }
+        for config in configs:
+            default_inventory["all"]["hosts"][config["vm"]["name"]] = {}
+            default_inventory["all"]["hosts"][config["vm"]["name"]]["ansible_host"] = config["vm"]["address"]
+            ipa_inventory_internal["all"]["hosts"][config["vm"]["name"]] = {}
+            ipa_inventory_internal["all"]["hosts"][config["vm"]["name"]]["ansible_host"] = config["vm"]["address"]
+            ipa_inventory_dmz["ipa_dmz"]["hosts"][config["vm"]["name"]] = {}
+            ipa_inventory_dmz["ipa_dmz"]["hosts"][config["vm"]["name"]]["ansible_host"] = config["vm"]["address"]
+            if len(config["vm"]["disks"]) > 1:
+                default_inventory["all"]["hosts"][config["vm"]["name"]]["disks"] = []
+                for disk in config["vm"]["disks"]:
+                    if disk["type"] == 2:
+                        disk_dict = {}
+                        disk_dict["mount_point"] = disk["mount_point"]
+                        disk_dict["size"] = disk["size"]
+                        default_inventory["all"]["hosts"][config["vm"]["name"]]["disks"].append(disk_dict)
 
+        # If targer folders don't exits - create them.
+        os.makedirs(os.path.dirname(f"{cfg.ANSIBLE_DEFAULT_INVENTORIES_FOLDER}/vm{document_num}.yml"), exist_ok=True)
+        os.makedirs(os.path.dirname(f"{cfg.ANSIBLE_DEFAULT_PLAYBOOKS_FOLDER}/vm{document_num}.yml"), exist_ok=True)
+        os.makedirs(os.path.dirname(f"{cfg.ANSIBLE_IPA_INVENTORIES_FOLDER}/internal/vm{document_num}.yml"), exist_ok=True)
+        os.makedirs(os.path.dirname(f"{cfg.ANSIBLE_IPA_INVENTORIES_FOLDER}/dmz/vm{document_num}.yml"), exist_ok=True)
+
+        # Saving results.
+        with open(f"{cfg.ANSIBLE_DEFAULT_INVENTORIES_FOLDER}/vm{document_num}.yml", 'w', encoding="utf-8") as file:
+            yaml.dump(default_inventory, file, default_flow_style=False)
+        with open(f"{cfg.ANSIBLE_DEFAULT_PLAYBOOKS_FOLDER}/vm{document_num}.yml", 'w', encoding="utf-8") as file:
+            print("---", file=file)
+            print("- hosts: all", file=file)
+            print("  roles:", file=file)
+            print("    - default", file=file)
+        with open(f"{cfg.ANSIBLE_IPA_INVENTORIES_FOLDER}/internal/vm{document_num}.yml", 'w', encoding="utf-8") as file:
+            yaml.dump(ipa_inventory_internal, file, default_flow_style=False)
+        with open(f"{cfg.ANSIBLE_IPA_INVENTORIES_FOLDER}/dmz/vm{document_num}.yml", 'w', encoding="utf-8") as file:
+            yaml.dump(ipa_inventory_dmz, file, default_flow_style=False)        
 
     def get_data_center_list(self):
         """Get data center information from all engines.

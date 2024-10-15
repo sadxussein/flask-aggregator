@@ -11,6 +11,6 @@ if __name__ == "__main__":
     for root, dirs, files in os.walk(f"{cfg.FRONT_FILES_FOLDER}/excel"):
         for file in files:
             print(file)
-            ovirt_helper.save_vm_configs_json(os.path.join(root, file))
+            ovirt_helper.save_vm_configs(os.path.join(root, file))
     ovirt_helper.disconnect_from_engines()
     

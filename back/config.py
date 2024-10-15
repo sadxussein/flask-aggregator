@@ -14,9 +14,9 @@ DPC_URLS = {
     "k45": "https://k45-redvirt-engine1.rncb.ru/ovirt-engine/api"
 }
 BACK_FILES_FOLDER = "back/files"
-ANSIBLE_DEFAULT_INVENTORIES_FOLDER = f"{BACK_FILES_FOLDER}/default/inventories"
-ANSIBLE_DEFAULT_PLAYBOOKS_FOLDER = f"{BACK_FILES_FOLDER}/default/playbooks"
-ANSIBLE_IPA_INVENTORIES_FOLDER = f"{BACK_FILES_FOLDER}/ipa/inventories"
+ANSIBLE_DEFAULT_INVENTORIES_FOLDER = f"{BACK_FILES_FOLDER}/ansible/default/inventories"
+ANSIBLE_DEFAULT_PLAYBOOKS_FOLDER = f"{BACK_FILES_FOLDER}/ansible/default/playbooks"
+ANSIBLE_IPA_INVENTORIES_FOLDER = f"{BACK_FILES_FOLDER}/ansible/ipa/inventories"
 FRONT_FILES_FOLDER = "front/files"
 HOST_MANAGEMENT_BONDS = ["bond0.2701", "bond0.1932", "bond0.2721", "bond0.1567"]
 
