@@ -1,5 +1,7 @@
 """Config file for OITI Flask aggregator."""
 
+SERVER_IP = "10.105.253.252"
+SERVER_PORT = "6299"
 USERNAME = "scriptbot@internal"
 PASSWORD = "CnfhnjdsqGfhjkm@1234"
 DPC_LIST = ["e15", "e15-2", "n32", "n32-2", "k45"]
@@ -14,6 +16,9 @@ DPC_URLS = {
     "k45": "https://k45-redvirt-engine1.rncb.ru/ovirt-engine/api"
 }
 BACK_FILES_FOLDER = "back/files"
+VM_CONFIGS_FOLDER = f"{BACK_FILES_FOLDER}/vm_configs"
+VIRT_DATA_FOLDER = f"{BACK_FILES_FOLDER}/virt_data"
+JSON_FILES_FOLDER = f"{BACK_FILES_FOLDER}/json"
 ANSIBLE_DEFAULT_INVENTORIES_FOLDER = f"{BACK_FILES_FOLDER}/ansible/default/inventories"
 ANSIBLE_DEFAULT_PLAYBOOKS_FOLDER = f"{BACK_FILES_FOLDER}/ansible/default/playbooks"
 ANSIBLE_IPA_INVENTORIES_FOLDER = f"{BACK_FILES_FOLDER}/ansible/ipa/inventories"

@@ -8,18 +8,23 @@ import time
 import re
 import ipaddress
 import json
-import yaml
 import os
+import threading
 
+import yaml
 import ovirtsdk4 as sdk
 import pandas as pd
-from . import config as cfg
 
-class OvirtHelper():
+from . import config as cfg
+from .virt_protocol import VirtProtocol
+from .logger import Logger
+
+class OvirtHelper(VirtProtocol):
     """Class required to perform different actions with oVirt hosted engines."""
 
     def __init__(self, dpc_list=cfg.DPC_LIST, urls_list=cfg.DPC_URLS,
-                 username=cfg.USERNAME, password=cfg.PASSWORD
+                 username=cfg.USERNAME, password=cfg.PASSWORD,
+                 logger=Logger()
                  ):
         """Construct default class instance."""
         # TODO: check input data.
@@ -38,10 +43,20 @@ class OvirtHelper():
         self.__logger_console_handler.setLevel(logging.DEBUG)
         self.__logger_formatter = logging.Formatter('%(asctime)s-[%(levelname)s] - %(threadName)s: %(message)s')
         self.__logger_file_handler.setFormatter(self.__logger_formatter)
-        self.__logger_console_handler.setFormatter(self.__logger_console_handler)
+        self.__logger_console_handler.setFormatter(self.__logger_formatter)
         self.__logger.addHandler(self.__logger_file_handler)
 
-    def connect_to_engines(self):
+        self.__test_logger = logger
+
+    @property
+    def pretty_name(self) -> str:
+        return "ovirt"
+
+    @property
+    def dpc_list(self) -> list:
+        return self.__dpc_list
+
+    def connect_to_virtualization(self):
         """Open connections to all engines passed to class instance."""
         for dpc in self.__dpc_list:
             connection = None
@@ -55,17 +70,26 @@ class OvirtHelper():
                 )
                 self.__logger.info("Connected to '%s' data processing center.",
                                    dpc)
+                self.__test_logger.log_info(
+                    f"Connected to {dpc} data processing center.",
+                )
                 self.__connections[dpc] = connection
             except sdk.ConnectionError as e:
                 self.__logger.error("Failed to connect to oVirt for DPC '%s': '%s'. Either cannot resolve server name or server is unreachable.",
                                     dpc,
                                     e)
+                self.__test_logger.log_error(
+                    f"Failed to connect to oVirt for DPC {dpc}: {e}. Either cannot resolve server name or server is unreachable.",
+                )
             except sdk.AuthError as e:
                 self.__logger.error("Failed to authenticate in oVirt Hosted Engine for DPC '%s': '%s'.",
                                     dpc,
                                     e)
+                self.__test_logger.log_error(
+                    f"Failed to authenticate in oVirt Hosted Engine for DPC {dpc}: {e}.",
+                )
 
-    def disconnect_from_engines(self):
+    def disconnect_from_virtualization(self):
         """Close connections with all engines.
         
         Closing connections with engines and cleaning up all logger handlers.
@@ -73,10 +97,14 @@ class OvirtHelper():
         for dpc in self.__dpc_list:
             self.__logger.info("Closed connection with '%s' data processing center.",
                                dpc)
+            self.__test_logger.log_info(
+                f"Closed connection with {dpc} data processing center.",
+            )
             self.__connections[dpc].close()
         for handler in self.__logger.handlers[:]:
-            self.__logger.removeHandler(handler)
+            self.__logger.removeHandler(handler)            
             handler.close()
+        self.__test_logger.close_handlers()
         self.__connections = {}
 
     # TODO: check if necessary. Might be redundant. Could get creation
@@ -90,8 +118,8 @@ class OvirtHelper():
         result = []
 
         # TODO: need to check if result files exist for these functions.
-        data_centers = self.get_data_center_list()
-        clusters = self.get_cluster_list()
+        data_centers = self.get_data_centers()
+        clusters = self.get_clusters()
 
         # Get VM info from excel file. Skip first two rows, which contain
         # meta information about VM.
@@ -304,11 +332,18 @@ class OvirtHelper():
         return result
 
     def save_vm_configs(self, excel_file):
-        """Save parsed VM configs from excel file."""
+        """Save parsed VM configs from excel file.
+        
+        Generate three folder of files (e.g. 'vm1234.yml'):
+        1. inventories for VM preparation playbook/role, with info about VM
+        disks.
+        2. inventories for IPA Internal.
+        3. inventories for IPA DMZ.
+        """
         vm_configs = self.get_vm_configs_from_excel(excel_file)
-        json_file = vm_configs[0]["meta"]["document_num"]
-        self.__get_ansible_meta(vm_configs, json_file)
-        with open(f"{cfg.BACK_FILES_FOLDER}/json/vm{json_file}.json", 'w', encoding="utf-8") as file:
+        document_num = vm_configs[0]["meta"]["document_num"]
+        self.__get_ansible_meta(vm_configs, document_num)
+        with open(f"{cfg.VM_CONFIGS_FOLDER}/vm{document_num}.json", 'w', encoding="utf-8") as file:
             json.dump(vm_configs, file, indent=4, ensure_ascii=False)
 
     def __get_ansible_meta(self, configs, document_num):  # TODO: fix long lines
@@ -353,24 +388,41 @@ class OvirtHelper():
 
         # If targer folders don't exits - create them.
         os.makedirs(os.path.dirname(f"{cfg.ANSIBLE_DEFAULT_INVENTORIES_FOLDER}/vm{document_num}.yml"), exist_ok=True)
-        os.makedirs(os.path.dirname(f"{cfg.ANSIBLE_DEFAULT_PLAYBOOKS_FOLDER}/vm{document_num}.yml"), exist_ok=True)
         os.makedirs(os.path.dirname(f"{cfg.ANSIBLE_IPA_INVENTORIES_FOLDER}/internal/vm{document_num}.yml"), exist_ok=True)
         os.makedirs(os.path.dirname(f"{cfg.ANSIBLE_IPA_INVENTORIES_FOLDER}/dmz/vm{document_num}.yml"), exist_ok=True)
 
         # Saving results.
         with open(f"{cfg.ANSIBLE_DEFAULT_INVENTORIES_FOLDER}/vm{document_num}.yml", 'w', encoding="utf-8") as file:
             yaml.dump(default_inventory, file, default_flow_style=False)
-        with open(f"{cfg.ANSIBLE_DEFAULT_PLAYBOOKS_FOLDER}/vm{document_num}.yml", 'w', encoding="utf-8") as file:
-            print("---", file=file)
-            print("- hosts: all", file=file)
-            print("  roles:", file=file)
-            print("    - default", file=file)
         with open(f"{cfg.ANSIBLE_IPA_INVENTORIES_FOLDER}/internal/vm{document_num}.yml", 'w', encoding="utf-8") as file:
             yaml.dump(ipa_inventory_internal, file, default_flow_style=False)
         with open(f"{cfg.ANSIBLE_IPA_INVENTORIES_FOLDER}/dmz/vm{document_num}.yml", 'w', encoding="utf-8") as file:
-            yaml.dump(ipa_inventory_dmz, file, default_flow_style=False)        
+            yaml.dump(ipa_inventory_dmz, file, default_flow_style=False)
 
-    def get_data_center_list(self):
+    def __create_bash_vm_commands(self, document_num):
+        """Create bash commands for VM creation.
+        
+        Returns:
+            list (string): Following command lines will be generated:
+            1. `curl` POST with VM creation options;
+            2. `ansible-playbook` for VM setup (disks, users, fixes, etc.);
+            3. `ansible-playbook` for VM IPA insertion.
+        """
+        result = []
+
+        result.append(
+            f"curl -X POST -F 'jsonfile=@{cfg.JSON_FILES_FOLDER}/vm{document_num}.json' http://{cfg.SERVER_IP}:{cfg.SERVER_PORT}/ovirt/create_vm"
+        )
+        result.append(
+            f"ansible-playbook -i /home/krasnoschekovvd/flask_aggregator/back/files/ansible/default/inventories/{document_num}.yml default-playbook.yml --skip-tags 'create_lvm'"
+        )
+        result.append(
+            f"rm -f ../network_check_logs/{document_num}.log && ANSIBLE_LOG_PATH=../network_check_logs/{document_num}.log ansible-playbook -i /home/krasnoschekovvd/flask_aggregator/back/files/ansible/ipa/inventories/internal/{document_num}.yml network_check.yml -u svc_ansibleoiti"
+        )
+
+        return result
+
+    def get_data_centers(self):
         """Get data center information from all engines.
         
         Returns:
@@ -395,7 +447,7 @@ class OvirtHelper():
                 })
         return result
 
-    def get_storage_domain_list(self):
+    def get_storages(self):
         """Get storage domain information from all engines.
 
         Returns:
@@ -431,7 +483,7 @@ class OvirtHelper():
                     })
         return result
 
-    def get_cluster_list(self):
+    def get_clusters(self):
         """Get cluster ID and name list.
     
         Returns:
@@ -451,7 +503,7 @@ class OvirtHelper():
                                "data_center": data_center.name})
         return result
 
-    def get_host_list(self):
+    def get_hosts(self) -> list:
         """Get host ID, name, cluster and IP list.
         
         Returns:
@@ -467,7 +519,9 @@ class OvirtHelper():
             data_centers_service = system_service.data_centers_service()
             for host in hosts:
                 cluster = clusters_service.cluster_service(host.cluster.id).get()
-                data_center = data_centers_service.data_center_service(cluster.data_center.id).get()
+                data_center = data_centers_service.data_center_service(
+                    cluster.data_center.id
+                ).get()
                 host_service = hosts_service.host_service(host.id)
                 nics_service = host_service.nics_service()
                 nics = nics_service.list()
@@ -484,7 +538,7 @@ class OvirtHelper():
                                "engine": dpc})
         return result
 
-    def get_vm_list(self):
+    def get_vms(self) -> list:
         """Get VM list as dictionary.
         
         Returns:
@@ -584,7 +638,12 @@ class OvirtHelper():
                     for disk_attachment in disc_attachments:
                         disk = system_service.disks_service().disk_service(disk_attachment.disk.id).get()
                         if disk:    # TODO: check questionable logic below.
-                            vm_data["total_space"] = vm_data["total_space"] + disk.total_size / 1024 ** 3
+                            try:
+                                vm_data["total_space"] = vm_data["total_space"] + disk.total_size / 1024 ** 3
+                            except TypeError as e:
+                                self.__test_logger.log_error(f"{disk.id}: {e}.")
+                            finally:
+                                vm_data["total_space"] = 0                                
                             for sd in disk.storage_domains:
                                 storage_domain = system_service.storage_domains_service().storage_domain_service(sd.id).get()
                                 vm_data["storage_domains"].add(storage_domain.name)
