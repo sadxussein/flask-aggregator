@@ -18,7 +18,9 @@
                     <tr>
                         <th>ID</th>
                         <th>name</th>
-                        <th>engine</th>
+                        <th>engine</th>                        
+                        <th>data_center</th>
+                        <th>description</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -26,7 +28,9 @@
                     <tr>
                         <th>{{ item.ID }}</th>
                         <th>{{ item.name }}</th>
-                        <th>{{ item.engine }}</th>    
+                        <th>{{ item.engine }}</th>                        
+                        <th>{{ item.data_center }}</th>
+                        <th>{{ item.description }}</th>
                     </tr>
                     {% endfor %}
                 </tbody>

@@ -3,50 +3,31 @@
 __version__ = "0.1"
 __author__ = "xussein"
 
-import logging
 import time
-import re
-import ipaddress
-import json
-import os
 import threading
 
-import yaml
 import ovirtsdk4 as sdk
-import pandas as pd
 
 from . import config as cfg
 from .virt_protocol import VirtProtocol
 from .logger import Logger
 
 class OvirtHelper(VirtProtocol):
-    """Class required to perform different actions with oVirt hosted engines."""
+    """Class required to perform different actions with oVirt hosted 
+    engines."""
 
-    def __init__(self, dpc_list=cfg.DPC_LIST, urls_list=cfg.DPC_URLS,
+    def __init__(self, dpc_list: list=cfg.DPC_LIST,
+                 urls_list: dict=cfg.DPC_URLS,
                  username=cfg.USERNAME, password=cfg.PASSWORD,
                  logger=Logger()
                  ):
         """Construct default class instance."""
-        # TODO: check input data.
         self.__dpc_list = dpc_list
         self.__urls_list = urls_list
         self.__username = username
         self.__password = password
         self.__connections = {}
-
-        # Setting logging vars, it writes both at log file and stderr.
-        self.__logger = logging.getLogger('logger')
-        self.__logger.setLevel(logging.DEBUG)
-        self.__logger_file_handler = logging.FileHandler('aggregator.log')
-        self.__logger_file_handler.setLevel(logging.DEBUG)
-        self.__logger_console_handler = logging.StreamHandler()
-        self.__logger_console_handler.setLevel(logging.DEBUG)
-        self.__logger_formatter = logging.Formatter('%(asctime)s-[%(levelname)s] - %(threadName)s: %(message)s')
-        self.__logger_file_handler.setFormatter(self.__logger_formatter)
-        self.__logger_console_handler.setFormatter(self.__logger_formatter)
-        self.__logger.addHandler(self.__logger_file_handler)
-
-        self.__test_logger = logger
+        self.__logger = logger
 
     @property
     def pretty_name(self) -> str:
@@ -68,25 +49,24 @@ class OvirtHelper(VirtProtocol):
                     insecure=True,
                     debug=True
                 )
-                self.__logger.info("Connected to '%s' data processing center.",
-                                   dpc)
-                self.__test_logger.log_info(
+                self.__logger.log_info(
                     f"Connected to {dpc} data processing center.",
                 )
                 self.__connections[dpc] = connection
             except sdk.ConnectionError as e:
-                self.__logger.error("Failed to connect to oVirt for DPC '%s': '%s'. Either cannot resolve server name or server is unreachable.",
-                                    dpc,
-                                    e)
-                self.__test_logger.log_error(
-                    f"Failed to connect to oVirt for DPC {dpc}: {e}. Either cannot resolve server name or server is unreachable.",
+                self.__logger.log_error(
+                    (
+                        f"Failed to connect to oVirt for DPC {dpc}: {e}. "
+                        "Either cannot resolve server name or server is "
+                        "unreachable."
+                    )
                 )
             except sdk.AuthError as e:
-                self.__logger.error("Failed to authenticate in oVirt Hosted Engine for DPC '%s': '%s'.",
-                                    dpc,
-                                    e)
-                self.__test_logger.log_error(
-                    f"Failed to authenticate in oVirt Hosted Engine for DPC {dpc}: {e}.",
+                self.__logger.log_error(
+                    (
+                        f"Failed to authenticate in oVirt Hosted Engine for "
+                        f"DPC {dpc}: {e}.",
+                    )
                 )
 
     def disconnect_from_virtualization(self):
@@ -95,16 +75,10 @@ class OvirtHelper(VirtProtocol):
         Closing connections with engines and cleaning up all logger handlers.
         """
         for dpc in self.__dpc_list:
-            self.__logger.info("Closed connection with '%s' data processing center.",
-                               dpc)
-            self.__test_logger.log_info(
+            self.__connections[dpc].close()
+            self.__logger.log_info(
                 f"Closed connection with {dpc} data processing center.",
             )
-            self.__connections[dpc].close()
-        for handler in self.__logger.handlers[:]:
-            self.__logger.removeHandler(handler)            
-            handler.close()
-        self.__test_logger.close_handlers()
         self.__connections = {}
 
     # TODO: check if necessary. Might be redundant. Could get creation
@@ -112,315 +86,16 @@ class OvirtHelper(VirtProtocol):
     def __get_timestamp(self):
         """Return current time. Primarily used for VMs."""
         return time.strftime("%Y.%d.%m-%H:%M:%S", time.localtime(time.time()))
-
-    def get_vm_configs_from_excel(self, excel_file):
-        """Parse ELMA excel file and return valid JSON VM config file."""
-        result = []
-
-        # TODO: need to check if result files exist for these functions.
-        data_centers = self.get_data_centers()
-        clusters = self.get_clusters()
-
-        # Get VM info from excel file. Skip first two rows, which contain
-        # meta information about VM.
-        df_vm_meta = pd.read_excel(excel_file, nrows=2, header=None)
-
-        # Skipping first 4 rows, containing VM meta, only loading main info
-        # about VM. Transforming it to become vertical and dropping header
-        # at first line.
-        df_vm_config = pd.read_excel(excel_file, skiprows=4)
-        df_vm_config = df_vm_config.T
-        df_vm_config = df_vm_config.drop(df_vm_config.index[0])
-
-        # DEBUG. TODO: remove.
-        # pd.set_option("display.max_columns", None)
-        # print(df_vm_config)
-
-        # Loop through all lines in data frame.
-        for row in df_vm_config.itertuples():
-            config = {"meta": {}, "ovirt": {}, "vm": {}, "vlan": {}}
-
-            # Setting up file ID number (elma ID "3185" from "Заявка ВМ-3185
-            # в BPMSoft Маркетинг.xlsx").
-            document_num = re.match(r'^\D*(\d+)', excel_file)
-            if document_num:
-                config["meta"]["document_num"] = document_num.group(1)
-            if not pd.isnull(row[1]):
-                config["meta"]["inf_system"] = df_vm_meta.iat[0, 1]
-                config["meta"]["owner"] = df_vm_meta.iat[1, 1]
-
-                # From here and on we keep working with rows of data from
-                # data frame. Rows are placed in following order in data
-                # frame: (1) vm name, (2) vm hostname, (3) cpu number, (4)
-                # memory size, (5) disks and mount points, (6) environment,
-                # (7) OS, (8) backup flag (not used), (9) SRM protect flag
-                # (not used), (10) crimea domain flag (not used), (11) admins
-                # (not used), (12) DPC, (13) VLAN name, (14) VLAN id, (15)
-                # subnet, (16) IP, (17) expiration date (not used), (18)
-                # FreeIPA flag (not used), (19) comment (not used). So, rows
-                # used are 0-6, 11-15. And as in Pandas itertuples rows are
-                # counted from 1 we add +1 to their number.
-                config["meta"]["environment"] = row[6]
-
-                if "15" in row[12]:
-                    # Checking environment. If VM should be productive it goes
-                    # to e15-2, otherwise e15.
-                    if (row[6] == "Продуктив"
-                        and not "dbo-" in row[1]
-                        and row[14] not in cfg.OLD_PROCESSING_VLANS
-                        and "prc" not in row[13]):
-                        config["ovirt"]["engine"] = "e15-2"
-                    else:
-                        config["ovirt"]["engine"] = "e15"
-                elif "32" in row[12]:
-                    # Here we have to check VLAN. If VLAN is in old network
-                    # (N32_NEW_CIRCUIT_VLAN_SET), send VM to n32-2, n32
-                    # otherwise.
-                    if int(row[14]) in cfg.N32_NEW_CIRCUIT_VLAN_SET:
-                        config["ovirt"]["engine"] = "n32"
-                    else:
-                        config["ovirt"]["engine"] = "n32-2"
-                elif "45" in row[12]:
-                    config["ovirt"]["engine"] = "k45"
-                else:
-                    # Set to none so that parser would throw an exception.
-                    config["ovirt"]["engine"] = None
-
-                config["vm"]["name"] = row[1]
-                config["vm"]["hostname"] = row[2]
-                config["vm"]["cores"] = row[3]
-                config["vm"]["memory"] = row[4]
-
-                # Searching for disks is a bit complicated. We are looking
-                # for a string looking like 'Root|/|70\nOther|swap|16' or
-                # 'Root|/|50\nOther|swap|16\nOther|/app|280'. So regex is
-                # quite a choice for parsing each disk.
-                disks_pattern = re.compile(r"(\w+)\|([\/]?.*)\|(\d+)")
-                disks = disks_pattern.finditer(row[5])
-                config["vm"]["disks"] = []
-                if disks:
-                    for disk in disks:
-                        if str(disk.group(1)) == "Root":
-                            disk_type = 1
-                        else:
-                            disk_type = 2
-                        # Making sparse disks by default.
-                        config["vm"]["disks"].append({"size": int(disk.group(3)),
-                                                  "type": disk_type,
-                                                  "mount_point": disk.group(2),
-                                                  "sparse": 1})
-                config["vm"]["os"] = row[7]
-                if config["vm"]["os"] == "RedOS 8":
-                    config["vm"]["nic_name"] = "enp1s0"
-                elif config["vm"]["os"] == "RedOS7.3":
-                    config["vm"]["nic_name"] = "ens3"
-                elif config["vm"]["os"] == "Астра Линукс 1.7 Воронеж":
-                    config["vm"]["nic_name"] = "eth0"
-                network = ipaddress.IPv4Network(row[15], strict=False)
-                network_address = network.network_address
-                config["vm"]["gateway"] = f"{network_address + 1}"
-                config["vm"]["netmask"] = f"{network.netmask}"
-                config["vm"]["address"] = row[16]
-
-                # These two are set to some default values, but certain logic
-                # could be applied also.
-                config["vm"]["dns_servers"] = "10.82.254.32 10.82.254.31"
-                config["vm"]["search_domain"] = "crimea.rncb.ru"
-
-                config["vlan"]["name"] = row[13]
-                config["vlan"]["id"] = row[14]
-                if "prc" in row[13].lower():
-                    config["vlan"]["suffix"] = "-prc"
-                elif config["vlan"]["id"] in cfg.DBO_VLANS:
-                    config["vlan"]["suffix"] = "-dbo"
-                else:
-                    config["vlan"]["suffix"] = ''
-
-                # Now to setup values which depend on other values.
-                # Defining cluster. So far we have logic for DBO, processing
-                # and old processing clusters.
-                if "dbo-" in config["vm"]["name"]:
-                    config["ovirt"]["cluster"], config["ovirt"]["data_center"] = self.__get_vm_cluster_and_data_center("dbo", config, clusters)
-                elif "prc" in config["vlan"]["name"].lower() and config["vlan"]["id"] not in cfg.OLD_PROCESSING_VLANS:
-                    config["ovirt"]["cluster"], config["ovirt"]["data_center"] = self.__get_vm_cluster_and_data_center("Processing", config, clusters)
-                elif config["vlan"]["id"] in cfg.OLD_PROCESSING_VLANS:
-                    config["ovirt"]["cluster"], config["ovirt"]["data_center"] = self.__get_vm_cluster_and_data_center("Processing-OLD", config, clusters)
-                # If no logic is viable for any cluster we set default one
-                # (always with "The default server cluster" in its
-                # description).
-                else:
-                    config["ovirt"]["cluster"] = next((cluster["name"] for cluster in clusters if "The default server cluster" in cluster["description"] and config["ovirt"]["engine"] == cluster["engine"]), None)
-                    config["ovirt"]["data_center"] = next((cluster["data_center"] for cluster in clusters if "The default server cluster" in cluster["description"] and config["ovirt"]["engine"] == cluster["engine"]), None)
-
-                # Setting up host (hypervisor) NIC.
-                if config["vlan"]["id"] in cfg.DBO_VLANS:
-                    if config["ovirt"]["engine"] == "e15":
-                        if config["vlan"]["id"] % 2 == 0:
-                            config["ovirt"]["host_nic"] = "ens51"
-                        else:
-                            config["ovirt"]["host_nic"] = "ens52"
-                    elif config["ovirt"]["engine"] == "n32-2":
-                        if config["vlan"]["id"] % 2 == 1:
-                            config["ovirt"]["host_nic"] = "ens51"
-                        else:
-                            config["ovirt"]["host_nic"] = "ens52"
-                elif (config["vlan"]["id"] in cfg.OLD_PROCESSING_VLANS and
-                      (config["ovirt"]["engine"] in ["e15", "k45"])):
-                    config["ovirt"]["host_nic"] = "bond1"
-                else:
-                    config["ovirt"]["host_nic"] = "bond0"
-
-                config["ovirt"]["storage_domain"] = self.__get_vm_storage_domain(config)
-
-                template_prefix = ''
-                for dc in data_centers:
-                    if dc["name"] == config["ovirt"]["data_center"] and dc["comment"] is not None:
-                        template_prefix = f"_{dc['comment']}"
-
-                if config["vm"]["os"] == "RedOS 8":
-                    config["vm"]["template"] = "template-packer-redos8-03092024" + template_prefix
-                elif config["vm"]["os"] == "RedOS7.3":
-                    config["vm"]["template"] = "template-redos7-29072024" + template_prefix
-                elif config["vm"]["os"] == "Астра Линукс 1.7 Воронеж":
-                    config["vm"]["template"] = "template-packer-astra-04092024" + template_prefix
-
-                result.append(config)
-        return result
-
-    def __get_vm_cluster_and_data_center(self, target, config, clusters):
-        """Get VM both cluster and data center.
+    
+    def __rename_thread(self):
+        """Change name of thread while executing function.
         
-        'target' here is a definitive part of cluster name, e.g. 'dbo' in
-        'e15-DBO-cluster'.
+        Any function in class is usually run in a thread named creator_N or
+        collector_N. We need to add DPC of current class to it to be more
+        representable in the log.
         """
-        result = (None, None)
-        for cluster in clusters:
-            if target.lower() in cluster["name"].lower() and config["ovirt"]["engine"] == cluster["engine"]:
-                result = (cluster["name"], cluster["data_center"])
-        return result
-
-    def __get_vm_storage_domain(self, config):
-        """Define on which storage VM should be put.
-        
-        Hard-coded logic, since defining which storage is preferable at any
-        given moment is complicated even for living people.
-        """
-        result = None
-        if config["ovirt"]["engine"] == "e15":
-            if config["ovirt"]["cluster"] == "e15-Processing":
-                result = "E15-DEPO4-REDPRC1"
-            elif config["ovirt"]["cluster"] == "e15-Processing-OLD":
-                result = "E15-AF250S3-4-PRC-OLD1"
-            else:
-                result =  "E15-DEPO4-REDDS2"
-        if config["ovirt"]["engine"] == "e15-2":
-            result = "E15-DEPO4-RED2-DS1"
-        elif config["ovirt"]["engine"] == "n32":
-            if config["ovirt"]["cluster"] == "n32-Processing":
-                result = "N32-AF250S1-REDPRC1"
-            else:
-                result = "N32-AF250S3-REDDS2"
-        elif config["ovirt"]["engine"] == "n32-2":
-            result = "N32-TATLIN-REDDS2"
-        elif config["ovirt"]["engine"] == "k45":
-            if config["ovirt"]["cluster"] == "k45-Processing":
-                result = "K45-AF250S3-REDPRC2"
-            elif config["ovirt"]["cluster"] == "k45-Processing-OLD":
-                result = "K45-AF250S3-PRC-OLD1"
-            else:
-                result = "K45-AF250S3-REDDS2"
-        return result
-
-    def save_vm_configs(self, excel_file):
-        """Save parsed VM configs from excel file.
-        
-        Generate three folder of files (e.g. 'vm1234.yml'):
-        1. inventories for VM preparation playbook/role, with info about VM
-        disks.
-        2. inventories for IPA Internal.
-        3. inventories for IPA DMZ.
-        """
-        vm_configs = self.get_vm_configs_from_excel(excel_file)
-        document_num = vm_configs[0]["meta"]["document_num"]
-        self.__get_ansible_meta(vm_configs, document_num)
-        with open(f"{cfg.VM_CONFIGS_FOLDER}/vm{document_num}.json", 'w', encoding="utf-8") as file:
-            json.dump(vm_configs, file, indent=4, ensure_ascii=False)
-
-    def __get_ansible_meta(self, configs, document_num):  # TODO: fix long lines
-        """Generate ansible playbooks and inventories for VM tuning and
-        FreeIPA accessing."""
-        default_inventory = {"all": {"hosts": {}}}
-        ipa_inventory_internal = {
-            "all": {
-                "vars": {
-                    "free_ipa": "yes",
-                    "ipa_client_state": "present",
-                    "ipa_host": "yes"
-                },
-                "hosts": {}
-            }
-        }
-        ipa_inventory_dmz = {
-            "ipa_dmz": {
-                "vars": {
-                    "free_ipa": "yes",
-                    "ipa_client_state": "present",
-                    "ipa_host": "yes"
-                },
-                "hosts": {}
-            }
-        }
-        for config in configs:
-            default_inventory["all"]["hosts"][config["vm"]["name"]] = {}
-            default_inventory["all"]["hosts"][config["vm"]["name"]]["ansible_host"] = config["vm"]["address"]
-            ipa_inventory_internal["all"]["hosts"][config["vm"]["name"]] = {}
-            ipa_inventory_internal["all"]["hosts"][config["vm"]["name"]]["ansible_host"] = config["vm"]["address"]
-            ipa_inventory_dmz["ipa_dmz"]["hosts"][config["vm"]["name"]] = {}
-            ipa_inventory_dmz["ipa_dmz"]["hosts"][config["vm"]["name"]]["ansible_host"] = config["vm"]["address"]
-            if len(config["vm"]["disks"]) > 1:
-                default_inventory["all"]["hosts"][config["vm"]["name"]]["disks"] = []
-                for disk in config["vm"]["disks"]:
-                    if disk["type"] == 2:
-                        disk_dict = {}
-                        disk_dict["mount_point"] = disk["mount_point"]
-                        disk_dict["size"] = disk["size"]
-                        default_inventory["all"]["hosts"][config["vm"]["name"]]["disks"].append(disk_dict)
-
-        # If targer folders don't exits - create them.
-        os.makedirs(os.path.dirname(f"{cfg.ANSIBLE_DEFAULT_INVENTORIES_FOLDER}/vm{document_num}.yml"), exist_ok=True)
-        os.makedirs(os.path.dirname(f"{cfg.ANSIBLE_IPA_INVENTORIES_FOLDER}/internal/vm{document_num}.yml"), exist_ok=True)
-        os.makedirs(os.path.dirname(f"{cfg.ANSIBLE_IPA_INVENTORIES_FOLDER}/dmz/vm{document_num}.yml"), exist_ok=True)
-
-        # Saving results.
-        with open(f"{cfg.ANSIBLE_DEFAULT_INVENTORIES_FOLDER}/vm{document_num}.yml", 'w', encoding="utf-8") as file:
-            yaml.dump(default_inventory, file, default_flow_style=False)
-        with open(f"{cfg.ANSIBLE_IPA_INVENTORIES_FOLDER}/internal/vm{document_num}.yml", 'w', encoding="utf-8") as file:
-            yaml.dump(ipa_inventory_internal, file, default_flow_style=False)
-        with open(f"{cfg.ANSIBLE_IPA_INVENTORIES_FOLDER}/dmz/vm{document_num}.yml", 'w', encoding="utf-8") as file:
-            yaml.dump(ipa_inventory_dmz, file, default_flow_style=False)
-
-    def __create_bash_vm_commands(self, document_num):
-        """Create bash commands for VM creation.
-        
-        Returns:
-            list (string): Following command lines will be generated:
-            1. `curl` POST with VM creation options;
-            2. `ansible-playbook` for VM setup (disks, users, fixes, etc.);
-            3. `ansible-playbook` for VM IPA insertion.
-        """
-        result = []
-
-        result.append(
-            f"curl -X POST -F 'jsonfile=@{cfg.JSON_FILES_FOLDER}/vm{document_num}.json' http://{cfg.SERVER_IP}:{cfg.SERVER_PORT}/ovirt/create_vm"
-        )
-        result.append(
-            f"ansible-playbook -i /home/krasnoschekovvd/flask_aggregator/back/files/ansible/default/inventories/{document_num}.yml default-playbook.yml --skip-tags 'create_lvm'"
-        )
-        result.append(
-            f"rm -f ../network_check_logs/{document_num}.log && ANSIBLE_LOG_PATH=../network_check_logs/{document_num}.log ansible-playbook -i /home/krasnoschekovvd/flask_aggregator/back/files/ansible/ipa/inventories/internal/{document_num}.yml network_check.yml -u svc_ansibleoiti"
-        )
-
-        return result
+        thread_name = threading.current_thread().name.split('_')
+        threading.current_thread().name = f"_{'^'.join(self.__dpc_list)}_".join(thread_name)
 
     def get_data_centers(self):
         """Get data center information from all engines.
@@ -438,7 +113,9 @@ class OvirtHelper(VirtProtocol):
         """
         result = []
         for dpc, connection in self.__connections.items():
-            for data_center in connection.system_service().data_centers_service().list():
+            for data_center in (
+                connection.system_service().data_centers_service().list()
+            ):
                 result.append({
                     "ID": data_center.id,
                     "name": data_center.name,
@@ -464,7 +141,11 @@ class OvirtHelper(VirtProtocol):
                 if domain.name not in cfg.STORAGE_DOMAIN_EXCEPTIONS:
                     data_centers = set()
                     for dc in domain.data_centers:
-                        data_center = data_centers_service.data_center_service(dc.id).get()
+                        data_center = (
+                            data_centers_service
+                            .data_center_service(dc.id)
+                            .get()
+                        )
                         data_centers.add(data_center.name)
                     result.append({
                         "ID": domain.id,
@@ -479,7 +160,8 @@ class OvirtHelper(VirtProtocol):
                         "percent_left": 100 - int(((100 * domain.used) 
                                         / (domain.available + domain.used))),
                         "overprovisioning": int((domain.committed * 100)
-                                                / (domain.available + domain.used))
+                                                / (domain.available
+                                                   + domain.used))
                     })
         return result
 
@@ -641,9 +323,9 @@ class OvirtHelper(VirtProtocol):
                             try:
                                 vm_data["total_space"] = vm_data["total_space"] + disk.total_size / 1024 ** 3
                             except TypeError as e:
-                                self.__test_logger.log_error(f"{disk.id}: {e}.")
+                                self.__logger.log_error(f"{disk.id}: {e}.")
                             finally:
-                                vm_data["total_space"] = 0                                
+                                vm_data["total_space"] = 0
                             for sd in disk.storage_domains:
                                 storage_domain = system_service.storage_domains_service().storage_domain_service(sd.id).get()
                                 vm_data["storage_domains"].add(storage_domain.name)
@@ -706,9 +388,13 @@ class OvirtHelper(VirtProtocol):
             ```
         Returns VM data as dict from oVirt if success, -1 otherwise.
         """
+        self.__rename_thread()
+
         # Try find VM with current VM name. If VM exists create corresponding
         # log entry and close function.
-        system_service = self.__connections[config["ovirt"]["engine"]].system_service()
+        system_service = self.__connections[
+            config["ovirt"]["engine"]
+        ].system_service()
         vms_service = system_service.vms_service()
 
         # Creating VM
@@ -750,21 +436,29 @@ class OvirtHelper(VirtProtocol):
                         )
                     )
                 ],
-                dns_servers=config["vm"]["dns_servers"] if "dns_servers" in config else "10.82.254.32 10.82.254.31",
-                dns_search=config["vm"]["search_domain"] if "search_domain" in config else "crimea.rncb.ru"
+                dns_servers=(
+                    config["vm"]["dns_servers"]
+                    if "dns_servers" in config
+                    else "10.82.254.32 10.82.254.31"
+                ),
+                dns_search=(
+                    config["vm"]["search_domain"]
+                    if "search_domain" in config["vm"]
+                    else "crimea.rncb.ru"
+                )
             )
         )
         try:
             vm = vms_service.add(vm, clone=True)
-            self.__logger.info("Creating VM '%s'.", vm.name)
+            self.__logger.log_info(f"Creating VM {vm.name}.")
 
             # After creating VM we have to shut it down to apply new hardware and
             # software options.
             vm_service = vms_service.vm_service(vm.id)
             while vm_service.get().status != sdk.types.VmStatus.DOWN:
-                self.__logger.debug("Waiting for VM status set to DOWN (ready for next setup)...")
+                self.__logger.log_debug("Waiting for VM status set to DOWN (ready for next setup)...")
                 time.sleep(10)
-            self.__logger.info("Created VM %s.", vm.name)
+            self.__logger.log_info(f"Created VM {vm.name}.")
 
             # Disks operations.
             self.__extend_vm_root_disk(system_service, vm, vm_service, config)
@@ -775,7 +469,7 @@ class OvirtHelper(VirtProtocol):
 
             # After applying changes VM will be locked, so wait until lockdown is released.
             while vm_service.get().status != sdk.types.VmStatus.DOWN:
-                self.__logger.debug("Waiting system service to release VM's LOCKED status...")
+                self.__logger.log_debug("Waiting system service to release VM's LOCKED status...")
                 time.sleep(10)
 
             # Starting VM via CloudInit.
@@ -783,27 +477,32 @@ class OvirtHelper(VirtProtocol):
 
             # Restrating VM to fix fstab.
             while vm_service.get().status != sdk.types.VmStatus.UP:
-                self.__logger.debug("Waiting VM to start...")
+                self.__logger.log_debug("Waiting VM to start...")
                 time.sleep(10)
             # Waiting 60 second for VM to properly start.
             time.sleep(60)
-            self.__logger.info("Issued VM reset to fix possible fstab malfunction.")
+            self.__logger.log_info("Issued VM reset to fix possible fstab malfunction.")
             vm_service.reset()
 
             # Finalizing VM.
             while vm_service.get().status != sdk.types.VmStatus.UP:
-                self.__logger.debug("Waiting VM to start...")
+                self.__logger.log_debug("Waiting VM to start...")
                 time.sleep(10)
-            self.__logger.info("VM '%s' in dpc '%s' created and operational.",
-                        vm.name,
-                        config["ovirt"]["engine"])
+            self.__logger.log_info(
+                f"VM {vm.name} in dpc {config['ovirt']['engine']} created "
+                "and operational."
+            )
 
-            return {"id": vm.id, "name": vm.name, "engine": config["ovirt"]["engine"]} if vm else -1
+            return {
+                "id": vm.id, 
+                "name": vm.name, 
+                "engine": config["ovirt"]["engine"]
+            } if vm else -1
 
         except sdk.Error as e:
-            self.__logger.error("Could not create VM '%s'. Reason: '%s'.",
-                                config["vm"]["name"],
-                                e)
+            self.__logger.log_error(
+                f"Could not create VM {config['vm']['name']}. Reason: {e}."
+            )
 
     def __extend_vm_root_disk(self, system_service, vm, vm_service, config):
         """Extend VM root disk size to one set in config dict."""
@@ -812,21 +511,26 @@ class OvirtHelper(VirtProtocol):
         disk_attachments = disk_attachments_service.list()
 
         # If any disk exist, and there will be only one in the template.
-        self.__logger.info("Resizing disk from template if it is > 30Gb.")
+        self.__logger.log_info("Resizing disk from template if it is > 30Gb.")
         if disk_attachments:
             disk_attachment = disk_attachments[0]
             disk_service = system_service.disks_service().disk_service(disk_attachment.disk.id)
 
             # Waiting for disk to be created
             while disk_service.get().status == sdk.types.DiskStatus.LOCKED:
-                self.__logger.debug("Waiting system service to release disks LOCKED status...")
+                self.__logger.log_debug("Waiting system service to release disks LOCKED status...")
                 time.sleep(10)
             for disk_config in config["vm"]["disks"]:
                 if int(disk_config["type"]) == 1:
-                    self.__logger.debug("Root disk detected.")
+                    self.__logger.log_debug("Root disk detected.")
                     if disk_config['size'] > 30:
-                        self.__logger.debug("Root disk size from vm config is '%s' which is larger than 30 gb.",
-                                            disk_config['size'])
+                        self.__logger.log_debug(
+                            (
+                                "Root disk size from vm config is "
+                                f"{disk_config['size']} which is larger "
+                                "than 30 gb."
+                            )
+                        )
                         disk_service.update(
                             disk=sdk.types.Disk(
                                 # Disk with root partition should always be
@@ -838,7 +542,7 @@ class OvirtHelper(VirtProtocol):
 
                     # Waiting to apply disk changes.
                     while disk_service.get().status == sdk.types.DiskStatus.LOCKED:
-                        self.__logger.debug("Waiting system service to release disks LOCKED status...")
+                        self.__logger.log_debug("Waiting system service to release disks LOCKED status...")
                         time.sleep(10)
 
                     # Setting disk name and label.
@@ -851,11 +555,15 @@ class OvirtHelper(VirtProtocol):
 
                     # Waiting to apply disk changes.
                     while disk_service.get().status == sdk.types.DiskStatus.LOCKED:
-                        self.__logger.debug("Waiting system service to release disks LOCKED status...")
+                        self.__logger.log_debug(
+                            ("Waiting system service to release disks LOCKED"
+                             " status...")
+                        )
                         time.sleep(10)
-                    self.__logger.info("Disk with root partition extended for VM '%s', with ID '%s'.",
-                                       vm.name,
-                                       vm.id)
+                    self.__logger.log_info(
+                        f"Disk with root partition extended for VM {vm.name},"
+                        f" with ID {vm.id}."
+                    )
 
     def __create_vm_extra_disks(self, system_service, vm, vm_service, config):
         """Create additional disks for VM, as stated in VM config dict."""
@@ -871,11 +579,11 @@ class OvirtHelper(VirtProtocol):
                     # throws exception.
                     if disk["size"] > 8192:
                         disk["size"] = 8192
-                    self.__logger.info("Creating additional disks #%i for VM '%s', with ID '%s'. Disk size: %sGb.",
-                                       disk_index,
-                                       vm.name,
-                                       vm.id,
-                                       disk['size'])
+                    self.__logger.log_info(
+                        f"Creating additional disks #{disk_index} for VM "
+                        f"{vm.name}, with ID {vm.id}. Disk size: "
+                        f"{disk['size']}Gb."
+                    )
                     disk_index += 1
 
                     # Attaching disk to VM.
@@ -898,35 +606,48 @@ class OvirtHelper(VirtProtocol):
                             interface=sdk.types.DiskInterface.VIRTIO_SCSI,
                         )
                     )
-                    self.__logger.debug("Created disk_attachment variable (disk #%s)", disk_index)
+                    self.__logger.log_debug(
+                        "Created disk_attachment variable "
+                        f"(disk #{disk_index})"
+                    )
                     disk_service = system_service.disks_service().disk_service(disk_attachment.disk.id)
-                    self.__logger.debug("Found disk_attachment service (disk #%s)", disk_index)
+                    self.__logger.log_debug(
+                        f"Found disk_attachment service (disk #{disk_index})"
+                    )
 
                     # Waiting to apply disk changes
                     while disk_service.get().status == sdk.types.DiskStatus.LOCKED:
-                        self.__logger.debug("Waiting system service to release disks LOCKED status...")
+                        self.__logger.log_debug(
+                            "Waiting system service to release disks LOCKED"
+                            " status..."
+                        )
                         time.sleep(10)
 
                     if disk_attachment:
-                        self.__logger.info("Created additional disk for VM '%s', with ID '%s'.",
-                                           vm.name,
-                                           vm.id)
+                        self.__logger.log_info(
+                            f"Created additional disk for VM {vm.name}, with "
+                            "ID {vm.id}."
+                        )
                     else:
-                        self.__logger.error("Failed to create disk with root partition for VM '%s', with ID '%s'.",
-                                            vm.name,
-                                            vm.id)
+                        self.__logger.log_error(
+                            "Failed to create disk with root partition for VM"
+                            f" {vm.name}, with ID {vm.id}."
+                        )
 
     def __set_vm_network(self, system_service, vm_service, config):
         """Change VM vNIC (VLAN)."""
-        self.__logger.info("Changing VM vNIC to %s. Searching vNIC profile.",
-                           config['vlan']['name'])
+        self.__logger.log_info(
+            f"Changing VM vNIC to {config['vlan']['name']}. Searching vNIC "
+            "profile."            
+        )
         vnic_profile_id = self.__get_vnic_profile(system_service, config)
         if vnic_profile_id:
             nics_service = vm_service.nics_service()
             nics = nics_service.list()
             # Applying vNIC profiles for main nic1 on VM
             for nic in nics:
-                # All templates will have NIC names 'nic1' as a primary connection
+                # All templates will have NIC names 'nic1' as a primary
+                # connection.
                 if nic.name == 'nic1':
                     nic_service = nics_service.nic_service(nic.id)
                     nic_service.update(
@@ -937,7 +658,9 @@ class OvirtHelper(VirtProtocol):
                         )
                     )
         else:
-            self.__logger.error("No vNIC with VLAN ID '%s' found!", config['vlan']['id'])
+            self.__logger.log_error(
+                f"No vNIC with VLAN ID {config['vlan']['id']} found!"
+            )
 
     def __get_vnic_profile(self, system_service, config):
         """Return vNIC profile ID if exists, -1 otherwise.
@@ -952,7 +675,9 @@ class OvirtHelper(VirtProtocol):
         vnic_profile_id = None
         for profile in vnic_profiles_service.list():
             if profile and profile.network.id:
-                network = networks_service.network_service(profile.network.id).get()
+                network = networks_service.network_service(
+                    profile.network.id
+                ).get()
                 data_center_id = self.__get_data_center(system_service, config)
                 if (network
                     and network.vlan.id == config["vlan"]["id"]
@@ -972,7 +697,11 @@ class OvirtHelper(VirtProtocol):
         for cluster in clusters_service.list():
             if cluster.name == config["ovirt"]["cluster"]:
                 data_centers_service = system_service.data_centers_service()
-                data_center = data_centers_service.data_center_service(cluster.data_center.id).get()
+                data_center = (
+                    data_centers_service
+                    .data_center_service(cluster.data_center.id)
+                    .get()
+                )
                 data_center_id = data_center.id
         return data_center_id
 
@@ -1004,41 +733,63 @@ class OvirtHelper(VirtProtocol):
                 ]
             ```
         """
-        system_service = self.__connections[config['ovirt']['engine']].system_service()
+        self.__rename_thread()
 
-        # Getting data center service. Also getting cluster service and full list of clusters.
+        system_service = self.__connections[
+            config['ovirt']['engine']
+        ].system_service()
+
+        self.remove_unmanaged_vlan()
+
+        # Getting data center service. Also getting cluster service and full
+        # list of clusters.
         dcs_service = system_service.data_centers_service()
         clusters_service = system_service.clusters_service()
         clusters = clusters_service.list()
 
-        # Defining where to put VLAN, based on cluster in prepared/raw VLAN JSON config.
+        # Defining where to put VLAN, based on cluster in prepared/raw VLAN
+        # JSON config.
         target_dc = None
         target_cluster = None
+        self.__logger.log_info(
+            "Checking if there is target cluster and data center."
+        )
         for cluster in clusters:
             if cluster.name == config["ovirt"]["cluster"]:
                 target_cluster = cluster
-                target_dc = dcs_service.data_center_service(cluster.data_center.id).get()
+                target_dc = dcs_service.data_center_service(
+                    cluster.data_center.id
+                ).get()
                 break
 
-        # Getting target data center's network service. Getting list of all networks
-        # in DC to check if vlans already exist.
-        dc_network_service = dcs_service.service(target_dc.id).networks_service()
+        # Getting target data center's network service. Getting list of all
+        # networks in DC to check if vlans already exist.
+        self.__logger.log_info(
+            f"Checking if VLAN {config['vlan']['name']} with ID "
+            f"{config['vlan']['id']} exists in current data center."
+        )
+        dc_network_service = dcs_service.service(
+            target_dc.id
+        ).networks_service()
         dc_networks = dc_network_service.list()
         current_vlan_exists = False
         for dc_network in dc_networks:
             if dc_network.vlan and dc_network.vlan.id == config["vlan"]["id"]:
                 current_vlan_exists = True
                 vlan = dc_network
-                self.__logger.error("Network '%s' already exists in '%s' datacenter!",
-                                    config['vlan']['name'],
-                                    target_dc.name)
+                self.__logger.log_error(
+                    f"Network {config['vlan']['name']} already exists in "
+                    f"{target_dc.name} datacenter!"
+                )
                 break
 
         # Creating VLAN.
         if not current_vlan_exists:
             vlan = dc_network_service.add(
                 sdk.types.Network(
-                    name=f"{config['vlan']['id']}{config['vlan']['suffix']}-vlan",
+                    name=
+                        f"{config['vlan']['id']}{config['vlan']['suffix']}"
+                        "-vlan",
                     data_center=sdk.types.DataCenter(
                         id=target_dc.id
                     ),
@@ -1053,15 +804,18 @@ class OvirtHelper(VirtProtocol):
             )
 
         # Adding VLAN via cluster, to populate it across all hosts
-        cluster_networks_service = clusters_service.cluster_service(target_cluster.id).networks_service()
+        cluster_networks_service = clusters_service.cluster_service(
+            target_cluster.id
+        ).networks_service()
         cluster_networks = cluster_networks_service.list()
         current_vlan_exists = False
         for cluster_network in cluster_networks:
             if cluster_network.vlan.id == config["vlan"]["id"]:
                 current_vlan_exists = True
-                self.__logger.error("Network '%s' already exists in '%s' cluster!",
-                                    config['vlan']['name'],
-                                    target_cluster.name)
+                self.__logger.log_error(
+                    f"Network {config['vlan']['name']} already exists in "
+                    f"{target_cluster.name} cluster!"
+                )
 
         if not current_vlan_exists:
             cluster_networks_service.add(
@@ -1071,15 +825,20 @@ class OvirtHelper(VirtProtocol):
                 )
             )
 
-        # Getting list of all hosts to perform check to define if vlan is already attached to host.
+        # Getting list of all hosts to perform check to define if vlan is
+        # already attached to host.
         hosts_service = system_service.hosts_service()
         hosts = hosts_service.list()
         for host in hosts:
 
             # Checking host <-> cluster.
-            host_cluster = self.__connections[config['ovirt']['engine']].follow_link(host.cluster)
+            host_cluster = self.__connections[
+                config['ovirt']['engine']
+            ].follow_link(host.cluster)
             if host_cluster.name == config["ovirt"]["cluster"]:
-                self.__logger.info("Attaching VLAN to host '%s'.", host.name)
+                self.__logger.log_info(
+                    f"Attaching VLAN to host {host.name}."
+                )
                 host_service = hosts_service.host_service(host.id)
 
                 # Specific host nics service.
@@ -1099,5 +858,43 @@ class OvirtHelper(VirtProtocol):
                                 ]
                             )
 
-        self.__logger.info("Network '%s' created and attached to all hosts.",
-                           config['vlan']['name'])
+        self.__logger.log_info(
+            f"Network {config['vlan']['name']} created and attached to all "
+            "hosts."
+        )
+
+    def remove_unmanaged_vlan(self, vlan_list: list=None) -> dict:
+        """Usually after removing VLAN from oVirt, it remains attached to
+        hosts and they refuse to attach new ones while 'unmanaged' ones remain
+        attached.
+        """
+        # If no VLANs to remove are specified - remove all unmanaged ones.
+        if not vlan_list:
+            self.__logger.log_info(
+                "No VLAN list specified. Cleaning all unmanaged VLANs."
+                )
+            for dpc, connection in self.__connections.items():
+                hosts_service = connection.system_service().hosts_service()
+                for host in hosts_service.list():
+                    unmng_netwks_service = hosts_service.host_service(
+                        host.id
+                    ).unmanaged_networks_service()
+                    for network in unmng_netwks_service.list():
+                        netw_service = (
+                            unmng_netwks_service
+                            .unmanaged_network_service(network.id)
+                        )
+                        try:
+                            netw_service.remove()
+                        except sdk.NotFoundError as e:
+                            self.__logger.log_error(
+                                f"Exception while working with VLAN "
+                                f"{network.name}: {e}."
+                            )
+                        else:
+                            self.__logger.log_info(
+                                f"Removed unmanaged VLAN {network.name} from"
+                                f" {dpc} DPC."
+                            )
+
+        return {"response": 200, "vlan_list": vlan_list}

@@ -1,6 +1,7 @@
 """Generate logs for all actions."""
 
 import logging
+from . import config as cfg
 
 class Logger:
     """Class (singleton) for logging both in file and console."""
@@ -11,10 +12,13 @@ class Logger:
             cls._instance = super().__new__(cls)
         return cls._instance
 
-    def __init__(self, log_file="app.log", log_level=logging.DEBUG):
+    def __init__(
+            self, log_file=f"{cfg.LOGS_FOLDER}/aggregator.log",
+            log_level=logging.DEBUG
+    ):
         if not hasattr(self, "_initialized"):
         # Creating logger.
-            self.__logger = logging.getLogger("AppLogger")
+            self.__logger = logging.getLogger("AggregatorLogger")
             self.__logger.setLevel(log_level)
 
             if not self.__logger.hasHandlers():
@@ -27,12 +31,17 @@ class Logger:
                 console_handler.setLevel(log_level)
 
                 # Setting log format.
-                formatter = logging.Formatter('%(asctime)s-[%(levelname)s] - %(threadName)s: %(message)s')
+                formatter = logging.Formatter(
+                    (
+                        '%(asctime)s-[%(levelname)s] - '
+                        '%(threadName)s: %(message)s'
+                    )
+                )
                 file_handler.setFormatter(formatter)
                 console_handler.setFormatter(formatter)
                 self.__logger.addHandler(file_handler)
                 self.__logger.addHandler(console_handler)
-            
+
             self._initialized = True
 
     def log_debug(self, message):
@@ -50,8 +59,3 @@ class Logger:
     def log_error(self, message):
         """Add error log entry."""
         self.__logger.error(message)
-
-    def close_handlers(self):
-        """Close handlers."""
-        for handler in self.__logger.handlers:
-            handler.close()

@@ -1,5 +1,6 @@
 __pycache__
 .vscode
+.mypy_cache
 test.py
 aggregator.log
 *.xlsx
