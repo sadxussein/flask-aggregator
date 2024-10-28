@@ -31,10 +31,12 @@ class OvirtHelper(VirtProtocol):
 
     @property
     def pretty_name(self) -> str:
+        """Return class' instance pretty name."""
         return "ovirt"
 
     @property
     def dpc_list(self) -> list:
+        """Return class' instance DPC list."""
         return self.__dpc_list
 
     def connect_to_virtualization(self):
@@ -86,7 +88,7 @@ class OvirtHelper(VirtProtocol):
     def __get_timestamp(self):
         """Return current time. Primarily used for VMs."""
         return time.strftime("%Y.%d.%m-%H:%M:%S", time.localtime(time.time()))
-    
+
     def __rename_thread(self):
         """Change name of thread while executing function.
         
@@ -95,7 +97,9 @@ class OvirtHelper(VirtProtocol):
         representable in the log.
         """
         thread_name = threading.current_thread().name.split('_')
-        threading.current_thread().name = f"_{'^'.join(self.__dpc_list)}_".join(thread_name)
+        threading.current_thread().name = (
+            f"_{'^'.join(self.__dpc_list)}_".join(thread_name)
+        )
 
     def get_data_centers(self):
         """Get data center information from all engines.
@@ -111,8 +115,10 @@ class OvirtHelper(VirtProtocol):
         define which template to choose, as each corresponding template ends
         with this tag in its name, e.g. 'template_PRC_OLD'.
         """
+        self.__rename_thread()
         result = []
         for dpc, connection in self.__connections.items():
+            self.__logger.log_info(f"Getting data centers from {dpc}.")
             for data_center in (
                 connection.system_service().data_centers_service().list()
             ):
@@ -120,8 +126,15 @@ class OvirtHelper(VirtProtocol):
                     "ID": data_center.id,
                     "name": data_center.name,
                     "engine": dpc,
-                    "comment": data_center.comment
+                    "comment": data_center.comment,
+                    "href": (
+                        f"{cfg.DPC_URLS[dpc][:-3]}webadmin/?locale=en_US#"
+                        f"dataCenters-storage;name={data_center.name}"
+                    )
                 })
+        self.__logger.log_info(
+            f"Finished collecting data centers from {dpc}."
+        ) 
         return result
 
     def get_storages(self):
@@ -132,8 +145,10 @@ class OvirtHelper(VirtProtocol):
             'ID', 'name', 'engine', 'data_center', 'available', 'used', 
             'committed', 'total', 'percent_left', 'overprovisioning'.
         """
+        self.__rename_thread()
         result = []
         for dpc, connection in self.__connections.items():
+            self.__logger.log_info(f"Getting storage domains from {dpc}.")
             system_service = connection.system_service()
             data_centers_service = system_service.data_centers_service()
             storage_domains_service = system_service.storage_domains_service()
@@ -161,8 +176,15 @@ class OvirtHelper(VirtProtocol):
                                         / (domain.available + domain.used))),
                         "overprovisioning": int((domain.committed * 100)
                                                 / (domain.available
-                                                   + domain.used))
+                                                   + domain.used)),
+                        "href": (
+                            f"{cfg.DPC_URLS[dpc][:-3]}webadmin/?locale=en_US#"
+                            f"storage-general;name={domain.name}"
+                        )
                     })
+            self.__logger.log_info(
+                f"Finished collecting storage domains from {dpc}."
+            )
         return result
 
     def get_clusters(self):
@@ -172,17 +194,30 @@ class OvirtHelper(VirtProtocol):
             cluster list (dict): List of following parameters:
             'ID', 'name', 'engine', 'description'.
         """
+        self.__rename_thread()
         result = []
         for dpc, connection in self.__connections.items():
+            self.__logger.log_info(f"Getting clusters from {dpc}.")
             system_service = connection.system_service()
             data_centers_service = system_service.data_centers_service()
             clusters_service = system_service.clusters_service()
             clusters = clusters_service.list()
             for cluster in clusters:
-                data_center = data_centers_service.data_center_service(cluster.data_center.id).get()
-                result.append({"name": cluster.name, "ID": cluster.id,
-                               "engine": dpc, "description": cluster.description,
-                               "data_center": data_center.name})
+                data_center = data_centers_service.data_center_service(
+                    cluster.data_center.id
+                ).get()
+                result.append(
+                    {
+                        "name": cluster.name, "ID": cluster.id,
+                        "engine": dpc, "description": cluster.description,
+                        "data_center": data_center.name,
+                        "href": (
+                            f"{cfg.DPC_URLS[dpc][:-3]}webadmin/?locale=en_US#"
+                            f"clusters-general;name={cluster.name}"
+                        )
+                    }
+                )
+            self.__logger.log_info(f"Finished collecting clusters from {dpc}.")        
         return result
 
     def get_hosts(self) -> list:
@@ -190,17 +225,21 @@ class OvirtHelper(VirtProtocol):
         
         Returns:
             host list (dict): List of following parameters:
-            'ID', 'name', 'cluster', 'IP', 'engine'.
+            'ID', 'name', 'cluster', 'IP', 'engine', 'href'.
         """
+        self.__rename_thread()
         result = []
         for dpc, connection in self.__connections.items():
+            self.__logger.log_info(f"Getting hosts from {dpc}.")
             system_service = connection.system_service()
             hosts_service = system_service.hosts_service()
             hosts = hosts_service.list()
             clusters_service = system_service.clusters_service()
             data_centers_service = system_service.data_centers_service()
             for host in hosts:
-                cluster = clusters_service.cluster_service(host.cluster.id).get()
+                cluster = clusters_service.cluster_service(
+                    host.cluster.id
+                ).get()
                 data_center = data_centers_service.data_center_service(
                     cluster.data_center.id
                 ).get()
@@ -212,30 +251,41 @@ class OvirtHelper(VirtProtocol):
                     if nic.name in cfg.HOST_MANAGEMENT_BONDS:
                         if nic.ip and nic.ip.address:
                             ip = nic.ip.address
-                result.append({"ID": host.id,
-                               "name": host.name, 
-                               "cluster": cluster.name, 
-                               "data_center": data_center.name,
-                               "IP": ip,
-                               "engine": dpc})
+                result.append(
+                    {
+                        "ID": host.id,
+                        "name": host.name, 
+                        "cluster": cluster.name, 
+                        "data_center": data_center.name,
+                        "IP": ip,
+                        "engine": dpc,
+                        "href": (
+                            f"{cfg.DPC_URLS[dpc][:-3]}webadmin/?locale=en_US#"
+                            f"hosts-general;name={host.name}"
+                        )
+                    }
+                )
+            self.__logger.log_info(f"Finished collecting hosts from {dpc}.")
         return result
 
     def get_vms(self) -> list:
         """Get VM list as dictionary.
         
         Returns:
-            host list (dict): List of following parameters:
+            VM list (dict): List of following parameters:
             'ID', 'name', 'hostname', 'state', 'engine', 'host',
             'cluster', 'data_center', 'was_migrated', 'total_space',
-            'storage_domains'.
+            'storage_domains', 'href'.
 
         Function connects to every oVirt engine passed to class instance file 
         and returns data from all VMs as dictionary.
         Field list will be extended in the future.
         """
+        self.__rename_thread()
         result = []
 
         for dpc, connection in self.__connections.items():
+            self.__logger.log_info(f"Getting VMs from {dpc}.")
             # Main service
             system_service = connection.system_service()
 
@@ -267,9 +317,7 @@ class OvirtHelper(VirtProtocol):
                     vm_data["state"] = "Other"
 
                 # IP
-                reported_devices_service = vm_service.reported_devices_service()
-                reported_devices = reported_devices_service.list()
-                for device in reported_devices:
+                for device in vm_service.reported_devices_service().list():
                     if device.ips:
                         for ip in device.ips:
                             if ip.version == sdk.types.IpVersion.V4:
@@ -294,7 +342,9 @@ class OvirtHelper(VirtProtocol):
 
                 # cluster
                 clusters_service = system_service.clusters_service()
-                cluster_service = clusters_service.cluster_service(vm.cluster.id)
+                cluster_service = clusters_service.cluster_service(
+                    vm.cluster.id
+                )
                 cluster = cluster_service.get()
                 vm_data["cluster"] = cluster.name
 
@@ -318,21 +368,37 @@ class OvirtHelper(VirtProtocol):
                 disc_attachments = vm_service.disk_attachments_service().list()
                 if disc_attachments:
                     for disk_attachment in disc_attachments:
-                        disk = system_service.disks_service().disk_service(disk_attachment.disk.id).get()
+                        disk = system_service.disks_service().disk_service(
+                            disk_attachment.disk.id
+                        ).get()
                         if disk:    # TODO: check questionable logic below.
                             try:
-                                vm_data["total_space"] = vm_data["total_space"] + disk.total_size / 1024 ** 3
+                                vm_data["total_space"] = (
+                                    vm_data["total_space"] + disk.total_size / 1024 ** 3
+                                )
                             except TypeError as e:
                                 self.__logger.log_error(f"{disk.id}: {e}.")
                             finally:
                                 vm_data["total_space"] = 0
                             for sd in disk.storage_domains:
-                                storage_domain = system_service.storage_domains_service().storage_domain_service(sd.id).get()
-                                vm_data["storage_domains"].add(storage_domain.name)
-                vm_data["storage_domains"] = '\n'.join(vm_data["storage_domains"])
+                                storage_domain = (
+                                    system_service.storage_domains_service()
+                                    .storage_domain_service(sd.id).get()
+                                )
+                                vm_data["storage_domains"].add(
+                                    storage_domain.name
+                                )
+                vm_data["storage_domains"] = '\n'.join(
+                    vm_data["storage_domains"]
+                )
+
+                vm_data["href"] = (
+                    f"{cfg.DPC_URLS[dpc][:-3]}webadmin/?locale=en_US#"
+                    f"vms-general;name={vm.name}"
+                )
 
                 result.append(vm_data)
-
+            self.__logger.log_info(f"Finished collecting VMs from {dpc}.")
         return result
 
     def create_vm(self, config):

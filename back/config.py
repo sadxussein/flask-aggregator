@@ -29,15 +29,20 @@ ANSIBLE_IPA_INTERNAL_FOLDER = f"{ANSIBLE_IPA_INVENTORIES_FOLDER}/internal"
 ANSIBLE_IPA_DMZ_FOLDER = f"{ANSIBLE_IPA_INVENTORIES_FOLDER}/dmz"
 FRONT_FILES_FOLDER = "front/files"
 EXCEL_FILES_FOLDER = f"{FRONT_FILES_FOLDER}/excel"
-HOST_MANAGEMENT_BONDS = ["bond0.2701", "bond0.1932", "bond0.2721", "bond0.1567"]
+HOST_MANAGEMENT_BONDS = [
+    "bond0.2701", "bond0.1932", "bond0.2721", "bond0.1567", "bond0.397",
+    "bond0.30", "bond0.35"
+]
 
 # List of storage domains to be avoided in data gathering.
 STORAGE_DOMAIN_EXCEPTIONS = ["ovirt-image-repository"]
 
 # VLANs exceptions.
 # DBO exceptions.
-DBO_VLANS = set([918, 919, 922, 923, 924, 925, 926, 927, 928, 929, 930, 931,
-                 932, 933, 934, 935, 936, 940, 942, 944, 945, 946, 947, 948, 949])
+DBO_VLANS = set([
+    918, 919, 922, 923, 924, 925, 926, 927, 928, 929, 930, 931,
+    932, 933, 934, 935, 936, 940, 942, 944, 945, 946, 947, 948, 949
+])
 
 # Main network n32 exceptions.
 N32_VLAN_EXCEPTIONS = set([1505, 1506, 1507, 1508, 1509, 1510])

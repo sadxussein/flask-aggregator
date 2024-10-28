@@ -7,6 +7,7 @@ from .virt_protocol import VirtProtocol
 from .ovirt_helper import OvirtHelper
 from .file_handler import FileHandler
 from .logger import Logger
+from . import config as cfg
 
 class VirtAggregator():
     """Operate different virtualizations automation."""
@@ -34,9 +35,8 @@ class VirtAggregator():
             virt_helper.disconnect_from_virtualization()
 
     def run_data_collection(self,
-                     virt_helpers: list,
-                     file_handler: FileHandler
-                     ) -> None:
+            file_handler: FileHandler
+        ) -> None:
         """Gathering data from virtualizations.
         
         Args:
@@ -54,9 +54,9 @@ class VirtAggregator():
 
         # 2. Run threads to gather info from virtualizations.
         with ThreadPoolExecutor(
-            max_workers=25, thread_name_prefix="collector"
+            max_workers=40, thread_name_prefix="collector"
         ) as executor:
-            for virt_helper in virt_helpers:
+            for virt_helper in self.__virt_helpers:
                 # Select only getter functions.
                 virt_protocol_functions = [
                     f for f in dir(VirtProtocol) if f.startswith("get")
@@ -157,15 +157,23 @@ class VirtAggregator():
 
         self.__disconnect_from_virtualizations()
 
-    def create_virt_helpers(self, file_handler):
+    def create_virt_helpers(self, file_handler=None):
         """Generate helpers for each unique virtualization endpoint.
         
         Args:
-            file_handler (FileHandler): should contain input JSON file.
+            file_handler (FileHandler): could contain input JSON file. If no
+              handler provided system will try to connect to all
+                virtualizations set in config.py.
 
         From FileHandler field `dpc_vm_configs` set of DPC's is taken.
         """
-        for dpc in file_handler.dpc_vm_configs:
-            self.__virt_helpers.append(OvirtHelper(
-                dpc_list=[dpc], logger=self.__logger
-            ))
+        if file_handler is not None:
+            for dpc in file_handler.dpc_vm_configs:
+                self.__virt_helpers.append(OvirtHelper(
+                    dpc_list=[dpc], logger=self.__logger
+                ))
+        else:
+            for dpc in cfg.DPC_LIST:
+                self.__virt_helpers.append(OvirtHelper(
+                    dpc_list=[dpc], logger=self.__logger
+                ))

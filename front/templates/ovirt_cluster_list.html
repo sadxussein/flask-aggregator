@@ -7,6 +7,7 @@
         <title>oVirt cluster list</title>
 
         <link rel="stylesheet" href="{{ url_for('static', filename='css/jquery.dataTables.min.css') }}">
+        <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css')}}">
 
         <script src="{{ url_for('static', filename='js/jquery-3.6.0.min.js') }}"></script>
         <script src="{{ url_for('static', filename='js/jquery.dataTables.min.js') }}"></script>
@@ -26,7 +27,7 @@
                 <tbody>
                     {% for item in data %}
                     <tr>
-                        <th>{{ item.ID }}</th>
+                        <th><a href="{{ item.href }}">{{ item.ID }}</a></th>
                         <th>{{ item.name }}</th>
                         <th>{{ item.engine }}</th>                        
                         <th>{{ item.data_center }}</th>
