@@ -13,6 +13,7 @@
         <script src="{{ url_for('static', filename='js/jquery.dataTables.min.js') }}"></script>
     </head>
     <body>
+        {% include "header.html" %}
         <div class="container">
             <table id="ovirt_cluster_list" class="display">
                 <thead>
@@ -37,6 +38,7 @@
                 </tbody>
             </table>
         </div>
+        {% include "footer.html" %}
         <script>
             $(document).ready(function() {
                 $('#ovirt_cluster_list').DataTable({
