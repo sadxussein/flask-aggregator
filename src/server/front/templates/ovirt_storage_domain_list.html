@@ -18,7 +18,7 @@
             <table id="ovirt_storage_domain_list" class="display">
                 <thead>
                     <tr>
-                        <th>ID</th>
+                        <th>UUID</th>
                         <th>name</th>
                         <th>engine</th>
                         <th>available</th>
@@ -32,7 +32,7 @@
                 <tbody>
                     {% for item in data %}
                     <tr>
-                        <th><a href="{{ item.href }}">{{ item.ID }}</a></th>
+                        <th><a href="{{ item.href }}">{{ item.UUID }}</a></th>
                         <th>{{ item.name }}</th>
                         <th>{{ item.engine }}</th>    
                         <th>{{ item.available }}</th>

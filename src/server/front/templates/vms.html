@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        
+        <title>VM list</title>
+
+        <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css')}}">
+    </head>
+    <body>
+        {% include "header.html" %}
+        <form method="get" action="/vms">
+            {% for key in filters.keys() %}
+                <label for="{{ key }}">{{ key }}:</label>
+                <input type="text" id="{{ key }}" name="{{ key }}" value="{{ filters[key] or '' }}">
+            {% endfor %}
+            <button type="submit">Search</button>
+        </form>
+        <hr>
+        <div class="container">
+            <table id="vms" class="display">
+                <thead>
+                    <tr>
+                        <th>UUID</th>
+                        <th>name</th>
+                        <th>hostname</th>
+                        <th>state</th>
+                        <th>IP</th>
+                        <th>engine</th>
+                        <th>host</th>
+                        <th>cluster</th>
+                        <th>datacenter</th>
+                        <th>was_migrated</th>
+                        <th>total_space</th>
+                        <th>storage_domains</th>
+                        <th>virtualization</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in data %}
+                    <tr>
+                        <td><a href="{{ item.href }}">{{ item.uuid }}</a></td>
+                        <td>{{ item.name }}</td>
+                        <td>{{ item.hostname }}</td>
+                        <td>{{ item.state }}</td>
+                        <td>{{ item.IP }}</td>
+                        <td>{{ item.engine }}</td>
+                        <td>{{ item.host }}</td>
+                        <td>{{ item.cluster }}</td>
+                        <td>{{ item.data_center }}</td>
+                        <td>{{ item.was_migrated }}</td>
+                        <td>{{ item.total_space }}</td>
+                        <td>{{ item.storage_domains }}</td>
+                        <td>{{ item.virtualization }}</td>                
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% include "footer.html" %}
+    </body>
+</html>

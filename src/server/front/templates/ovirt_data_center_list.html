@@ -4,7 +4,7 @@
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         
-        <title>oVirt cluster list</title>
+        <title>oVirt data center list</title>
 
         <link rel="stylesheet" href="{{ url_for('static', filename='css/jquery.dataTables.min.css') }}">
         <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css')}}">
@@ -15,24 +15,20 @@
     <body>
         {% include "header.html" %}
         <div class="container">
-            <table id="ovirt_cluster_list" class="display">
+            <table id="ovirt_data_center_list" class="display">
                 <thead>
                     <tr>
-                        <th>ID</th>
+                        <th>UUID</th>
                         <th>name</th>
-                        <th>engine</th>                        
-                        <th>data_center</th>
-                        <th>description</th>
+                        <th>engine</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for item in data %}
                     <tr>
-                        <th><a href="{{ item.href }}">{{ item.ID }}</a></th>
+                        <th><a href="{{ item.href }}">{{ item.UUID }}</a></th>
                         <th>{{ item.name }}</th>
-                        <th>{{ item.engine }}</th>                        
-                        <th>{{ item.data_center }}</th>
-                        <th>{{ item.description }}</th>
+                        <th>{{ item.engine }}</th>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -41,7 +37,7 @@
         {% include "footer.html" %}
         <script>
             $(document).ready(function() {
-                $('#ovirt_cluster_list').DataTable({
+                $('#ovirt_data_center_list').DataTable({
                     initComplete: function() {
                         this.api().columns().every(function () {
                             var column = this;

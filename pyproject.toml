@@ -1,0 +1,28 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "flask_aggregator_krasnoschekovvd"
+version = "0.0.1"
+authors = [
+    { name="krasnoschekovvd", email="krasnoschekovvd@rncb.ru" },
+]
+description = "OITI flask aggregator client-server package"
+readme = "README.md"
+requires-python = ">= 3.8"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+dependencies = []
+
+[project.optional-dependencies]
+client = ["pandas"]
+server = ["flask"]
+
+[project.urls]
+Homepage = "https://gl.rncb.ru/KrasnoschekovVD/flask_aggregator"
+Issues = "https://gl.rncb.ru/KrasnoschekovVD/flask_aggregator/-/issues"

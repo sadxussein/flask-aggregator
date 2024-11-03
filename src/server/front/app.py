@@ -4,13 +4,12 @@ Used primarily for aggregating oVirt information.
 """
 
 import json
-import threading
 
 from flask import Flask, render_template, request, jsonify
 
-from back.virt_aggregator import VirtAggregator
-from back.config import BACK_FILES_FOLDER
-from back.file_handler import FileHandler
+from ..back.virt_aggregator import VirtAggregator
+from ..back.file_handler import FileHandler
+from ..back.sqlite_handler import SQLiteHandler
 
 class FlaskAggregator():
     """Flask-based aggregator class. Used primarily for oVirt interactions."""
@@ -42,6 +41,19 @@ class FlaskAggregator():
                 data=file_handler.file_data["vms"]
             )
 
+        @self.app.route("/vms")
+        def ovirt_vms():
+            """Show VM list from database."""
+            sqlite_handler = SQLiteHandler()
+            filters = {
+                "uuid": request.args.get("uuid"),
+                "name": request.args.get("name")
+            }
+            data = sqlite_handler.get_data("vms", filters)
+            return render_template(
+                "vms.html", data=data, filters=filters
+            )
+
         @self.app.route("/ovirt/host_list")
         def ovirt_host_list():
             """Show host list."""
@@ -59,6 +71,15 @@ class FlaskAggregator():
             file_handler.get_group_data("clusters")
             return render_template(
                 "ovirt_cluster_list.html",
+                data=file_handler.file_data["clusters"]
+            )
+
+        @self.app.route("/ovirt/cluster_list/raw_json")
+        def ovirt_cluster_raw_json():
+            """Show cluster list (raw JSON)."""
+            file_handler = FileHandler()
+            file_handler.get_group_data("clusters")
+            return jsonify(
                 data=file_handler.file_data["clusters"]
             )
 

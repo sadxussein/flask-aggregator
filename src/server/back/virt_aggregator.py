@@ -157,7 +157,9 @@ class VirtAggregator():
 
         self.__disconnect_from_virtualizations()
 
-    def create_virt_helpers(self, file_handler=None):
+    def create_virt_helpers(
+            self, file_handler: dict=None, dpc_list: list=None
+    ) -> None:
         """Generate helpers for each unique virtualization endpoint.
         
         Args:
@@ -169,6 +171,11 @@ class VirtAggregator():
         """
         if file_handler is not None:
             for dpc in file_handler.dpc_vm_configs:
+                self.__virt_helpers.append(OvirtHelper(
+                    dpc_list=[dpc], logger=self.__logger
+                ))
+        elif dpc_list is not None:
+            for dpc in dpc_list:
                 self.__virt_helpers.append(OvirtHelper(
                     dpc_list=[dpc], logger=self.__logger
                 ))

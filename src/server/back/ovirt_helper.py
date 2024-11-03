@@ -106,7 +106,7 @@ class OvirtHelper(VirtProtocol):
         
         Returns:
             data center list (dict): List of following parameters:
-            'ID', 'name', 'engine', 'comment'.
+            'UUID', 'name', 'engine', 'comment', 'href', 'virtualization'.
 
         Field 'comment' is quite important for selecting proper template
         for VM. The currenct list of comments is: 'K8S', 'PRC' (processing), 
@@ -123,18 +123,19 @@ class OvirtHelper(VirtProtocol):
                 connection.system_service().data_centers_service().list()
             ):
                 result.append({
-                    "ID": data_center.id,
+                    "UUID": data_center.id,
                     "name": data_center.name,
                     "engine": dpc,
                     "comment": data_center.comment,
                     "href": (
                         f"{cfg.DPC_URLS[dpc][:-3]}webadmin/?locale=en_US#"
                         f"dataCenters-storage;name={data_center.name}"
-                    )
+                    ),
+                    "virtualization": self.pretty_name
                 })
-        self.__logger.log_info(
-            f"Finished collecting data centers from {dpc}."
-        ) 
+            self.__logger.log_info(
+                f"Finished collecting data centers from {dpc}."
+            )
         return result
 
     def get_storages(self):
@@ -142,8 +143,9 @@ class OvirtHelper(VirtProtocol):
 
         Returns:
             storage domain list (dict): List of following parameters:
-            'ID', 'name', 'engine', 'data_center', 'available', 'used', 
-            'committed', 'total', 'percent_left', 'overprovisioning'.
+            'UUID', 'name', 'engine', 'data_center', 'available', 'used', 
+            'committed', 'total', 'percent_left', 'overprovisioning',
+            'href', 'virtualization'.
         """
         self.__rename_thread()
         result = []
@@ -163,7 +165,7 @@ class OvirtHelper(VirtProtocol):
                         )
                         data_centers.add(data_center.name)
                     result.append({
-                        "ID": domain.id,
+                        "UUID": domain.id,
                         "name": domain.name,
                         "engine": dpc,
                         "data_center": ' '.join(data_centers),
@@ -180,7 +182,8 @@ class OvirtHelper(VirtProtocol):
                         "href": (
                             f"{cfg.DPC_URLS[dpc][:-3]}webadmin/?locale=en_US#"
                             f"storage-general;name={domain.name}"
-                        )
+                        ),
+                        "virtualization": self.pretty_name
                     })
             self.__logger.log_info(
                 f"Finished collecting storage domains from {dpc}."
@@ -192,7 +195,8 @@ class OvirtHelper(VirtProtocol):
     
         Returns:
             cluster list (dict): List of following parameters:
-            'ID', 'name', 'engine', 'description'.
+            'UUID', 'name', 'engine', 'description', 'data_center', 'href',
+            'virtualization'.
         """
         self.__rename_thread()
         result = []
@@ -208,16 +212,17 @@ class OvirtHelper(VirtProtocol):
                 ).get()
                 result.append(
                     {
-                        "name": cluster.name, "ID": cluster.id,
+                        "name": cluster.name, "UUID": cluster.id,
                         "engine": dpc, "description": cluster.description,
                         "data_center": data_center.name,
                         "href": (
                             f"{cfg.DPC_URLS[dpc][:-3]}webadmin/?locale=en_US#"
                             f"clusters-general;name={cluster.name}"
-                        )
+                        ),
+                        "virtualization": self.pretty_name
                     }
                 )
-            self.__logger.log_info(f"Finished collecting clusters from {dpc}.")        
+            self.__logger.log_info(f"Finished collecting clusters from {dpc}.")
         return result
 
     def get_hosts(self) -> list:
@@ -225,7 +230,7 @@ class OvirtHelper(VirtProtocol):
         
         Returns:
             host list (dict): List of following parameters:
-            'ID', 'name', 'cluster', 'IP', 'engine', 'href'.
+            'UUID', 'name', 'cluster', 'IP', 'engine', 'href'.
         """
         self.__rename_thread()
         result = []
@@ -253,7 +258,7 @@ class OvirtHelper(VirtProtocol):
                             ip = nic.ip.address
                 result.append(
                     {
-                        "ID": host.id,
+                        "UUID": host.id,
                         "name": host.name, 
                         "cluster": cluster.name, 
                         "data_center": data_center.name,
@@ -262,7 +267,8 @@ class OvirtHelper(VirtProtocol):
                         "href": (
                             f"{cfg.DPC_URLS[dpc][:-3]}webadmin/?locale=en_US#"
                             f"hosts-general;name={host.name}"
-                        )
+                        ),
+                        "virtualization": self.pretty_name
                     }
                 )
             self.__logger.log_info(f"Finished collecting hosts from {dpc}.")
@@ -273,11 +279,11 @@ class OvirtHelper(VirtProtocol):
         
         Returns:
             VM list (dict): List of following parameters:
-            'ID', 'name', 'hostname', 'state', 'engine', 'host',
+            'UUID', 'name', 'hostname', 'state', 'IP', 'engine', 'host',
             'cluster', 'data_center', 'was_migrated', 'total_space',
-            'storage_domains', 'href'.
+            'storage_domains', 'href', 'virtualization'.
 
-        Function connects to every oVirt engine passed to class instance file 
+        Function connects to every oVirt engine passed to class instance file
         and returns data from all VMs as dictionary.
         Field list will be extended in the future.
         """
@@ -300,7 +306,7 @@ class OvirtHelper(VirtProtocol):
 
                 # Getting VM fields described in module docstring.
                 # ID
-                vm_data["ID"] = vm.id
+                vm_data["UUID"] = vm.id
 
                 # name
                 vm_data["name"] = vm.name
@@ -396,6 +402,8 @@ class OvirtHelper(VirtProtocol):
                     f"{cfg.DPC_URLS[dpc][:-3]}webadmin/?locale=en_US#"
                     f"vms-general;name={vm.name}"
                 )
+
+                vm_data["virtualization"] = self.pretty_name
 
                 result.append(vm_data)
             self.__logger.log_info(f"Finished collecting VMs from {dpc}.")

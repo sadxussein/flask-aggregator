@@ -4,7 +4,7 @@
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         
-        <title>oVirt host list</title>
+        <title>oVirt VM list</title>
 
         <link rel="stylesheet" href="{{ url_for('static', filename='css/jquery.dataTables.min.css') }}">
         <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css')}}">
@@ -15,26 +15,38 @@
     <body>
         {% include "header.html" %}
         <div class="container">
-            <table id="ovirt_host_list" class="display">
+            <table id="ovirt_vm_list" class="display">
                 <thead>
                     <tr>
-                        <th>ID</th>
+                        <th>UUID</th>
                         <th>name</th>
+                        <th>hostname</th>
+                        <th>state</th>
                         <th>IP</th>
                         <th>engine</th>
+                        <th>host</th>
                         <th>cluster</th>
-                        <th>data_center</th>
+                        <th>datacenter</th>
+                        <th>was_migrated</th>
+                        <th>total_space</th>
+                        <th>storage_domains</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for item in data %}
                     <tr>
-                        <th><a href="{{ item.href }}">{{ item.ID }}</a></th>
+                        <th><a href="{{ item.href }}">{{ item.UUID }}</a></th>
                         <th>{{ item.name }}</th>
+                        <th>{{ item.hostname }}</th>
+                        <th>{{ item.state }}</th>
                         <th>{{ item.IP }}</th>
                         <th>{{ item.engine }}</th>
-                        <th>{{ item.cluster }}</th>          
-                        <th>{{ item.data_center }}</th>   
+                        <th>{{ item.host }}</th>
+                        <th>{{ item.cluster }}</th>
+                        <th>{{ item.data_center }}</th>
+                        <th>{{ item.was_migrated }}</th> 
+                        <th>{{ item.total_space }}</th>
+                        <th>{{ item.storage_domains }}</th>               
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -43,7 +55,7 @@
         {% include "footer.html" %}
         <script>
             $(document).ready(function() {
-                $('#ovirt_host_list').DataTable({
+                $('#ovirt_vm_list').DataTable({
                     initComplete: function() {
                         this.api().columns().every(function () {
                             var column = this;
