@@ -4,7 +4,6 @@ import os
 import re
 import json
 import ipaddress
-from itertools import chain
 
 import yaml
 import pandas as pd
@@ -81,13 +80,8 @@ class FileHandler():
 
     def __create_folders(self) -> None:
         """Prepare necessary folder infrastructure for files operations."""
-        os.makedirs(cfg.ANSIBLE_DEFAULT_INVENTORIES_FOLDER, exist_ok=True)
-        os.makedirs(cfg.ANSIBLE_IPA_INVENTORIES_FOLDER, exist_ok=True)
-        os.makedirs(cfg.VM_CONFIGS_FOLDER, exist_ok=True)
         os.makedirs(cfg.VIRT_DATA_FOLDER, exist_ok=True)
         os.makedirs(cfg.LOGS_FOLDER, exist_ok=True)
-        os.makedirs(cfg.IPA_INTEGRATION_LOG_FOLDER, exist_ok=True)
-        os.makedirs(cfg.IPA_NETWORK_CHECK_LOG_FOLDER, exist_ok=True)
 
     def make_unique_vlan_configs(self) -> None:
         """In order to create VLANs it is better to get a set of unique

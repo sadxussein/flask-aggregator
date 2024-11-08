@@ -8,6 +8,9 @@ from .ovirt_helper import OvirtHelper
 from .file_handler import FileHandler
 from .logger import Logger
 from . import config as cfg
+from .sqlite_handler import SQLiteHandler
+from .dbmanager import DBManager
+from .models import Vm, Host, Cluster, Storage, DataCenter
 
 class VirtAggregator():
     """Operate different virtualizations automation."""
@@ -34,9 +37,7 @@ class VirtAggregator():
         for virt_helper in self.__virt_helpers:
             virt_helper.disconnect_from_virtualization()
 
-    def run_data_collection(self,
-            file_handler: FileHandler
-        ) -> None:
+    def run_data_collection(self) -> None:
         """Gathering data from virtualizations.
         
         Args:
@@ -54,7 +55,7 @@ class VirtAggregator():
 
         # 2. Run threads to gather info from virtualizations.
         with ThreadPoolExecutor(
-            max_workers=40, thread_name_prefix="collector"
+            max_workers=100, thread_name_prefix="collector"
         ) as executor:
             for virt_helper in self.__virt_helpers:
                 # Select only getter functions.
@@ -63,8 +64,8 @@ class VirtAggregator():
                 ]
                 for function_name in virt_protocol_functions:
                     futures.append(
-                        executor.submit(self.__get_virt_info, virt_helper,
-                                        function_name, file_handler
+                        executor.submit(
+                            self.__get_virt_info, virt_helper, function_name
                         )
                     )
             for future in futures:
@@ -73,24 +74,106 @@ class VirtAggregator():
         # 3. Close connections with virtualizations safely.
         self.__disconnect_from_virtualizations()
 
-    def __get_virt_info(self,
-                     virt_helper: VirtProtocol,
-                     function_name: str,
-                     file_handler: FileHandler
-                     ) -> None:
+    def __get_virt_info(
+        self, virt_helper: VirtProtocol, function_name: str
+    ) -> None:
         """Get certain info from virtualization based on function name."""
         dpcs = '_'.join(virt_helper.dpc_list)
-        entity = function_name.removeprefix("get_")
+        # Get table name by removing get_ prefix from function.
+        table = function_name.removeprefix("get_")
         self.__logger.log_debug(f"Started thread {dpcs}-{function_name}.")
-        file_handler.collect_data(
-            # Call getter function from VirtProtocol class, such as
-            # ovirt_helper.get_vms(). It returns list type variable as result.
-            getattr(virt_helper, function_name)(),
-            # Since funtion name should always be in type of 'get_entity' we
-            # can easily parse it to get entity name.
-            f"{virt_helper.pretty_name}_{dpcs}_{entity}"
-        )
+        dbmanager = DBManager()
+        raw_data = getattr(virt_helper, function_name)()
+        data = []
+        if table == "vms":
+            for el in raw_data:
+                data.append(Vm(**el))
+        elif table == "hosts":
+            for el in raw_data:
+                data.append(Host(**el))
+        elif table == "clusters":
+            for el in raw_data:
+                data.append(Cluster(**el))
+        elif table == "storages":
+            for el in raw_data:
+                data.append(Storage(**el))
+        elif table == "data_centers":
+            for el in raw_data:
+                data.append(DataCenter(**el))
+        dbmanager.add_data(data)
+        dbmanager.close()
+        # sqlite_handler = SQLiteHandler()
+        # sqlite_handler.insert_data(
+        #     table,
+        #     # Call getter function from VirtProtocol class, such as
+        #     # ovirt_helper.get_vms(). It returns list type variable as result.
+        #     getattr(virt_helper, function_name)()
+        # )
         self.__logger.log_debug(f"Finished thread {dpcs}-{function_name}.")
+
+    # def run_data_collection(self,
+    #         file_handler: FileHandler
+    #     ) -> None:
+    #     """Gathering data from virtualizations.
+        
+    #     Args:
+    #         virt_helpers (list): List of objects with their classes derived
+    #         from VirtProtocol.
+    #         file_handler (FileHandler): file handler.
+
+    #     Returns:
+    #         None
+    #     """
+    #     futures = []
+
+    #     # 1. Establish connections with all virtualization endpoints.
+    #     self.__connect_to_virtualizations()
+
+    #     # 2. Run threads to gather info from virtualizations.
+    #     with ThreadPoolExecutor(
+    #         max_workers=40, thread_name_prefix="collector"
+    #     ) as executor:
+    #         for virt_helper in self.__virt_helpers:
+    #             # Select only getter functions.
+    #             virt_protocol_functions = [
+    #                 f for f in dir(VirtProtocol) if f.startswith("get")
+    #             ]
+    #             for function_name in virt_protocol_functions:
+    #                 futures.append(
+    #                     executor.submit(self.__get_virt_info, virt_helper,
+    #                                     function_name, file_handler
+    #                     )
+    #                 )
+    #         for future in futures:
+    #             future.result()
+
+    #     # 3. Close connections with virtualizations safely.
+    #     self.__disconnect_from_virtualizations()
+
+    # def __get_virt_info(self,
+    #                  virt_helper: VirtProtocol,
+    #                  function_name: str,
+    #                  file_handler: FileHandler
+    #                  ) -> None:
+    #     """Get certain info from virtualization based on function name."""
+    #     dpcs = '_'.join(virt_helper.dpc_list)
+    #     entity = function_name.removeprefix("get_")
+    #     self.__logger.log_debug(f"Started thread {dpcs}-{function_name}.")
+    #     file_handler.collect_data(
+    #         # Call getter function from VirtProtocol class, such as
+    #         # ovirt_helper.get_vms(). It returns list type variable as result.
+    #         getattr(virt_helper, function_name)(),
+    #         # Since funtion name should always be in type of 'get_entity' we
+    #         # can easily parse it to get entity name.
+    #         f"{virt_helper.pretty_name}_{dpcs}_{entity}"
+    #     )
+    #     self.__logger.log_debug(f"Finished thread {dpcs}-{function_name}.")
+
+    # def __save_data_to_db(self, data: list, table: str) -> None:
+    #     """Save data directly to database from virt helpers getter
+    #     functions.
+    #     """
+    #     self.__
 
     def create_vms(self, file_handler: FileHandler) -> None:
         """Creating VMs with configs stored in JSON files."""

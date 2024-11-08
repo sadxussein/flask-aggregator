@@ -30,3 +30,7 @@ header nav ul li a:hover {
 header nav ul li a:active {
     background-color: #003f7f;
 }
+
+.error {
+    color: red;
+}

@@ -75,12 +75,18 @@ class SQLiteHandler():
         # Storages table.
         cursor.execute(
             """
-                CREATE TABLE IF NOT EXISTS clusters (
+                CREATE TABLE IF NOT EXISTS storages (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     uuid UUID UNIQUE,
                     name TEXT,
-                    comment TEXT,
                     engine TEXT,
+                    data_center TEXT,
+                    available FLOAT,
+                    used FLOAT,
+                    committed FLOAT,
+                    total FLOAT,
+                    percent_left FLOAT,
+                    overprovisioning FLOAT,
                     href TEXT,
                     virtualization TEXT
                 )
@@ -89,7 +95,7 @@ class SQLiteHandler():
         # Data centers table.
         cursor.execute(
             """
-                CREATE TABLE IF NOT EXISTS clusters (
+                CREATE TABLE IF NOT EXISTS data_centers (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     uuid UUID UNIQUE,
                     name TEXT,
@@ -115,8 +121,15 @@ class SQLiteHandler():
         for element in data:
             keys = ", ".join(element.keys())
             values = ", :".join(element.keys())
+            update_clause = ", ".join(
+                [
+                    f"{key} = excluded.{key}" for key 
+                    in element.keys() if key != "UUID"
+                ]
+            )
             cursor.execute(
-                f"INSERT INTO {table} ({keys}) VALUES (:{values})",
+                f"INSERT INTO {table} ({keys}) VALUES (:{values})"
+                f"ON CONFLICT(UUID) DO UPDATE SET {update_clause}",
                 element
             )
             self.__conn.commit()
@@ -139,10 +152,11 @@ class SQLiteHandler():
         query_conditions = []
         query_params = []
         # Getting info from target table.
-        for k, v in filters.items():
-            if v:
-                query_conditions.append(f"{k} LIKE ?")
-                query_params.append(f"%{v}%")
+        if filters:
+            for k, v in filters.items():
+                if v:
+                    query_conditions.append(f"{k} LIKE ?")
+                    query_params.append(f"%{v}%")
         if query_conditions:
             query += " WHERE " + " AND ".join(query_conditions)
         cursor.execute(query, query_params)

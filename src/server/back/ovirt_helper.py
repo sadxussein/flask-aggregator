@@ -106,7 +106,7 @@ class OvirtHelper(VirtProtocol):
         
         Returns:
             data center list (dict): List of following parameters:
-            'UUID', 'name', 'engine', 'comment', 'href', 'virtualization'.
+            'uuid', 'name', 'engine', 'comment', 'href', 'virtualization'.
 
         Field 'comment' is quite important for selecting proper template
         for VM. The currenct list of comments is: 'K8S', 'PRC' (processing), 
@@ -123,7 +123,7 @@ class OvirtHelper(VirtProtocol):
                 connection.system_service().data_centers_service().list()
             ):
                 result.append({
-                    "UUID": data_center.id,
+                    "uuid": data_center.id,
                     "name": data_center.name,
                     "engine": dpc,
                     "comment": data_center.comment,
@@ -143,7 +143,7 @@ class OvirtHelper(VirtProtocol):
 
         Returns:
             storage domain list (dict): List of following parameters:
-            'UUID', 'name', 'engine', 'data_center', 'available', 'used', 
+            'uuid', 'name', 'engine', 'data_center', 'available', 'used', 
             'committed', 'total', 'percent_left', 'overprovisioning',
             'href', 'virtualization'.
         """
@@ -165,7 +165,7 @@ class OvirtHelper(VirtProtocol):
                         )
                         data_centers.add(data_center.name)
                     result.append({
-                        "UUID": domain.id,
+                        "uuid": domain.id,
                         "name": domain.name,
                         "engine": dpc,
                         "data_center": ' '.join(data_centers),
@@ -195,7 +195,7 @@ class OvirtHelper(VirtProtocol):
     
         Returns:
             cluster list (dict): List of following parameters:
-            'UUID', 'name', 'engine', 'description', 'data_center', 'href',
+            'uuid', 'name', 'engine', 'description', 'data_center', 'href',
             'virtualization'.
         """
         self.__rename_thread()
@@ -212,7 +212,7 @@ class OvirtHelper(VirtProtocol):
                 ).get()
                 result.append(
                     {
-                        "name": cluster.name, "UUID": cluster.id,
+                        "name": cluster.name, "uuid": cluster.id,
                         "engine": dpc, "description": cluster.description,
                         "data_center": data_center.name,
                         "href": (
@@ -230,7 +230,7 @@ class OvirtHelper(VirtProtocol):
         
         Returns:
             host list (dict): List of following parameters:
-            'UUID', 'name', 'cluster', 'IP', 'engine', 'href'.
+            'uuid', 'name', 'cluster', 'IP', 'engine', 'href'.
         """
         self.__rename_thread()
         result = []
@@ -258,11 +258,11 @@ class OvirtHelper(VirtProtocol):
                             ip = nic.ip.address
                 result.append(
                     {
-                        "UUID": host.id,
+                        "uuid": host.id,
                         "name": host.name, 
                         "cluster": cluster.name, 
                         "data_center": data_center.name,
-                        "IP": ip,
+                        "ip": ip,
                         "engine": dpc,
                         "href": (
                             f"{cfg.DPC_URLS[dpc][:-3]}webadmin/?locale=en_US#"
@@ -279,7 +279,7 @@ class OvirtHelper(VirtProtocol):
         
         Returns:
             VM list (dict): List of following parameters:
-            'UUID', 'name', 'hostname', 'state', 'IP', 'engine', 'host',
+            'uuid', 'name', 'hostname', 'state', 'IP', 'engine', 'host',
             'cluster', 'data_center', 'was_migrated', 'total_space',
             'storage_domains', 'href', 'virtualization'.
 
@@ -306,7 +306,7 @@ class OvirtHelper(VirtProtocol):
 
                 # Getting VM fields described in module docstring.
                 # ID
-                vm_data["UUID"] = vm.id
+                vm_data["uuid"] = vm.id
 
                 # name
                 vm_data["name"] = vm.name
@@ -327,9 +327,9 @@ class OvirtHelper(VirtProtocol):
                     if device.ips:
                         for ip in device.ips:
                             if ip.version == sdk.types.IpVersion.V4:
-                                vm_data["IP"] = ip.address
+                                vm_data["ip"] = ip.address
                     else:
-                        vm_data["IP"] = ''
+                        vm_data["ip"] = ''
 
                 # engine
                 vm_data["engine"] = dpc
@@ -364,9 +364,9 @@ class OvirtHelper(VirtProtocol):
 
                 # was_migrated
                 if "Migrated by IntelSource" in vm.description:
-                    vm_data["was_migrated"] = "True"
+                    vm_data["was_migrated"] = True
                 else:
-                    vm_data["was_migrated"] = ""
+                    vm_data["was_migrated"] = False
 
                 # Calculating VM total disks usage and storage domains.
                 vm_data["total_space"] = 0
@@ -380,19 +380,28 @@ class OvirtHelper(VirtProtocol):
                         if disk:    # TODO: check questionable logic below.
                             try:
                                 vm_data["total_space"] = (
-                                    vm_data["total_space"] + disk.total_size / 1024 ** 3
+                                    vm_data["total_space"]
+                                    + disk.total_size / 1024 ** 3
                                 )
                             except TypeError as e:
                                 self.__logger.log_error(f"{disk.id}: {e}.")
                             finally:
                                 vm_data["total_space"] = 0
-                            for sd in disk.storage_domains:
-                                storage_domain = (
-                                    system_service.storage_domains_service()
-                                    .storage_domain_service(sd.id).get()
-                                )
-                                vm_data["storage_domains"].add(
-                                    storage_domain.name
+                            try:
+                                for sd in disk.storage_domains:
+                                    storage_domain = (
+                                        system_service
+                                        .storage_domains_service()
+                                        .storage_domain_service(sd.id).get()
+                                    )
+                                    vm_data["storage_domains"].add(
+                                        storage_domain.name
+                                    )
+                            except FileNotFoundError as e:
+                                self.__logger.log_error(e)
+                            except TypeError as e:
+                                self.__logger.log_error(
+                                    f"Error with disk of VM {vm.name}: {e}"
                                 )
                 vm_data["storage_domains"] = '\n'.join(
                     vm_data["storage_domains"]
