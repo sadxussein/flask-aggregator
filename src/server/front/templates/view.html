@@ -48,5 +48,26 @@
     {% if page < total_pages %}
         <a href="{{ get_pagination_url(page + 1) }}">Next</a>
     {% endif %}
+    <hr>
+    <label for="perPage">Elements per page:</label>
+    <select id="perPage" onchange="updatePerPage()">
+        <option value="10">10</option>
+        <option value="25">25</option>
+        <option value="50">50</option>
+        <option value="100">100</option>
+    </select>
 </div>
+{% endblock %}
+
+{% block script %}
+<script>
+    const perPage = "{{ per_page }}";
+    document.getElementById("perPage").value = perPage;
+    function updatePerPage() {        
+        const selectedValue = document.getElementById("perPage").value;
+        const currentUrl = new URL(window.location.href);
+        currentUrl.searchParams.set('per_page', selectedValue);
+        window.location.href = currentUrl.toString();
+    }
+</script>
 {% endblock %}
