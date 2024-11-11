@@ -60,9 +60,10 @@ class FlaskAggregator():
             if model is None:
                 abort(404, description=f"Table {model_name} not found.")
             page = request.args.get("page", 1, type=int)
-            per_page = request.args.get("per_page", 10, type=int)
+            per_page = request.args.get("per_page", 100, type=int)
             dbmanager = DBManager()
-            filters = {
+            fields = self.DB_MODELS[model_name].get_columns_order()
+            filters = { # TODO: make filters unique for each model
                 "name": request.args.get("name"),
                 "engine": request.args.get("engine")
             }
@@ -80,7 +81,8 @@ class FlaskAggregator():
                 "view.html", model_name=model_name, data=data,
                 filters=filters, title=model_name, page=page,
                 per_page=per_page, total_pages=total_pages,
-                get_pagination_url=get_pagination_url, getattr=getattr
+                get_pagination_url=get_pagination_url, getattr=getattr,
+                fields=fields
             )
 
         @self.__app.route("/ovirt/cluster_list/raw_json")
@@ -91,7 +93,7 @@ class FlaskAggregator():
             return jsonify(
                 data=data
             )
-        
+
         @self.__app.route("/ovirt/data_center_list/raw_json")
         def ovirt_data_center_raw_json():
             """Show data center list (raw JSON)."""

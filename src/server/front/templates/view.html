@@ -13,9 +13,9 @@
     <table id="{{ model_name }}" class="display">
         <thead>
             <tr>
-                {% for column in data[0].__table__.columns %}
-                    {% if column.name != "href" %}
-                        <th>{{ column.name }}</th>
+                {% for column in fields %}
+                    {% if column != "href" %}
+                        <th>{{ column }}</th>
                     {% endif %}
                 {% endfor %}
             </tr>
@@ -24,9 +24,9 @@
             {% for item in data %}
             <tr>
                 <td><a href="{{ item.href }}">{{ item.uuid }}</a></td>
-                {% for column in item.__table__.columns %}
-                    {% if column.name != "uuid" and column.name != "href" %}
-                        <td>{{ getattr(item, column.name) }}</td>
+                {% for column in fields %}
+                    {% if column != "uuid" and column != "href" %}
+                        <td>{{ getattr(item, column) }}</td>
                     {% endif %}
                 {% endfor %}
             </tr>

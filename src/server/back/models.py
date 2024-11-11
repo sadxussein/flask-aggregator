@@ -18,15 +18,10 @@ class OvirtEntity(Base):
     href = Column(String)
     virtualization = Column(String)
 
-    @property
-    def as_dict(self) -> dict:
-        """Get model as dictionary."""
-        return {c.name: getattr(self, c.name) for c in self.__table__.columns}
-    
-    @property
-    def column_names(self) -> list:
-        """Get field names."""
-        return [c.name for c in self.__table__.columns if c.table == self.__table__]
+    @staticmethod
+    def get_columns_order():
+        """Simply get starting order of columns of base class."""
+        return ["uuid", "name", "engine", "href", "virtualization"]
 
 class Vm(OvirtEntity):
     """oVirt VM model class."""
@@ -43,6 +38,14 @@ class Vm(OvirtEntity):
     total_space = Column(Float)
     storage_domains = Column(String)
 
+    @staticmethod
+    def get_columns_order():
+        """Get full order of columns."""
+        return OvirtEntity.get_columns_order() + [
+            "hostname", "state", "ip", "host", "state", "cluster",
+            "data_center", "was_migrated", "total_space", "storage_domains"
+        ]
+
 class Host(OvirtEntity):
     """oVirt host model class."""
     __tablename__ = "hosts"
@@ -51,6 +54,13 @@ class Host(OvirtEntity):
     cluster = Column(String)
     data_center = Column(String)
 
+    @staticmethod
+    def get_columns_order():
+        """Get full order of columns."""
+        return OvirtEntity.get_columns_order() + [
+            "ip", "cluster", "data_center"
+        ]
+
 class Cluster(OvirtEntity):
     """oVirt cluster model class."""
     __tablename__ = "clusters"
@@ -58,6 +68,13 @@ class Cluster(OvirtEntity):
     data_center = Column(String)
     comment = Column(String)
     description = Column(String)
+
+    @staticmethod
+    def get_columns_order():
+        """Get full order of columns."""
+        return OvirtEntity.get_columns_order() + [
+            "data_center", "comment", "description"
+        ]
 
 class Storage(OvirtEntity):
     """oVirt storage model class."""
@@ -71,11 +88,26 @@ class Storage(OvirtEntity):
     percent_left = Column(Float)
     overprovisioning = Column(Float)
 
+    @staticmethod
+    def get_columns_order():
+        """Get full order of columns."""
+        return OvirtEntity.get_columns_order() + [
+            "data_center", "available", "used", "committed", "total",
+            "percent_left", "overprovisioning"
+        ]
+
 class DataCenter(OvirtEntity):
     """oVirt data center model class."""
     __tablename__ = "data_centers"
 
     comment = Column(String)
+
+    @staticmethod
+    def get_columns_order():
+        """Get full order of columns."""
+        return OvirtEntity.get_columns_order() + [
+            "comment"
+        ]
 
 def get_engine(db_url):
     """Return corresponding engine to database manager class."""

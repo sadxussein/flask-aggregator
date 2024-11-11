@@ -54,7 +54,6 @@ class DBManager():
         total_items = query.count()
         query = query.offset((page - 1) * per_page).limit(per_page)
         data = query.all()
-        print("EXAMPLE DATA", data[0])
         session.close()
         return (total_items, data)
 
