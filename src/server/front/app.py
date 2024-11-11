@@ -5,6 +5,7 @@ Used primarily for aggregating oVirt information.
 
 import json
 import os
+from urllib.parse import urlencode
 
 from flask import (
     Flask, request, render_template, jsonify, flash, redirect, url_for, abort
@@ -49,13 +50,6 @@ class FlaskAggregator():
                 return redirect(url_for('vms'))
             return render_template("login.html", form=form)
 
-        @self.__app.route("/ovirt")
-        def ovirt_index():
-            """oVirt index page."""
-            return '''
-                <h1>oVirt index page.</h1>
-            '''
-
         @self.__app.route("/view/<model_name>")
         def view(model_name):
             """Show model list from database.
@@ -69,66 +63,42 @@ class FlaskAggregator():
             per_page = request.args.get("per_page", 10, type=int)
             dbmanager = DBManager()
             filters = {
-                "uuid": request.args.get("uuid"),
                 "name": request.args.get("name"),
-                "ip": request.args.get("ip")
+                "engine": request.args.get("engine")
             }
-            data = dbmanager.get_paginated_data(model, page, per_page)
-            data_count = dbmanager.get_data_count(model)
+            data_count, data = dbmanager.get_paginated_data(
+                model, page, per_page, filters
+            )
             total_pages = (data_count + per_page - 1) // per_page
-            return render_template(
-                f"{model_name}.html", model_name=model_name, data=data, 
-                filters=filters,title="VMs", page=page, per_page=per_page,
-                total_pages=total_pages
-            )
 
-        @self.__app.route("/ovirt/host_list")
-        def ovirt_host_list():
-            """Show host list."""
-            file_handler = FileHandler()
-            file_handler.get_group_data("hosts")
-            return render_template(
-                "ovirt_host_list.html",
-                data=file_handler.file_data["hosts"]
-            )
+            def get_pagination_url(page: int) -> str:
+                args = request.args.to_dict()
+                args["page"] = page
+                return f"/view/{model_name}?{urlencode(args)}"
 
-        @self.__app.route("/ovirt/cluster_list")
-        def ovirt_cluster_list():
-            """Show cluster list."""
-            file_handler = FileHandler()
-            file_handler.get_group_data("clusters")
             return render_template(
-                "ovirt_cluster_list.html",
-                data=file_handler.file_data["clusters"]
+                "view.html", model_name=model_name, data=data,
+                filters=filters, title=model_name, page=page,
+                per_page=per_page, total_pages=total_pages,
+                get_pagination_url=get_pagination_url, getattr=getattr
             )
 
         @self.__app.route("/ovirt/cluster_list/raw_json")
         def ovirt_cluster_raw_json():
             """Show cluster list (raw JSON)."""
-            file_handler = FileHandler()
-            file_handler.get_group_data("clusters")
+            dbmanager = DBManager()
+            data = dbmanager.get_all_data_as_dict(Cluster)
             return jsonify(
-                data=file_handler.file_data["clusters"]
+                data=data
             )
-
-        @self.__app.route("/ovirt/storage_domain_list")
-        def ovirt_storage_domain_list():
-            """Show storage domain list."""
-            file_handler = FileHandler()
-            file_handler.get_group_data("storages")
-            return render_template(
-                "ovirt_storage_domain_list.html",
-                data=file_handler.file_data["storages"]
-            )
-
-        @self.__app.route("/ovirt/data_center_list")
-        def ovirt_data_center_list():
-            """Show storage domain list."""
-            file_handler = FileHandler()
-            file_handler.get_group_data("data_centers")
-            return render_template(
-                "ovirt_data_center_list.html",
-                data=file_handler.file_data["data_centers"]
+        
+        @self.__app.route("/ovirt/data_center_list/raw_json")
+        def ovirt_data_center_raw_json():
+            """Show data center list (raw JSON)."""
+            dbmanager = DBManager()
+            data = dbmanager.get_all_data_as_dict(DataCenter)
+            return jsonify(
+                data=data
             )
 
         @self.__app.route("/ovirt/create_vm", methods=["POST"])

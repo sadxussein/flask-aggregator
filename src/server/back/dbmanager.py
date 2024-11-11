@@ -1,7 +1,7 @@
 """Database interactions module."""
 
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, scoped_session
+from sqlalchemy.orm import sessionmaker, scoped_session, Query
 from sqlalchemy.exc import IntegrityError
 from .models import Base
 from .logger import Logger
@@ -44,33 +44,38 @@ class DBManager():
             finally:
                 session.close()
 
-    def get_all_data(self, table_type) -> list:
-        """Get all data from specified table by type."""
-        session = self.__session()
-        data = session.query(table_type).all()
-        session.close()
-        return data
-
-    def get_paginated_data(self, table_type, page, per_page) -> list:
-        """Get all data from specified table by type, paginated."""
-        session = self.__session()
-        data = (
-            session.query(table_type)
-            .offset((page - 1) * per_page)
-            .limit(per_page)
-        )
-        data = data.all()
-        session.close()
-        return data
-
-    def get_data_count(self, table_type) -> int:
-        """Number of lines in selected table.
-
-        Takes class name as an argument.
+    def get_paginated_data(self, table_type, page, per_page, filters) -> tuple:
+        """Get all data from specified table by type, paginated.
+        Also get item count.
         """
         session = self.__session()
-        count = session.query(table_type).count()
-        return count
+        query = session.query(table_type)
+        query = self.__apply_filters(query, table_type, filters)
+        total_items = query.count()
+        query = query.offset((page - 1) * per_page).limit(per_page)
+        data = query.all()
+        print("EXAMPLE DATA", data[0])
+        session.close()
+        return (total_items, data)
+
+    def get_all_data_as_dict(self, table_type) -> dict:
+        """For """
+        session = self.__session()
+        data = session.query(table_type).all()
+        dict_data = [d.as_dict for d in data]
+        session.close()
+        return dict_data
+
+    def __apply_filters(
+        self, query: Query, table_type: any, filters: dict
+    ) -> Query:
+        """Apply query filters."""
+        for k, v in filters.items():
+            if v != '' and v is not None:
+                column = getattr(table_type, k, None)
+                if column is not None:
+                    query = query.filter(column.like(f"%{v}%"))
+        return query
 
     def close(self):
         """Clean up and close."""

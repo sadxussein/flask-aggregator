@@ -8,7 +8,6 @@ from .ovirt_helper import OvirtHelper
 from .file_handler import FileHandler
 from .logger import Logger
 from . import config as cfg
-from .sqlite_handler import SQLiteHandler
 from .dbmanager import DBManager
 from .models import Vm, Host, Cluster, Storage, DataCenter
 

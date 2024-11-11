@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% block content %}
-<form method="get" action="/view/vms">
+<form method="get" action="/view/{{ model_name }}">
     {% for key in filters.keys() %}
         <label for="{{ key }}">{{ key }}:</label>
         <input type="text" id="{{ key }}" name="{{ key }}" value="{{ filters[key] or '' }}">
@@ -10,40 +10,25 @@
 </form>
 <hr>
 <div class="container">
-    <table id="vms" class="display">
+    <table id="{{ model_name }}" class="display">
         <thead>
             <tr>
-                <th>UUID</th>
-                <th>name</th>
-                <th>hostname</th>
-                <th>state</th>
-                <th>IP</th>
-                <th>engine</th>
-                <th>host</th>
-                <th>cluster</th>
-                <th>datacenter</th>
-                <th>was_migrated</th>
-                <th>total_space</th>
-                <th>storage_domains</th>
-                <th>virtualization</th>
+                {% for column in data[0].__table__.columns %}
+                    {% if column.name != "href" %}
+                        <th>{{ column.name }}</th>
+                    {% endif %}
+                {% endfor %}
             </tr>
         </thead>
         <tbody>
             {% for item in data %}
             <tr>
                 <td><a href="{{ item.href }}">{{ item.uuid }}</a></td>
-                <td>{{ item.name }}</td>
-                <td>{{ item.hostname }}</td>
-                <td>{{ item.state }}</td>
-                <td>{{ item.ip }}</td>
-                <td>{{ item.engine }}</td>
-                <td>{{ item.host }}</td>
-                <td>{{ item.cluster }}</td>
-                <td>{{ item.data_center }}</td>
-                <td>{{ item.was_migrated }}</td>
-                <td>{{ item.total_space }}</td>
-                <td>{{ item.storage_domains }}</td>
-                <td>{{ item.virtualization }}</td>                
+                {% for column in item.__table__.columns %}
+                    {% if column.name != "uuid" and column.name != "href" %}
+                        <td>{{ getattr(item, column.name) }}</td>
+                    {% endif %}
+                {% endfor %}
             </tr>
             {% endfor %}
         </tbody>

@@ -7,8 +7,10 @@ from sqlalchemy.ext.declarative import declarative_base
 
 Base = declarative_base()
 
-class OvirtEntity():
+class OvirtEntity(Base):
     """Base class for every oVirt entity."""
+    __abstract__ = True
+
     id = Column(Integer, primary_key=True)
     uuid = Column(UUID, unique=True, nullable=False)
     name = Column(String)
@@ -16,7 +18,17 @@ class OvirtEntity():
     href = Column(String)
     virtualization = Column(String)
 
-class Vm(Base, OvirtEntity):
+    @property
+    def as_dict(self) -> dict:
+        """Get model as dictionary."""
+        return {c.name: getattr(self, c.name) for c in self.__table__.columns}
+    
+    @property
+    def column_names(self) -> list:
+        """Get field names."""
+        return [c.name for c in self.__table__.columns if c.table == self.__table__]
+
+class Vm(OvirtEntity):
     """oVirt VM model class."""
     __tablename__ = "vms"
 
@@ -31,7 +43,7 @@ class Vm(Base, OvirtEntity):
     total_space = Column(Float)
     storage_domains = Column(String)
 
-class Host(Base, OvirtEntity):
+class Host(OvirtEntity):
     """oVirt host model class."""
     __tablename__ = "hosts"
 
@@ -39,14 +51,15 @@ class Host(Base, OvirtEntity):
     cluster = Column(String)
     data_center = Column(String)
 
-class Cluster(Base, OvirtEntity):
+class Cluster(OvirtEntity):
     """oVirt cluster model class."""
     __tablename__ = "clusters"
 
     data_center = Column(String)
+    comment = Column(String)
     description = Column(String)
 
-class Storage(Base, OvirtEntity):
+class Storage(OvirtEntity):
     """oVirt storage model class."""
     __tablename__ = "storages"
 
@@ -58,7 +71,7 @@ class Storage(Base, OvirtEntity):
     percent_left = Column(Float)
     overprovisioning = Column(Float)
 
-class DataCenter(Base, OvirtEntity):
+class DataCenter(OvirtEntity):
     """oVirt data center model class."""
     __tablename__ = "data_centers"
 

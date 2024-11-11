@@ -4,13 +4,14 @@ import os
 import re
 import json
 import ipaddress
+import requests
 
 import yaml
 import pandas as pd
 
 from . import config as cfg
 
-class FileHandler():
+class Parser():
     """Handle files."""
     def __init__(self):
         self.__file_data = {}
@@ -51,23 +52,23 @@ class FileHandler():
     def input_json(self, input_json):
         self.__input_json = input_json
 
-    def collect_data(self, data: list, file_name: str) -> None:
-        """Collect data from all virtualization sources.
+    # def collect_data(self, data: list, file_name: str) -> None:
+    #     """Collect data from all virtualization sources.
         
-        Args:
-            data (list): Returned from VirtProtocol classes getter functions,
-                such as ovirt_helper.get_vms(). Always should be a list of
-                dicts.
-            file_name (str): What name will be used for file, which stores
-                `data` values.
+    #     Args:
+    #         data (list): Returned from VirtProtocol classes getter functions,
+    #             such as ovirt_helper.get_vms(). Always should be a list of
+    #             dicts.
+    #         file_name (str): What name will be used for file, which stores
+    #             `data` values.
 
-        What this function does is simply collects dictionary with keys as 
-        file names and values as lists of dicts.
-        """
-        if file_name in self.__file_data:
-            self.__file_data[file_name] = self.__file_data[file_name] + data
-        else:
-            self.__file_data[file_name] = data
+    #     What this function does is simply collects dictionary with keys as 
+    #     file names and values as lists of dicts.
+    #     """
+    #     if file_name in self.__file_data:
+    #         self.__file_data[file_name] = self.__file_data[file_name] + data
+    #     else:
+    #         self.__file_data[file_name] = data
 
     def save_data_to_json_files(self, target_folder: str) -> None:
         """Save info from function to JSON file."""
@@ -86,6 +87,12 @@ class FileHandler():
         os.makedirs(cfg.EXCEL_FILES_FOLDER, exist_ok=True)
         os.makedirs(cfg.ANSIBLE_DEFAULT_INVENTORIES_FOLDER, exist_ok=True)
         os.makedirs(cfg.ANSIBLE_IPA_INVENTORIES_FOLDER, exist_ok=True)
+        os.makedirs(
+            f"{cfg.ANSIBLE_IPA_INVENTORIES_FOLDER}/internal", exist_ok=True
+        )
+        os.makedirs(
+            f"{cfg.ANSIBLE_IPA_INVENTORIES_FOLDER}/dmz", exist_ok=True
+        )
         os.makedirs(cfg.VM_CONFIGS_FOLDER, exist_ok=True)
         os.makedirs(cfg.IPA_INTEGRATION_LOG_FOLDER, exist_ok=True)
         os.makedirs(cfg.IPA_NETWORK_CHECK_LOG_FOLDER, exist_ok=True)
@@ -125,32 +132,32 @@ class FileHandler():
             dpc_set.add(config["ovirt"]["engine"])
         self.__dpc_list = list(dpc_set)
 
-    def __get_dict_from_json_file(self, file_path: str) -> list:
-        """Open file and return dict.
+    # def __get_dict_from_json_file(self, file_path: str) -> list:
+    #     """Open file and return dict.
         
-        Args:
-            file_path (str): File path.
+    #     Args:
+    #         file_path (str): File path.
 
-        Returns:
-            (dict): File contents.
-        """
-        with open(file_path, 'r', encoding="utf-8") as file:
-            return json.load(file)
+    #     Returns:
+    #         (dict): File contents.
+    #     """
+    #     with open(file_path, 'r', encoding="utf-8") as file:
+    #         return json.load(file)
 
-    def get_group_data(self, data_group: str) -> None:
-        """Get data from virt group, e.g. VMs, clusters, etc."""
-        for root, dirs, files in os.walk(f"{cfg.VIRT_DATA_FOLDER}"):
-            for file in files:
-                if data_group in file:
-                    data = self.__get_dict_from_json_file(
-                        os.path.join(root, file)
-                    )
-                    if data_group in self.__file_data:
-                        self.__file_data[data_group] = (
-                            self.__file_data[data_group] + data
-                        )
-                    else:
-                        self.__file_data[data_group] = data
+    # def get_group_data(self, data_group: str) -> None:
+    #     """Get data from virt group, e.g. VMs, clusters, etc."""
+    #     for root, dirs, files in os.walk(f"{cfg.VIRT_DATA_FOLDER}"):
+    #         for file in files:
+    #             if data_group in file:
+    #                 data = self.__get_dict_from_json_file(
+    #                     os.path.join(root, file)
+    #                 )
+    #                 if data_group in self.__file_data:
+    #                     self.__file_data[data_group] = (
+    #                         self.__file_data[data_group] + data
+    #                     )
+    #                 else:
+    #                     self.__file_data[data_group] = data
 
     def __parse_vm_configs_from_excel(self, excel_file: str) -> list:
         """Parse ELMA excel file and return valid JSON VM config file.
@@ -160,6 +167,11 @@ class FileHandler():
         """
         result = []
         document_nums = set()
+
+        response = requests.get(f"http://{cfg.SERVER_IP}:{cfg.SERVER_PORT}/ovirt/cluster_list/raw_json")
+        clusters = response.json()
+        response = requests.get(f"http://{cfg.SERVER_IP}:{cfg.SERVER_PORT}/ovirt/data_center_list/raw_json")
+        data_centers = response.json()
 
         # Get VM info from excel file. Skip first two rows, which contain
         # meta information about VM.
@@ -277,13 +289,6 @@ class FileHandler():
                 else:
                     config["vlan"]["suffix"] = ''
 
-                # Now to setup values which depend on other values.
-                clusters = self.__get_dict_from_json_file(
-                    f"{cfg.VIRT_DATA_FOLDER}/ovirt_{config['ovirt']['engine']}_clusters.json"
-                )
-                data_centers = self.__get_dict_from_json_file(
-                    f"{cfg.VIRT_DATA_FOLDER}/ovirt_{config['ovirt']['engine']}_data_centers.json"
-                )
                 # Defining cluster. So far we have logic for DBO, processing
                 # and old processing clusters.
                 if "dbo-" in config["vm"]["name"]:
@@ -296,9 +301,25 @@ class FileHandler():
                 # (always with "The default server cluster" in its
                 # description).
                 else:
-                    config["ovirt"]["cluster"] = next((cluster["name"] for cluster in clusters if "The default server cluster" in cluster["description"] and config["ovirt"]["engine"] == cluster["engine"]), None)
-                    config["ovirt"]["data_center"] = next((cluster["data_center"] for cluster in clusters if "The default server cluster" in cluster["description"] and config["ovirt"]["engine"] == cluster["engine"]), None)
-
+                    config["ovirt"]["cluster"] = next(
+                        (
+                            cluster["name"] for cluster in clusters["data"]
+                            if "The default server cluster"
+                            in cluster["description"]
+                            and config["ovirt"]["engine"] == cluster["engine"]
+                        ),
+                        None
+                    )
+                    config["ovirt"]["data_center"] = next(
+                        (
+                            cluster["data_center"] for cluster
+                            in clusters["data"] 
+                            if "The default server cluster"
+                            in cluster["description"]
+                            and config["ovirt"]["engine"] == cluster["engine"]
+                        ),
+                        None
+                    )
                 # Setting up host (hypervisor) NIC.
                 if config["vlan"]["id"] in cfg.DBO_VLANS:
                     if config["ovirt"]["engine"] == "e15":
@@ -320,16 +341,16 @@ class FileHandler():
                 config["ovirt"]["storage_domain"] = self.__get_vm_storage_domain(config)
 
                 template_prefix = ''
-                for dc in data_centers:
+                for dc in data_centers["data"]:
                     if dc["name"] == config["ovirt"]["data_center"] and dc["comment"] is not None:
                         template_prefix = f"_{dc['comment']}"
 
                 if config["vm"]["os"] == "RedOS 8":
-                    config["vm"]["template"] = "template-packer-redos8-03092024" + template_prefix
+                    config["vm"]["template"] = "template-packer-redos8-02112024" + template_prefix
                 elif config["vm"]["os"] == "RedOS7.3":
-                    config["vm"]["template"] = "template-redos7-29072024" + template_prefix
+                    config["vm"]["template"] = "template-redos7-06112024" + template_prefix
                 elif config["vm"]["os"] == "Астра Линукс 1.7 Воронеж":
-                    config["vm"]["template"] = "template-packer-astra-04092024" + template_prefix
+                    config["vm"]["template"] = "template-packer-astra-174-05112024" + template_prefix
 
                 result.append(config)
         return result

@@ -5,4 +5,6 @@ test.py
 *.xlsx
 *.json
 *.log
+*.sh
+*.yml
 venv

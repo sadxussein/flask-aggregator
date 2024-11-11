@@ -157,13 +157,17 @@ class OvirtHelper(VirtProtocol):
             for domain in storage_domains_service.list():
                 if domain.name not in cfg.STORAGE_DOMAIN_EXCEPTIONS:
                     data_centers = set()
-                    for dc in domain.data_centers:
-                        data_center = (
-                            data_centers_service
-                            .data_center_service(dc.id)
-                            .get()
-                        )
-                        data_centers.add(data_center.name)
+                    try:
+                        for dc in domain.data_centers:
+                            data_center = (
+                                data_centers_service
+                                .data_center_service(dc.id)
+                                .get()
+                            )
+                            data_centers.add(data_center.name)
+                    except TypeError as e:
+                        self.__logger.log_error(e)
+                        data_centers.add('-')
                     result.append({
                         "uuid": domain.id,
                         "name": domain.name,
