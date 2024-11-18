@@ -19,7 +19,7 @@ class DBManager():
     )
 
     def __init__(self) -> None:
-        self.__engine = create_engine(self.DATABASE_URL, echo=True)
+        self.__engine = create_engine(self.DATABASE_URL)
         self.__session = scoped_session(sessionmaker(bind=self.__engine))
         Base.metadata.create_all(self.__engine)
         self.__logger = Logger()

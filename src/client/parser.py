@@ -52,24 +52,6 @@ class Parser():
     def input_json(self, input_json):
         self.__input_json = input_json
 
-    # def collect_data(self, data: list, file_name: str) -> None:
-    #     """Collect data from all virtualization sources.
-        
-    #     Args:
-    #         data (list): Returned from VirtProtocol classes getter functions,
-    #             such as ovirt_helper.get_vms(). Always should be a list of
-    #             dicts.
-    #         file_name (str): What name will be used for file, which stores
-    #             `data` values.
-
-    #     What this function does is simply collects dictionary with keys as 
-    #     file names and values as lists of dicts.
-    #     """
-    #     if file_name in self.__file_data:
-    #         self.__file_data[file_name] = self.__file_data[file_name] + data
-    #     else:
-    #         self.__file_data[file_name] = data
-
     def save_data_to_json_files(self, target_folder: str) -> None:
         """Save info from function to JSON file."""
         for file_name, data in self.__file_data.items():
@@ -132,33 +114,6 @@ class Parser():
             dpc_set.add(config["ovirt"]["engine"])
         self.__dpc_list = list(dpc_set)
 
-    # def __get_dict_from_json_file(self, file_path: str) -> list:
-    #     """Open file and return dict.
-        
-    #     Args:
-    #         file_path (str): File path.
-
-    #     Returns:
-    #         (dict): File contents.
-    #     """
-    #     with open(file_path, 'r', encoding="utf-8") as file:
-    #         return json.load(file)
-
-    # def get_group_data(self, data_group: str) -> None:
-    #     """Get data from virt group, e.g. VMs, clusters, etc."""
-    #     for root, dirs, files in os.walk(f"{cfg.VIRT_DATA_FOLDER}"):
-    #         for file in files:
-    #             if data_group in file:
-    #                 data = self.__get_dict_from_json_file(
-    #                     os.path.join(root, file)
-    #                 )
-    #                 if data_group in self.__file_data:
-    #                     self.__file_data[data_group] = (
-    #                         self.__file_data[data_group] + data
-    #                     )
-    #                 else:
-    #                     self.__file_data[data_group] = data
-
     def __parse_vm_configs_from_excel(self, excel_file: str) -> list:
         """Parse ELMA excel file and return valid JSON VM config file.
         
@@ -168,10 +123,16 @@ class Parser():
         result = []
         document_nums = set()
 
-        response = requests.get(f"http://{cfg.SERVER_IP}:{cfg.SERVER_PORT}/ovirt/cluster_list/raw_json")
-        clusters = response.json()
-        response = requests.get(f"http://{cfg.SERVER_IP}:{cfg.SERVER_PORT}/ovirt/data_center_list/raw_json")
-        data_centers = response.json()
+        response = requests.get(
+            f"http://{cfg.SERVER_IP}:{cfg.SERVER_PORT}"
+            "/ovirt/cluster_list/raw_json", timeout=30
+        )
+        clusters = response.json()["data"]
+        response = requests.get(
+            f"http://{cfg.SERVER_IP}:{cfg.SERVER_PORT}"
+            "/ovirt/data_center_list/raw_json", timeout=30
+        )
+        data_centers = response.json()["data"]
 
         # Get VM info from excel file. Skip first two rows, which contain
         # meta information about VM.
@@ -341,7 +302,7 @@ class Parser():
                 config["ovirt"]["storage_domain"] = self.__get_vm_storage_domain(config)
 
                 template_prefix = ''
-                for dc in data_centers["data"]:
+                for dc in data_centers:
                     if dc["name"] == config["ovirt"]["data_center"] and dc["comment"] is not None:
                         template_prefix = f"_{dc['comment']}"
 

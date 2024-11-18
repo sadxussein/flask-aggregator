@@ -60,7 +60,7 @@ class FlaskAggregator():
             if model is None:
                 abort(404, description=f"Table {model_name} not found.")
             page = request.args.get("page", 1, type=int)
-            per_page = request.args.get("per_page", 100, type=int)
+            per_page = request.args.get("per_page", 10, type=int)
             dbmanager = DBManager()
             fields = self.DB_MODELS[model_name].get_columns_order()
             filters = { # TODO: make filters unique for each model

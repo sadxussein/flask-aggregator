@@ -18,6 +18,11 @@ class OvirtEntity(Base):
     href = Column(String)
     virtualization = Column(String)
 
+    @property
+    def as_dict(self):
+        """Return dict from model structure."""
+        return {c.name: getattr(self, c.name) for c in self.__table__.columns}
+
     @staticmethod
     def get_columns_order():
         """Simply get starting order of columns of base class."""

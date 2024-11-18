@@ -13,6 +13,7 @@ DPC_URLS = {
     "e15-3": "https://e15-redvirt-engine3.rncb.ru/ovirt-engine/api",
     "n32": "https://n32-redvirt-engine1.rncb.ru/ovirt-engine/api",
     "n32-2": "https://n32-redvirt-engine2.rncb.ru/ovirt-engine/api",
+    "n32-sigma": "https://n32-sigma-engine1.rncb.ru/ovirt-engine/api",
     "k45": "https://k45-redvirt-engine1.rncb.ru/ovirt-engine/api"
 }
 FILES_FOLDER = "client/files"
