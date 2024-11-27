@@ -1,7 +1,7 @@
 __pycache__
 .vscode
 .mypy_cache
-test.py
+tests
 *.xlsx
 *.json
 *.log
