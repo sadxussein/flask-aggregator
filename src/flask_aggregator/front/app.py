@@ -8,7 +8,7 @@ import os
 from urllib.parse import urlencode
 
 from flask import (
-    Flask, request, render_template, jsonify, flash, redirect, url_for, abort
+    Flask, request, render_template, jsonify, abort
 )
 
 from ..back.virt_aggregator import VirtAggregator
@@ -16,7 +16,6 @@ from ..back.file_handler import FileHandler
 from ..back.dbmanager import DBManager
 from ..back.models import Vm, Host, Cluster, Storage, DataCenter
 from ..config import DevelopmentConfig, ProductionConfig
-from .forms import LoginForm
 
 class FlaskAggregator():
     """Flask-based aggregator class. Used primarily for oVirt interactions."""
@@ -39,17 +38,6 @@ class FlaskAggregator():
             """Show index page."""
             return render_template("index.html")
 
-        @self.__app.route("/login", methods=["GET", "POST"])
-        def login():
-            form = LoginForm()
-            if form.validate_on_submit():
-                flash(
-                    f"Login requested for user {form.username.data}"
-                    f", remember_me={form.remember_me.data}"
-                )
-                return redirect(url_for('vms'))
-            return render_template("login.html", form=form)
-
         @self.__app.route("/view/<model_name>")
         def view(model_name):
             """Show model list from database.
@@ -63,10 +51,9 @@ class FlaskAggregator():
             per_page = request.args.get("per_page", 10, type=int)
             dbmanager = DBManager()
             fields = self.DB_MODELS[model_name].get_columns_order()
-            filters = { # TODO: make filters unique for each model
-                "name": request.args.get("name"),
-                "engine": request.args.get("engine")
-            }
+            filters = {}
+            for f in model.get_filters():
+                filters[f] = request.args.get(f)
             data_count, data = dbmanager.get_paginated_data(
                 model, page, per_page, filters
             )

@@ -8,6 +8,7 @@ from .logger import Logger
 
 class DBManager():
     """Class that operates with Postgres database."""
+    # TODO: make proper DB on localhost.
     USERNAME = "aggregator"
     PASSWORD = "CnfhnjdsqGfhjkm%401234"
     DB_NAME = "aggregator_test"

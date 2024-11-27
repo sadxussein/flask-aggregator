@@ -28,6 +28,11 @@ class OvirtEntity(Base):
         """Simply get starting order of columns of base class."""
         return ["uuid", "name", "engine", "href", "virtualization"]
 
+    @staticmethod
+    def get_filters():
+        """Default set of filters."""
+        return ["name", "engine", "virtualization"]
+
 class Vm(OvirtEntity):
     """oVirt VM model class."""
     __tablename__ = "vms"
@@ -51,6 +56,11 @@ class Vm(OvirtEntity):
             "data_center", "was_migrated", "total_space", "storage_domains"
         ]
 
+    @staticmethod
+    def get_filters():
+        """Full set of filters."""
+        return OvirtEntity.get_filters() + ["ip"]
+
 class Host(OvirtEntity):
     """oVirt host model class."""
     __tablename__ = "hosts"
@@ -65,6 +75,11 @@ class Host(OvirtEntity):
         return OvirtEntity.get_columns_order() + [
             "ip", "cluster", "data_center"
         ]
+
+    @staticmethod
+    def get_filters():
+        """Full set of filters."""
+        return OvirtEntity.get_filters() + ["ip"]
 
 class Cluster(OvirtEntity):
     """oVirt cluster model class."""

@@ -8,7 +8,7 @@ import threading
 
 import ovirtsdk4 as sdk
 
-from . import config as cfg
+from ..config import Config
 from .virt_protocol import VirtProtocol
 from .logger import Logger
 
@@ -16,9 +16,9 @@ class OvirtHelper(VirtProtocol):
     """Class required to perform different actions with oVirt hosted 
     engines."""
 
-    def __init__(self, dpc_list: list=cfg.DPC_LIST,
-                 urls_list: dict=cfg.DPC_URLS,
-                 username=cfg.USERNAME, password=cfg.PASSWORD,
+    def __init__(self, dpc_list: list=Config.DPC_LIST,
+                 urls_list: dict=Config.DPC_URLS,
+                 username=Config.USERNAME, password=Config.PASSWORD,
                  logger=Logger()
                  ):
         """Construct default class instance."""
@@ -128,7 +128,7 @@ class OvirtHelper(VirtProtocol):
                     "engine": dpc,
                     "comment": data_center.comment,
                     "href": (
-                        f"{cfg.DPC_URLS[dpc][:-3]}webadmin/?locale=en_US#"
+                        f"{Config.DPC_URLS[dpc][:-3]}webadmin/?locale=en_US#"
                         f"dataCenters-storage;name={data_center.name}"
                     ),
                     "virtualization": self.pretty_name
@@ -155,7 +155,7 @@ class OvirtHelper(VirtProtocol):
             data_centers_service = system_service.data_centers_service()
             storage_domains_service = system_service.storage_domains_service()
             for domain in storage_domains_service.list():
-                if domain.name not in cfg.STORAGE_DOMAIN_EXCEPTIONS:
+                if domain.name not in Config.STORAGE_DOMAIN_EXCEPTIONS:
                     data_centers = set()
                     try:
                         for dc in domain.data_centers:
@@ -184,7 +184,8 @@ class OvirtHelper(VirtProtocol):
                                                 / (domain.available
                                                    + domain.used)),
                         "href": (
-                            f"{cfg.DPC_URLS[dpc][:-3]}webadmin/?locale=en_US#"
+                            f"{Config.DPC_URLS[dpc][:-3]}"
+                            "webadmin/?locale=en_US#"
                             f"storage-general;name={domain.name}"
                         ),
                         "virtualization": self.pretty_name
@@ -221,7 +222,7 @@ class OvirtHelper(VirtProtocol):
                             "engine": dpc, "description": cluster.description,
                             "data_center": data_center.name,
                             "href": (
-                                f"{cfg.DPC_URLS[dpc][:-3]}webadmin/"
+                                f"{Config.DPC_URLS[dpc][:-3]}webadmin/"
                                 "?locale=en_US#"
                                 f"clusters-general;name={cluster.name}"
                             ),
@@ -263,7 +264,7 @@ class OvirtHelper(VirtProtocol):
                 nics = nics_service.list()
                 ip = None
                 for nic in nics:
-                    if nic.name in cfg.HOST_MANAGEMENT_BONDS:
+                    if nic.name in Config.HOST_MANAGEMENT_BONDS:
                         if nic.ip and nic.ip.address:
                             ip = nic.ip.address
                 result.append(
@@ -275,7 +276,8 @@ class OvirtHelper(VirtProtocol):
                         "ip": ip,
                         "engine": dpc,
                         "href": (
-                            f"{cfg.DPC_URLS[dpc][:-3]}webadmin/?locale=en_US#"
+                            f"{Config.DPC_URLS[dpc][:-3]}"
+                            "webadmin/?locale=en_US#"
                             f"hosts-general;name={host.name}"
                         ),
                         "virtualization": self.pretty_name
@@ -418,7 +420,7 @@ class OvirtHelper(VirtProtocol):
                 )
 
                 vm_data["href"] = (
-                    f"{cfg.DPC_URLS[dpc][:-3]}webadmin/?locale=en_US#"
+                    f"{Config.DPC_URLS[dpc][:-3]}webadmin/?locale=en_US#"
                     f"vms-general;name={vm.name}"
                 )
 
@@ -496,8 +498,15 @@ class OvirtHelper(VirtProtocol):
             cluster=sdk.types.Cluster(
                 name=config["ovirt"]["cluster"]
             ),
-            comment=f"{config['meta']['environment']}, {config['meta']['inf_system']}",
-            description=f"Time created: {self.__get_timestamp()}, owner: {config['meta']['owner']}, ELMA task number: {config['meta']['document_num']}",
+            comment=(
+                f"{config['meta']['environment']}, "
+                f"{config['meta']['inf_system']}"
+            ),
+            description=(
+                f"Time created: {self.__get_timestamp()},"
+                f" owner: {config['meta']['owner']}, "
+                f"ELMA task number: {config['meta']['document_num']}"
+            ),
             template=sdk.types.Template(
                 name=config["vm"]["template"]
             ),
@@ -510,7 +519,11 @@ class OvirtHelper(VirtProtocol):
                 topology=sdk.types.CpuTopology(
                     # Set CPU topology. If in ELMA document there is > 10
                     # cores, split them between no more than 2 sockets.
-                    cores=int(config["vm"]["cores"]) if int(config["vm"]["cores"]) <= 10 else int(config["vm"]["cores"] / 2),
+                    cores=(
+                        int(config["vm"]["cores"])
+                        if int(config["vm"]["cores"]) <= 10
+                        else int(config["vm"]["cores"] / 2)
+                    ),
                     sockets=1 if config["vm"]["cores"] <= 10 else 2
                 )
             ),
@@ -545,24 +558,32 @@ class OvirtHelper(VirtProtocol):
             vm = vms_service.add(vm, clone=True)
             self.__logger.log_info(f"Creating VM {vm.name}.")
 
-            # After creating VM we have to shut it down to apply new hardware and
-            # software options.
+            # After creating VM we have to shut it down to apply new hardware
+            # and software options.
             vm_service = vms_service.vm_service(vm.id)
             while vm_service.get().status != sdk.types.VmStatus.DOWN:
-                self.__logger.log_debug("Waiting for VM status set to DOWN (ready for next setup)...")
+                self.__logger.log_debug(
+                    "Waiting for VM status set to DOWN "
+                    "(ready for next setup)..."
+                )
                 time.sleep(10)
             self.__logger.log_info(f"Created VM {vm.name}.")
 
             # Disks operations.
             self.__extend_vm_root_disk(system_service, vm, vm_service, config)
-            self.__create_vm_extra_disks(system_service, vm, vm_service, config)
+            self.__create_vm_extra_disks(
+                system_service, vm, vm_service, config
+            )
 
             # Network operations.
             self.__set_vm_network(system_service, vm_service, config)
 
-            # After applying changes VM will be locked, so wait until lockdown is released.
+            # After applying changes VM will be locked, so wait until lockdown
+            # is released.
             while vm_service.get().status != sdk.types.VmStatus.DOWN:
-                self.__logger.log_debug("Waiting system service to release VM's LOCKED status...")
+                self.__logger.log_debug(
+                    "Waiting system service to release VM's LOCKED status..."
+                )
                 time.sleep(10)
 
             # Starting VM via CloudInit.
@@ -574,7 +595,9 @@ class OvirtHelper(VirtProtocol):
                 time.sleep(10)
             # Waiting 60 second for VM to properly start.
             time.sleep(60)
-            self.__logger.log_info("Issued VM reset to fix possible fstab malfunction.")
+            self.__logger.log_info(
+                "Issued VM reset to fix possible fstab malfunction."
+            )
             vm_service.reset()
 
             # Finalizing VM.
@@ -608,35 +631,41 @@ class OvirtHelper(VirtProtocol):
         self.__logger.log_info("Resizing disk from template if it is > 30Gb.")
         if disk_attachments:
             disk_attachment = disk_attachments[0]
-            disk_service = system_service.disks_service().disk_service(disk_attachment.disk.id)
+            disk_service = system_service.disks_service().disk_service(
+                disk_attachment.disk.id
+            )
 
             # Waiting for disk to be created
             while disk_service.get().status == sdk.types.DiskStatus.LOCKED:
-                self.__logger.log_debug("Waiting system service to release disks LOCKED status...")
+                self.__logger.log_debug(
+                    "Waiting system service to release disks LOCKED status..."
+                )
                 time.sleep(10)
             for disk_config in config["vm"]["disks"]:
-                if int(disk_config["type"]) == 1:
-                    self.__logger.log_debug("Root disk detected.")
-                    if disk_config['size'] > 30:
-                        self.__logger.log_debug(
-                            (
-                                "Root disk size from vm config is "
-                                f"{disk_config['size']} which is larger "
-                                "than 30 gb."
-                            )
+                if int(disk_config["type"]) == 1 and disk_config['size'] > 30:
+                    self.__logger.log_debug(
+                        (
+                            "Root disk size from vm config is "
+                            f"{disk_config['size']} which is larger "
+                            "than 30 gb."
                         )
-                        disk_service.update(
-                            disk=sdk.types.Disk(
-                                # Disk with root partition should always be
-                                # first in the list.
-                                provisioned_size=disk_config["size"] * 2**30,
-                                bootable=True
-                            )
+                    )
+                    disk_service.update(
+                        disk=sdk.types.Disk(
+                            # Disk with root partition should always be
+                            # first in the list.
+                            provisioned_size=disk_config["size"] * 2**30,
+                            bootable=True
                         )
+                    )
 
                     # Waiting to apply disk changes.
-                    while disk_service.get().status == sdk.types.DiskStatus.LOCKED:
-                        self.__logger.log_debug("Waiting system service to release disks LOCKED status...")
+                    while (
+                        disk_service.get().status == sdk.types.DiskStatus.LOCKED
+                    ):
+                        self.__logger.log_debug(
+                            "Waiting system service to release disks LOCKED status..."
+                        )
                         time.sleep(10)
 
                     # Setting disk name and label.
@@ -685,8 +714,15 @@ class OvirtHelper(VirtProtocol):
                         sdk.types.DiskAttachment(
                             disk=sdk.types.Disk(
                                 name=f"{vm.name}-data-disk-{disk_index}",
-                                description=f"Additional disk #{disk_index} for {vm.name}",
-                                format=sdk.types.DiskFormat.COW if bool(disk["sparse"]) else sdk.types.DiskFormat.RAW,
+                                description=(
+                                    f"Additional disk #{disk_index}"
+                                    f"for {vm.name}"
+                                ),
+                                format=(
+                                    sdk.types.DiskFormat.COW
+                                    if bool(disk["sparse"])
+                                    else sdk.types.DiskFormat.RAW
+                                ),
                                 provisioned_size=disk["size"] * 2**30,
                                 storage_domains=[
                                     sdk.types.StorageDomain(
@@ -704,7 +740,9 @@ class OvirtHelper(VirtProtocol):
                         "Created disk_attachment variable "
                         f"(disk #{disk_index})"
                     )
-                    disk_service = system_service.disks_service().disk_service(disk_attachment.disk.id)
+                    disk_service = system_service.disks_service().disk_service(
+                        disk_attachment.disk.id
+                    )
                     self.__logger.log_debug(
                         f"Found disk_attachment service (disk #{disk_index})"
                     )
@@ -799,7 +837,8 @@ class OvirtHelper(VirtProtocol):
                 data_center_id = data_center.id
         return data_center_id
 
-    def create_vlan(self, config):  # TODO: change checking if VLAN exists logic
+    def create_vlan(self, config):
+        # TODO: change checking if VLAN exists logic
         """Create VLAN.
         
         Example JSON, required by functions should be as following:
