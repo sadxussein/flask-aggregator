@@ -1,6 +1,6 @@
 """Database interactions module."""
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, asc, desc
 from sqlalchemy.orm import sessionmaker, scoped_session, Query
 from sqlalchemy.exc import IntegrityError
 from .models import Base
@@ -45,13 +45,20 @@ class DBManager():
             finally:
                 session.close()
 
-    def get_paginated_data(self, table_type, page, per_page, filters) -> tuple:
+    def get_paginated_data(
+            self, table_type, page, per_page, filters, sort_by: str,
+            order: str
+    ) -> tuple:
         """Get all data from specified table by type, paginated.
         Also get item count.
         """
         session = self.__session()
         query = session.query(table_type)
         query = self.__apply_filters(query, table_type, filters)
+        if order == "desc":
+            query = query.order_by(desc(sort_by))
+        else:
+            query = query.order_by(asc(sort_by))
         total_items = query.count()
         query = query.offset((page - 1) * per_page).limit(per_page)
         data = query.all()
@@ -59,7 +66,7 @@ class DBManager():
         return (total_items, data)
 
     def get_all_data_as_dict(self, table_type) -> dict:
-        """For """
+        """For aggregator client parser."""
         session = self.__session()
         data = session.query(table_type).all()
         dict_data = [d.as_dict for d in data]

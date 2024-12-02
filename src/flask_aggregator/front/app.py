@@ -49,13 +49,15 @@ class FlaskAggregator():
                 abort(404, description=f"Table {model_name} not found.")
             page = request.args.get("page", 1, type=int)
             per_page = request.args.get("per_page", 10, type=int)
+            sort_by = request.args.get("sort_by", "name")
+            order = request.args.get("order", "asc")
             dbmanager = DBManager()
             fields = self.DB_MODELS[model_name].get_columns_order()
             filters = {}
             for f in model.get_filters():
                 filters[f] = request.args.get(f)
             data_count, data = dbmanager.get_paginated_data(
-                model, page, per_page, filters
+                model, page, per_page, filters, sort_by, order
             )
             total_pages = (data_count + per_page - 1) // per_page
 
@@ -69,7 +71,7 @@ class FlaskAggregator():
                 filters=filters, title=model_name, page=page,
                 per_page=per_page, total_pages=total_pages,
                 get_pagination_url=get_pagination_url, getattr=getattr,
-                fields=fields
+                fields=fields, sort_by=sort_by, order=order
             )
 
         @self.__app.route("/ovirt/cluster_list/raw_json")
