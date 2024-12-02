@@ -2,6 +2,8 @@
 
 import os
 
+from src.flask_aggregator.back.models import *
+
 class Config:
     """Configuration class for Flask Aggregator app."""
 
@@ -36,11 +38,19 @@ class Config:
     # Host ovirtmgmt NIC names.
     HOST_MANAGEMENT_BONDS = [
         "bond0.2701", "bond0.1932", "bond0.2721", "bond0.1567", "bond0.397",
-        "bond0.30", "bond0.35"
+        "bond0.30", "bond0.35", "bond0.2921"
     ]
 
     # List of storage domains to be avoided in data gathering.
     STORAGE_DOMAIN_EXCEPTIONS = ["ovirt-image-repository"]
+
+    DB_MODELS = {
+        "vms": Vm,
+        "hosts": Host,
+        "clusters": Cluster,
+        "storages": Storage,
+        "data_centers": DataCenter
+    }
 
 class DevelopmentConfig(Config):
     """Development flask app configuration."""

@@ -14,18 +14,13 @@ from flask import (
 from ..back.virt_aggregator import VirtAggregator
 from ..back.file_handler import FileHandler
 from ..back.dbmanager import DBManager
-from ..back.models import Vm, Host, Cluster, Storage, DataCenter
-from ..config import DevelopmentConfig, ProductionConfig
+from src.flask_aggregator.back.models import DataCenter, Cluster
+from src.flask_aggregator.config import (
+    Config, DevelopmentConfig, ProductionConfig
+)
 
 class FlaskAggregator():
-    """Flask-based aggregator class. Used primarily for oVirt interactions."""
-    DB_MODELS = {
-        "vms": Vm,
-        "hosts": Host,
-        "clusters": Cluster,
-        "storages": Storage,
-        "data_centers": DataCenter
-    }
+    """Flask-based aggregator class. Used primarily for oVirt interactions."""    
 
     def __init__(self):
         self.__app = Flask(__name__)
@@ -44,7 +39,7 @@ class FlaskAggregator():
             
             Model list is defined in DM_MODELS dictionary of this class.
             """
-            model = self.DB_MODELS.get(model_name)
+            model = Config.DB_MODELS.get(model_name)
             if model is None:
                 abort(404, description=f"Table {model_name} not found.")
             page = request.args.get("page", 1, type=int)
@@ -52,7 +47,7 @@ class FlaskAggregator():
             sort_by = request.args.get("sort_by", "name")
             order = request.args.get("order", "asc")
             dbmanager = DBManager()
-            fields = self.DB_MODELS[model_name].get_columns_order()
+            fields = Config.DB_MODELS[model_name].get_columns_order()
             filters = {}
             for f in model.get_filters():
                 filters[f] = request.args.get(f)

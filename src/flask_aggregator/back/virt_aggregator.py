@@ -3,11 +3,11 @@
 from concurrent.futures import ThreadPoolExecutor
 from itertools import zip_longest
 
+from src.flask_aggregator.config import Config
 from .virt_protocol import VirtProtocol
 from .ovirt_helper import OvirtHelper
 from .file_handler import FileHandler
 from .logger import Logger
-from ..config import Config
 from .dbmanager import DBManager
 from .models import Vm, Host, Cluster, Storage, DataCenter
 
@@ -83,23 +83,29 @@ class VirtAggregator():
         self.__logger.log_debug(f"Started thread {dpcs}-{function_name}.")
         dbmanager = DBManager()
         raw_data = getattr(virt_helper, function_name)()
-        data = []
-        if table == "vms":
-            for el in raw_data:
-                data.append(Vm(**el))
-        elif table == "hosts":
-            for el in raw_data:
-                data.append(Host(**el))
-        elif table == "clusters":
-            for el in raw_data:
-                data.append(Cluster(**el))
-        elif table == "storages":
-            for el in raw_data:
-                data.append(Storage(**el))
-        elif table == "data_centers":
-            for el in raw_data:
-                data.append(DataCenter(**el))
-        dbmanager.add_data(data)
+        # data = []
+        # if table == "vms":
+        #     for el in raw_data:
+        #         data.append(Vm(**el))
+        # elif table == "hosts":
+        #     for el in raw_data:
+        #         data.append(Host(**el))
+        # elif table == "clusters":
+        #     for el in raw_data:
+        #         data.append(Cluster(**el))
+        # elif table == "storages":
+        #     for el in raw_data:
+        #         data.append(Storage(**el))
+        # elif table == "data_centers":
+        #     for el in raw_data:
+        #         data.append(DataCenter(**el))
+        # for el in raw_data:
+        #     if table == "vms":
+        #         try:
+        #             print(el["name"], el["ip"])
+        #         except KeyError as e:
+        #             print(f"error on vm with name {el['name']}: {e}")
+        dbmanager.add_data(Config.DB_MODELS[table], raw_data)
         dbmanager.close()
         self.__logger.log_debug(f"Finished thread {dpcs}-{function_name}.")
 

@@ -2,9 +2,8 @@
 
 from sqlalchemy import create_engine, asc, desc
 from sqlalchemy.orm import sessionmaker, scoped_session, Query
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.dialects.postgresql import insert
 from .models import Base
-from .logger import Logger
 
 class DBManager():
     """Class that operates with Postgres database."""
@@ -20,30 +19,46 @@ class DBManager():
     )
 
     def __init__(self) -> None:
-        self.__engine = create_engine(self.DATABASE_URL)
+        self.__engine = create_engine(self.DATABASE_URL, echo=True)
         self.__session = scoped_session(sessionmaker(bind=self.__engine))
         Base.metadata.create_all(self.__engine)
-        self.__logger = Logger()
 
-    def add_data(self, data: list) -> None:
+    # def add_data(self, data: list) -> None:
+    #     """Add data to tables based on their type."""
+    #     session = self.__session()
+    #     for element in data:
+    #         try:
+    #             session.merge(element)
+    #             session.commit()
+    #             self.__logger.log_debug(
+    #                 f"Added element with {element.uuid} of type "
+    #                 f"{type(element).name}."
+    #             )
+    #         except IntegrityError:
+    #             session.rollback()
+    #             self.__logger.log_debug(
+    #                 f"Element with same UUID ({element.uuid}) already "
+    #                 "exists."
+    #             )
+    #         finally:
+    #             session.close()
+
+    def add_data(self, model: any, data: list) -> None:
         """Add data to tables based on their type."""
         session = self.__session()
-        for element in data:
-            try:
-                session.merge(element)
-                session.commit()
-                self.__logger.log_debug(
-                    f"Added element with {element.uuid} of type "
-                    f"{type(element).name}."
-                )
-            except IntegrityError:
-                session.rollback()
-                self.__logger.log_debug(
-                    f"Element with same UUID ({element.uuid}) already "
-                    "exists."
-                )
-            finally:
-                session.close()
+        # Postgres specific "upsert".
+        stmt = insert(model).values(data)
+        dict_set = {
+            column.name: getattr(stmt.excluded, column.name) 
+            for column in model.__table__.columns if column.name != 'uuid'
+        }
+        stmt = stmt.on_conflict_do_update(
+            index_elements=['uuid'],
+            set_=dict_set
+        )
+        session.execute(stmt)
+        session.commit()
+        session.close()
 
     def get_paginated_data(
             self, table_type, page, per_page, filters, sort_by: str,

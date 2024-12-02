@@ -5,10 +5,11 @@ __author__ = "xussein"
 
 import time
 import threading
+import json
 
 import ovirtsdk4 as sdk
 
-from ..config import Config
+from src.flask_aggregator.config import Config
 from .virt_protocol import VirtProtocol
 from .logger import Logger
 
@@ -335,13 +336,12 @@ class OvirtHelper(VirtProtocol):
                     vm_data["state"] = "Other"
 
                 # IP
+                vm_data["ip"] = ''
                 for device in vm_service.reported_devices_service().list():
                     if device.ips:
                         for ip in device.ips:
                             if ip.version == sdk.types.IpVersion.V4:
                                 vm_data["ip"] = ip.address
-                    else:
-                        vm_data["ip"] = ''
 
                 # engine
                 vm_data["engine"] = dpc
@@ -1031,3 +1031,66 @@ class OvirtHelper(VirtProtocol):
                             )
 
         return {"response": 200, "vlan_list": vlan_list}
+
+    def get_domain_meta(self):
+        """Generate JSON for Zabbix monitoring."""
+        json_output = { "storage_domain": list() }
+        for dpc, connection in self.__connections.items():
+            system_service = connection.system_service()
+            storage_domains_service = system_service.storage_domains_service()
+            storage_domains = storage_domains_service.list()
+            for domain in storage_domains:
+                domain_meta = {}
+                domain_meta["cluster"] = dpc
+                domain_meta["name"] = domain.name
+                domain_meta["id"] = domain.id
+                domain_meta["available"] = domain.available
+                domain_meta["used"] = domain.used
+                domain_meta["commited"] = domain.committed
+                domain_meta["type"] = f"{domain.type}"
+                domain_meta[
+                    "warning_low_space_indicator"
+                ] = domain.warning_low_space_indicator
+                if "storage_domain" in json_output and isinstance(
+                    json_output['storage_domain'], list
+                ):
+                    if domain_meta["type"] != "image":
+                        json_output["storage_domain"].append(domain_meta)
+
+        json_output = json.dumps(json_output, indent=4, ensure_ascii=False)
+        return json_output
+
+    # Simply retrieving host name, its cluster and management IP address. Actions list:
+    # 1. Get system, hosts and clusters service;
+    # 2. Loop through all hosts, get their names and clusters;
+    # 3. Get host nics service;
+    # 4. Get host nic IP address (only management one, with VLAN ids 2701, 1932, 2721, 1567);
+    # 5. Return result as dict (preferably, to be exported as JSON).
+    # Host is main entity in result dictionary, its name stands on top of dictionary tree.
+    # Hence function is called "get_host_meta". Cluster meta has (or will have) separate
+    # implementation.
+    def get_host_meta(self):
+        """Retrieve data from oVirt hosts.
+        
+        Currenty taking following host parameters: 'name', 'ip', 'status'.
+        """
+        hosts_meta = []
+        for dpc, connection in self.__connections.items():
+            system_service = connection.system_service()
+            hosts_service = system_service.hosts_service()
+            hosts = hosts_service.list()
+
+            for host in hosts:
+                host_meta = {}
+                host_meta["name"] = host.name
+                host_service = hosts_service.host_service(host.id)
+                nics_service = host_service.nics_service()
+                nics = nics_service.list()
+                for nic in nics:
+                    if nic.name in Config.HOST_MANAGEMENT_BONDS:
+                        if nic.ip and nic.ip.address:
+                            host_meta["ip"] = nic.ip.address if nic.ip.address else ''
+                hosts_meta.append(host_meta)
+                host_meta["status"] = f"{host.status}"
+
+        return hosts_meta

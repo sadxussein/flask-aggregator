@@ -19,10 +19,6 @@ classifiers = [
 
 dependencies = []
 
-[project.optional-dependencies]
-client = ["pandas"]
-server = ["flask"]
-
 [project.urls]
 Homepage = "https://gl.rncb.ru/KrasnoschekovVD/flask_aggregator"
 Issues = "https://gl.rncb.ru/KrasnoschekovVD/flask_aggregator/-/issues"
