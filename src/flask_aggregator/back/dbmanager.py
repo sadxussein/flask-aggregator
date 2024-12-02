@@ -3,23 +3,16 @@
 from sqlalchemy import create_engine, asc, desc
 from sqlalchemy.orm import sessionmaker, scoped_session, Query
 from sqlalchemy.dialects.postgresql import insert
-from .models import Base
+from src.flask_aggregator.config import ProductionConfig, DevelopmentConfig
+from src.flask_aggregator.back.models import Base
 
 class DBManager():
     """Class that operates with Postgres database."""
-    # TODO: make proper DB on localhost.
-    USERNAME = "aggregator"
-    PASSWORD = "CnfhnjdsqGfhjkm%401234"
-    DB_NAME = "aggregator_test"
-    DB_ADDRESS = "10.105.253.252"
-    DB_PORT = "6298"
-    DATABASE_URL = (
-        f"postgresql+psycopg2://{USERNAME}:{PASSWORD}@{DB_ADDRESS}"
-        f":{DB_PORT}/{DB_NAME}"
-    )
-
-    def __init__(self) -> None:
-        self.__engine = create_engine(self.DATABASE_URL)
+    def __init__(self, env: str="dev") -> None:
+        if env == "prod":
+            self.__engine = create_engine(ProductionConfig.DB_URL)
+        else:
+            self.__engine = create_engine(DevelopmentConfig.DB_URL)
         self.__session = scoped_session(sessionmaker(bind=self.__engine))
         Base.metadata.create_all(self.__engine)
 
@@ -29,7 +22,7 @@ class DBManager():
         # Postgres specific "upsert".
         stmt = insert(model).values(data)
         dict_set = {
-            column.name: getattr(stmt.excluded, column.name) 
+            column.name: getattr(stmt.excluded, column.name)
             for column in model.__table__.columns if column.name != 'uuid'
         }
         stmt = stmt.on_conflict_do_update(
