@@ -19,29 +19,9 @@ class DBManager():
     )
 
     def __init__(self) -> None:
-        self.__engine = create_engine(self.DATABASE_URL, echo=True)
+        self.__engine = create_engine(self.DATABASE_URL)
         self.__session = scoped_session(sessionmaker(bind=self.__engine))
         Base.metadata.create_all(self.__engine)
-
-    # def add_data(self, data: list) -> None:
-    #     """Add data to tables based on their type."""
-    #     session = self.__session()
-    #     for element in data:
-    #         try:
-    #             session.merge(element)
-    #             session.commit()
-    #             self.__logger.log_debug(
-    #                 f"Added element with {element.uuid} of type "
-    #                 f"{type(element).name}."
-    #             )
-    #         except IntegrityError:
-    #             session.rollback()
-    #             self.__logger.log_debug(
-    #                 f"Element with same UUID ({element.uuid}) already "
-    #                 "exists."
-    #             )
-    #         finally:
-    #             session.close()
 
     def add_data(self, model: any, data: list) -> None:
         """Add data to tables based on their type."""

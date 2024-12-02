@@ -11,13 +11,14 @@ from flask import (
     Flask, request, render_template, jsonify, abort
 )
 
-from ..back.virt_aggregator import VirtAggregator
-from ..back.file_handler import FileHandler
-from ..back.dbmanager import DBManager
+from src.flask_aggregator.back.logger import Logger
 from src.flask_aggregator.back.models import DataCenter, Cluster
 from src.flask_aggregator.config import (
     Config, DevelopmentConfig, ProductionConfig
 )
+from ..back.virt_aggregator import VirtAggregator
+from ..back.file_handler import FileHandler
+from ..back.dbmanager import DBManager
 
 class FlaskAggregator():
     """Flask-based aggregator class. Used primarily for oVirt interactions."""    
@@ -104,7 +105,7 @@ class FlaskAggregator():
                     file_handler.input_json = json.load(json_file)
                     # Formatting to get separate list for each unique DPC.
                     file_handler.reformat_input_json()
-                    virt_aggregator = VirtAggregator()
+                    virt_aggregator = VirtAggregator(logger=Logger())
                     virt_aggregator.create_virt_helpers(file_handler)
                     virt_aggregator.create_vms(file_handler)
                     return jsonify({"success": "Created VMs."}), 200
@@ -132,7 +133,7 @@ class FlaskAggregator():
                     file_handler.reformat_input_json()
                     # Creating list of unique VLANs per DPC.
                     file_handler.make_unique_vlan_configs()
-                    virt_aggregator = VirtAggregator()
+                    virt_aggregator = VirtAggregator(logger=Logger())
                     virt_aggregator.create_virt_helpers(file_handler)
                     virt_aggregator.create_vlans(file_handler)
                     return jsonify({"success": "Created VMs."}), 200

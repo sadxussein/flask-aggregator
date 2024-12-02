@@ -3,7 +3,7 @@
 import os
 import logging
 
-from ..config import DevelopmentConfig
+from ..config import Config
 
 class Logger:
     """Class (singleton) for logging both in file and console."""
@@ -15,7 +15,7 @@ class Logger:
         return cls._instance
 
     def __init__(
-            self, log_file=f"{DevelopmentConfig.LOGS_DIR}/aggregator.log",
+            self, log_file=f"{Config.LOGS_DIR}/aggregator.log",
             log_level=logging.DEBUG
     ):
         if not hasattr(self, "_initialized"):
@@ -24,7 +24,7 @@ class Logger:
             self.__logger.setLevel(log_level)
 
             # Create dir for logger.
-            os.makedirs(DevelopmentConfig.LOGS_DIR, exist_ok=True)
+            os.makedirs(Config.LOGS_DIR, exist_ok=True)
 
             if not self.__logger.hasHandlers():
                 # Creating file handler.

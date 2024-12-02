@@ -22,3 +22,7 @@ class VirtProtocol(Protocol):
         """Get all 'datacenters' if there are any."""
     def get_storages(self) -> list:
         """Get all storages."""
+    def collect_zabbix_storages_info(self) -> list:
+        """Get storages info for zabbix agent."""
+    def collect_zabbix_hosts_info(self) -> list:
+        """Get hosts info for zabbix agent."""

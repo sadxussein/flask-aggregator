@@ -1032,7 +1032,7 @@ class OvirtHelper(VirtProtocol):
 
         return {"response": 200, "vlan_list": vlan_list}
 
-    def get_domain_meta(self):
+    def collect_zabbix_storages_info(self):
         """Generate JSON for Zabbix monitoring."""
         json_output = { "storage_domain": list() }
         for dpc, connection in self.__connections.items():
@@ -1060,16 +1060,18 @@ class OvirtHelper(VirtProtocol):
         json_output = json.dumps(json_output, indent=4, ensure_ascii=False)
         return json_output
 
-    # Simply retrieving host name, its cluster and management IP address. Actions list:
+    # Simply retrieving host name, its cluster and management IP address.
+    # Actions list:
     # 1. Get system, hosts and clusters service;
     # 2. Loop through all hosts, get their names and clusters;
     # 3. Get host nics service;
-    # 4. Get host nic IP address (only management one, with VLAN ids 2701, 1932, 2721, 1567);
+    # 4. Get host nic IP address (only management one, with VLAN ids 2701,
+    # 1932, 2721, 1567);
     # 5. Return result as dict (preferably, to be exported as JSON).
-    # Host is main entity in result dictionary, its name stands on top of dictionary tree.
-    # Hence function is called "get_host_meta". Cluster meta has (or will have) separate
-    # implementation.
-    def get_host_meta(self):
+    # Host is main entity in result dictionary, its name stands on top of
+    # dictionary tree. Hence function is called "get_host_meta". Cluster
+    # meta has (or will have) separate implementation.
+    def collect_zabbix_hosts_info(self):
         """Retrieve data from oVirt hosts.
         
         Currenty taking following host parameters: 'name', 'ip', 'status'.
@@ -1083,13 +1085,16 @@ class OvirtHelper(VirtProtocol):
             for host in hosts:
                 host_meta = {}
                 host_meta["name"] = host.name
+                host_meta["engine"] = dpc
                 host_service = hosts_service.host_service(host.id)
                 nics_service = host_service.nics_service()
                 nics = nics_service.list()
                 for nic in nics:
                     if nic.name in Config.HOST_MANAGEMENT_BONDS:
                         if nic.ip and nic.ip.address:
-                            host_meta["ip"] = nic.ip.address if nic.ip.address else ''
+                            host_meta["ip"] = (
+                                nic.ip.address if nic.ip.address else ''
+                            )
                 hosts_meta.append(host_meta)
                 host_meta["status"] = f"{host.status}"
 
