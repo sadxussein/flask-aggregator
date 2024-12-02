@@ -5,13 +5,12 @@ __author__ = "xussein"
 
 import time
 import threading
-import json
 
 import ovirtsdk4 as sdk
 
-from src.flask_aggregator.config import Config
-from .virt_protocol import VirtProtocol
-from .logger import Logger
+from flask_aggregator.config import Config
+from flask_aggregator.back.virt_protocol import VirtProtocol
+from flask_aggregator.back.logger import Logger
 
 class OvirtHelper(VirtProtocol):
     """Class required to perform different actions with oVirt hosted 

@@ -7,4 +7,5 @@ tests
 *.log
 *.sh
 *.yml
+*.egg-info
 venv

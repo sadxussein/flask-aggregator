@@ -1,6 +1,6 @@
 [build-system]
 requires = ["setuptools>=59.0"]
-build-backend = "setuptools.build"
+build-backend = "setuptools.build_meta"
 
 [project]
 name = "flask_aggregator"
@@ -18,6 +18,9 @@ classifiers = [
 ]
 
 dependencies = []
+
+[project.scripts]
+flask_aggregator_start = "flask_aggregator.front.app:main"
 
 [project.urls]
 Homepage = "https://gl.rncb.ru/KrasnoschekovVD/flask_aggregator"

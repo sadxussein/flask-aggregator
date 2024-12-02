@@ -2,7 +2,7 @@
 
 import os
 
-from src.flask_aggregator.back.models import *
+from flask_aggregator.back.models import *
 
 class Config:
     """Configuration class for Flask Aggregator app."""
@@ -14,7 +14,7 @@ class Config:
     SERVER_IP = "10.105.253.11"
     SERVER_PORT = "6299"
     USERNAME = "scriptbot@internal"
-    PASSWORD = "CnfhnjdsqGfhjkm@1234"    
+    PASSWORD = "CnfhnjdsqGfhjkm@1234"
 
     DPC_LIST = [
         "e15-test2", "e15", "e15-2", "e15-3", "n32", "n32-sigma", "n32-2",

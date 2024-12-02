@@ -3,12 +3,12 @@
 from concurrent.futures import ThreadPoolExecutor
 from itertools import zip_longest
 
-from src.flask_aggregator.config import Config
-from .virt_protocol import VirtProtocol
-from .ovirt_helper import OvirtHelper
-from .file_handler import FileHandler
-from .logger import Logger
-from .dbmanager import DBManager
+from flask_aggregator.config import Config
+from flask_aggregator.back.virt_protocol import VirtProtocol
+from flask_aggregator.back.ovirt_helper import OvirtHelper
+from flask_aggregator.back.file_handler import FileHandler
+from flask_aggregator.back.logger import Logger
+from flask_aggregator.back.dbmanager import DBManager
 
 class VirtAggregator():
     """Operate different virtualizations automation."""
@@ -53,8 +53,6 @@ class VirtAggregator():
         function_prefix = ""
         if function_type == "default":
             function_prefix = "get_"
-        elif function_type == "zabbix":
-            function_prefix = "collect_zabbix_"
 
         # 1. Establish connections with all virtualization endpoints.
         self.__connect_to_virtualizations()
@@ -93,17 +91,14 @@ class VirtAggregator():
     ) -> None:
         """Get certain info from virtualization based on function name."""
         dpcs = '_'.join(virt_helper.dpc_list)
-        if function_prefix == "get_":
-            # Get table name by removing corresponding prefix from function.
-            table = function_name.removeprefix(function_prefix)
-            self.__logger.log_debug(f"Started thread {dpcs}-{function_name}.")
-            dbmanager = DBManager()
-            raw_data = getattr(virt_helper, function_name)()
-            dbmanager.add_data(Config.DB_MODELS[table], raw_data)
-            dbmanager.close()
-            self.__logger.log_debug(f"Finished thread {dpcs}-{function_name}.")
-        elif function_prefix == "collect_zabbix_":
-            print(getattr(virt_helper, function_name)())
+        # Get table name by removing corresponding prefix from function.
+        table = function_name.removeprefix(function_prefix)
+        self.__logger.log_debug(f"Started thread {dpcs}-{function_name}.")
+        dbmanager = DBManager()
+        raw_data = getattr(virt_helper, function_name)()
+        dbmanager.add_data(Config.DB_MODELS[table], raw_data)
+        dbmanager.close()
+        self.__logger.log_debug(f"Finished thread {dpcs}-{function_name}.")
 
     def create_vms(self, file_handler: FileHandler) -> None:
         """Creating VMs with configs stored in JSON files."""
@@ -133,10 +128,6 @@ class VirtAggregator():
             for future in futures_tuple:
                 if future is not None:
                     future.result()
-
-        # for future_list in futures.values():
-        #     for future in future_list:
-        #         future.result()
 
         # 3. Close connections with virtualizations safely.
         self.__disconnect_from_virtualizations()

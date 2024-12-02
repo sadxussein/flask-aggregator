@@ -3,8 +3,8 @@
 from sqlalchemy import create_engine, asc, desc
 from sqlalchemy.orm import sessionmaker, scoped_session, Query
 from sqlalchemy.dialects.postgresql import insert
-from src.flask_aggregator.config import ProductionConfig, DevelopmentConfig
-from src.flask_aggregator.back.models import Base
+from flask_aggregator.config import ProductionConfig, DevelopmentConfig
+from flask_aggregator.back.models import Base
 
 class DBManager():
     """Class that operates with Postgres database."""

@@ -11,14 +11,15 @@ from flask import (
     Flask, request, render_template, jsonify, abort
 )
 
-from src.flask_aggregator.back.logger import Logger
-from src.flask_aggregator.back.models import DataCenter, Cluster
-from src.flask_aggregator.config import (
+
+from flask_aggregator.config import (
     Config, DevelopmentConfig, ProductionConfig
 )
-from ..back.virt_aggregator import VirtAggregator
-from ..back.file_handler import FileHandler
-from ..back.dbmanager import DBManager
+from flask_aggregator.back.models import DataCenter, Cluster
+from flask_aggregator.back.logger import Logger
+from flask_aggregator.back.virt_aggregator import VirtAggregator
+from flask_aggregator.back.file_handler import FileHandler
+from flask_aggregator.back.dbmanager import DBManager
 
 class FlaskAggregator():
     """Flask-based aggregator class. Used primarily for oVirt interactions."""    
@@ -151,5 +152,10 @@ class FlaskAggregator():
             self.__app.config.from_object(DevelopmentConfig)
         return self.__app
 
+# If run from flask run.
 flask_aggregator = FlaskAggregator()
 app = flask_aggregator.get_app()
+
+# If run from venv directly.
+def main():
+    app.run()
