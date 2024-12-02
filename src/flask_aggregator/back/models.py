@@ -1,7 +1,9 @@
 """Database models module."""
 
+from datetime import datetime, timezone, timedelta
+
 from sqlalchemy import (
-    Column, Integer, String, Float, Boolean, UUID, create_engine
+    Column, Integer, String, Float, Boolean, UUID, DateTime, create_engine
 )
 from sqlalchemy.ext.declarative import declarative_base
 
@@ -17,6 +19,11 @@ class OvirtEntity(Base):
     engine = Column(String)
     href = Column(String)
     virtualization = Column(String)
+    time_created = Column(
+        DateTime,
+        default=datetime.now(timezone(timedelta(hours=3))),
+        onupdate=datetime.now(timezone(timedelta(hours=3)))
+    )
 
     @property
     def as_dict(self):
