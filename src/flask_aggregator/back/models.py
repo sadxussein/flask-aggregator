@@ -74,7 +74,7 @@ class Host(OvirtEntity):
     def get_columns_order():
         """Get full order of columns."""
         return OvirtEntity.get_columns_order() + [
-            "ip", "cluster", "data_center"
+            "ip", "cluster", "data_center", "status"
         ]
 
     @staticmethod

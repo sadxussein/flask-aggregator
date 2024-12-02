@@ -272,7 +272,8 @@ class OvirtHelper(VirtProtocol):
                     {
                         "uuid": host.id,
                         "name": host.name, 
-                        "cluster": cluster.name, 
+                        "cluster": cluster.name,
+                        "status": f"{host.status}",
                         "data_center": data_center.name,
                         "ip": ip,
                         "engine": dpc,
