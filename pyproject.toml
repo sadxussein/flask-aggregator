@@ -25,6 +25,8 @@ fa_get_hosts = "flask_aggregator.back.run.collector.get_hosts:run"
 fa_get_storages = "flask_aggregator.back.run.collector.get_storages:run"
 fa_get_clusters = "flask_aggregator.back.run.collector.get_clusters:run"
 fa_get_data_centers = "flask_aggregator.back.run.collector.get_data_centers:run"
+fa_mon_hosts = "flask_aggregator.back.run.monitoring.get_hosts:run"
+fa_mon_storages = "flask_aggregator.back.run.monitoring.get_storages:run"
 
 [project.urls]
 Homepage = "https://gl.rncb.ru/KrasnoschekovVD/flask_aggregator"

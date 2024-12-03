@@ -5,19 +5,20 @@
 3. Создать пользователя и базу в postgres (как указаны в install.sh)
 4. Скопировать содержимое папки linux на нужный хост
 5. Запустить install.sh
-## back
-Класс `OvirtHelper` в `ovirt_helper.py` - для работы в oVirt. Основной функционал:
-1. `get_vm_list` - получает список ВМ в виде словаря из всех энжинов
-2. `get_host_list` - получает список хостов в виде словаря из всех энжинов
-3. `get_cluster_list` - получает список кластеров в виде словаря из всех энжинов
-4. `get_data_center_list` - получает список дата центров в виде словаря из всех энжинов
-5. `get_storage_domain_list` - получает список доменов хранения в виде словаря из всех энжинов
-6. `get_vm_configs_json.py` - получает JSON из excel файлов. Использование - `python3 -m back.get_vm_configs_json`.
-4. `create_vm` - создание ВМ
-5. `create_vlan` - создание VLAN
-Standalone геттеры нужны для выгрузки в JSON результатов геттеров класса `OvirtHelper`.
+После установки можно запустить сбор информации с виртуализаций (пока что только oVirt). Активируем venv:
+`source /app/flask-aggregator/bin/activate`
+И запускаем сборщик для всех сущностей (для первого наполнения базы) - `fa_collect_all_data`
+Отдельные функции для обновления базы:
+ - `fa_get_vms`
+ - `fa_get_hosts` (сервис с запуском стоит на таймере, раз в 30 минут)
+ - `fa_get_storages` (сервис с запуском стоит на таймере, раз в 15 минут)
+ - `fa_get_clusters`
+ - `fa_get_data_centers`
+Функции для выдачи json в мониторнинг:
+ - `fa_mon_hosts`
+ - `fa_mon_storages`
+Эти функции нужны только для userparameters заббикс-агента.
 ## front
-Класс `FlaskAggregator` в `app.py` - сервер фласка, вебморда для взаимодействий с виртуализациями. Основной функционал:
 1. endpoint `/` - пустая индекс страница
 2. endpoint `/ovirt/create_vm` (POST only) - эндпоинт для передачи JSON файла с конфигурациями создаваемых вм. Пример JSON:
 ```
@@ -103,6 +104,8 @@ DPC_URLS = {
 ]
 ```
 Та же самая конструкция как в `create_vm`, только без ключа `vm`.
-4. endpoint `/ovirt/vm_list` - список ВМ
-5. endpoint `/ovirt/host_list` - список гипервизоров
-6. endpoint `/ovirt/cluster_list` - список кластеров
+4. endpoint `/view/vms` - список ВМ
+5. endpoint `/view/hosts` - список гипервизоров
+6. endpoint `/view/clusters` - список кластеров
+7. endpoint `/view/data_centers` - список датацентров
+8. endpoint `/view/storages` - список хранилок

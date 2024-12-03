@@ -20,13 +20,6 @@ source /app/flask-aggregator/bin/activate
 pip3 install -r $SCRIPT_DIR/app/requirements.txt
 pip3 install --force-reinstall $SCRIPT_DIR/app/flask_aggregator*.whl
 
-# 4. copy runner scripts
-cp $SCRIPT_DIR/app/start_server.sh /app/start_server.sh
-cp $SCRIPT_DIR/app/run_collector.sh /app/run_collector.sh
-ln -s /app/start_server.sh /usr/local/bin/aggregator_run_gunicorn.sh
-ln -s /app/run_collector.sh /usr/local/bin/aggregator_run_collector.sh
-chmod +x /app/*.sh
-
 # 4. change rights to /app folder
 chown -R aggregator:aggregator /app
 
@@ -35,6 +28,8 @@ cp $SCRIPT_DIR/etc/systemd/system/aggregator-gunicorn.service /etc/systemd/syste
 cp $SCRIPT_DIR/etc/systemd/system/aggregator.target /etc/systemd/system/aggregator.target
 cp $SCRIPT_DIR/etc/systemd/system/aggregator-collector-hosts.service /etc/systemd/system/aggregator-collector-hosts.service
 cp $SCRIPT_DIR/etc/systemd/system/aggregator-collector-hosts.timer /etc/systemd/system/aggregator-collector-hosts.timer
+cp $SCRIPT_DIR/etc/systemd/system/aggregator-collector-storages.service /etc/systemd/system/aggregator-collector-storages.service
+cp $SCRIPT_DIR/etc/systemd/system/aggregator-collector-storages.timer /etc/systemd/system/aggregator-collector-storages.timer
 
 # 6. reload systemd
 systemctl daemon-reload
@@ -57,8 +52,3 @@ systemctl restart nginx
 # sudo -u postgres psql -c "create user $DB_USER with password '$DB_PASS';"
 # sudo -u postgres psql -c "alter database $DB_NAME owner to $DB_USER;"
 # sudo -u postgres psql -c "grant all privileges on database $DB_NAME to $DB_USER;"
-
-# 10. set up service for host monitoring
-# 11. set up timer for host monitoring
-# 12. set up service for storage monitoring
-# 13. set up timer for storage monitoring

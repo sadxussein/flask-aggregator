@@ -11,9 +11,16 @@ rm -f /usr/local/bin/aggregator_run_collector.sh
 # 2. stop services, timers and targets
 systemctl stop aggregator-gunicorn.service
 systemctl disable aggregator-gunicorn.service
+systemctl stop aggregator.target
+systemctl disable aggregator.target
 
 # 3. removing app files from /etc
 rm -f /etc/systemd/system/aggregator-gunicorn.service
+rm -f /etc/systemd/system/aggregator.target
+rm -f /etc/systemd/system/aggregator-collector-hosts.service
+rm -f /etc/systemd/system/aggregator-collector-hosts.timer
+rm -f /etc/systemd/system/aggregator-collector-storages.service
+rm -f /etc/systemd/system/aggregator-collector-storages.timer
 rm -f /etc/nginx/conf.d/aggregator.conf
 
 # 4. reload systemd and other services
