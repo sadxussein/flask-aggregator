@@ -5,7 +5,6 @@ tests
 *.xlsx
 *.json
 *.log
-*.sh
 *.yml
 *.egg-info
 venv
