@@ -10,8 +10,10 @@ systemctl disable aggregator-gunicorn.service
 
 # 3. removing app files from /etc/systemd/system/
 rm -f /etc/systemd/system/aggregator-gunicorn.service
+rm -f /etc/nginx/conf.d/aggregator.conf
 
-# 4. reload systemd
+# 4. reload systemd and other services
+systemctl restart nginx
 systemctl daemon-reload
 
 # 5. deleting user and group

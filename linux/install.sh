@@ -7,6 +7,7 @@ usermod -aG aggregator-group aggregator
 
 # 2. set up venv
 mkdir -p /app/flask-aggregator
+mkdir -p /app/log/nginx
 python3 -m venv /app/flask-aggregator
 source /app/flask-aggregator/bin/activate
 
@@ -24,16 +25,21 @@ ln -s /app/run.sh /usr/local/bin/aggregator_run_gunicorn.sh
 chown -R aggregator:aggregator /app
 
 # 5. set up targets, timers and services
-cp etc/systemd/system/aggregator-gunicorn.service /etc/systemd/system/aggregator-gunicorn.service
+cp $SCRIPT_DIR/etc/systemd/system/aggregator-gunicorn.service /etc/systemd/system/aggregator-gunicorn.service
 
 # 6. reload systemd
 systemctl daemon-reload
 
-# 6. start gunicorn service
+# 7. start gunicorn service
 systemctl start aggregator-gunicorn.service
 systemctl enable aggregator-gunicorn.service
-# 6. set up nginx config
-# 7. restart nginx service
+
+# 8. set up nginx config
+cp $SCRIPT_DIR/etc/nginx/conf.d/aggregator.conf /etc/nginx/conf.d/aggregator.conf
+
+# 9. restart nginx service
+systemctl restart nginx
+
 # 8. set up postgresql config (user, pass, port, db)
 # 9. restart postgresql
 # 10. set up service for host monitoring
