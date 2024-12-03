@@ -1,0 +1,7 @@
+[Unit]
+Description=Aggregator timers target
+Requires=aggregator-collector-hosts.timer
+After=timers.target
+
+[Install]
+WantedBy=multi-user.target

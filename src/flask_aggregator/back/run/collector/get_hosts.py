@@ -2,12 +2,16 @@
 
 Retrieves information about hosts in oVirt."""
 
-from src.flask_aggregator.back.virt_aggregator import VirtAggregator
+from flask_aggregator.back.virt_aggregator import VirtAggregator
 
-if __name__ == "__main__":
+def run():
+    """External runner."""
     virt_aggregator = VirtAggregator()
     virt_aggregator.create_virt_helpers()
     virt_aggregator.run_data_collection(
         function_type="default",
         function="get_hosts"
     )
+
+if __name__ == "__main__":
+    run()

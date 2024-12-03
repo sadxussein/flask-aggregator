@@ -2,7 +2,7 @@
 
 Retrieves information about hosts in oVirt."""
 
-from src.flask_aggregator.back.virt_aggregator import VirtAggregator
+from flask_aggregator.back.virt_aggregator import VirtAggregator
 
 if __name__ == "__main__":
     virt_aggregator = VirtAggregator()

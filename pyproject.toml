@@ -19,6 +19,12 @@ classifiers = [
 
 [project.scripts]
 flask_aggregator_start = "flask_aggregator.front.app:main"
+fa_collect_all_data = "flask_aggregator.back.run.collector.get_all:run"
+fa_get_vms = "flask_aggregator.back.run.collector.get_vms:run"
+fa_get_hosts = "flask_aggregator.back.run.collector.get_hosts:run"
+fa_get_storages = "flask_aggregator.back.run.collector.get_storages:run"
+fa_get_clusters = "flask_aggregator.back.run.collector.get_clusters:run"
+fa_get_data_centers = "flask_aggregator.back.run.collector.get_data_centers:run"
 
 [project.urls]
 Homepage = "https://gl.rncb.ru/KrasnoschekovVD/flask_aggregator"
