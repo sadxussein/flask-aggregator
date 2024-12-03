@@ -8,7 +8,7 @@ from flask_aggregator.back.models import Base
 
 class DBManager():
     """Class that operates with Postgres database."""
-    def __init__(self, env: str="dev") -> None:
+    def __init__(self, env: str="prod") -> None:
         if env == "prod":
             self.__engine = create_engine(ProductionConfig.DB_URL)
         else:

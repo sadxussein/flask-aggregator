@@ -6,7 +6,6 @@ After=network.target
 User=aggregator
 Group=aggregator-group
 WorkingDirectory=/app
-Environment="PATH=/app/flask-aggregator/bin"
 ExecStart=/usr/local/bin/aggregator_run_gunicorn.sh
 
 [Install]

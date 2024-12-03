@@ -74,10 +74,10 @@ class ProductionConfig(Config):
     TESTING = False
 
     DB_USERNAME = "aggregator"
-    DB_PASSWORD = "CnfhnjdsqGfhjkm%401234"
-    DB_NAME = "aggregator"
+    DB_PASSWORD = "68mLMd4WzqLQkZ1LXPd0"
+    DB_NAME = "aggregator_db"
     DB_ADDRESS = "localhost"
-    DB_PORT = "6298"
+    DB_PORT = "5432"
     DB_URL = (
         f"postgresql+psycopg2://{DB_USERNAME}:{DB_PASSWORD}@{DB_ADDRESS}"
         f":{DB_PORT}/{DB_NAME}"

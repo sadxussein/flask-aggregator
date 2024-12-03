@@ -1,8 +1,10 @@
 # Функциональный агрегатор для виртуализаций ОИТИ
-## Настройка
-1. Положить содержимое в /usr/local/bin/flask_aggregator
-2. Поставить в crontab геттеры по вкусу
-3. Запустить приложение из корня flask_aggregator через `python3 -m front.app`
+## Установка
+1. dnf install -y nginx postgresql16-server postgresql16
+2. /usr/pgsql-16/bin/postgresql-16-setup initdb
+3. Создать пользователя и базу в postgres (как указаны в install.sh)
+4. Скопировать содержимое папки linux на нужный хост
+5. Запустить install.sh
 ## back
 Класс `OvirtHelper` в `ovirt_helper.py` - для работы в oVirt. Основной функционал:
 1. `get_vm_list` - получает список ВМ в виде словаря из всех энжинов
