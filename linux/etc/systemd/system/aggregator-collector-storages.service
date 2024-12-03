@@ -1,0 +1,7 @@
+[Unit]
+Description=Collecting hosts info from virtualization
+
+[Service]
+User=aggregator
+WorkingDirectory=/app
+ExecStart=/bin/bash -c 'source /app/flask-aggregator/bin/activate && fa_get_storages && deactivate'

@@ -1,0 +1,9 @@
+[Unit]
+Description=Storages collector timer
+
+[Timer]
+OnCalendar=*:0/15
+Persistent=true
+
+[Install]
+WantedBy=aggregator.target
