@@ -1,0 +1,12 @@
+[Unit]
+Description=Aggregator gunicorn server
+After=network.target
+
+[Service]
+User=aggregator
+Group=aggregator-group
+WorkingDirectory=/app
+ExecStart=/usr/local/bin/aggregator_run_gunicorn.sh
+
+[Install]
+WantedBy=multi-user.target

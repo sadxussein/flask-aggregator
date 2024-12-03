@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "flask_aggregator"
-version = "0.0.1"
+version = "2024.12.03"
 authors = [
     { name="krasnoschekovvd", email="krasnoschekovvd@rncb.ru" },
 ]
@@ -16,8 +16,6 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
-
-dependencies = []
 
 [project.scripts]
 flask_aggregator_start = "flask_aggregator.front.app:main"

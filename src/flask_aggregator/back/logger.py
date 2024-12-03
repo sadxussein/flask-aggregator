@@ -3,7 +3,7 @@
 import os
 import logging
 
-from ..config import Config
+from flask_aggregator.config import Config
 
 class Logger:
     """Class (singleton) for logging both in file and console."""
