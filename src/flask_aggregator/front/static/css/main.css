@@ -31,6 +31,26 @@ header nav ul li a:active {
     background-color: #003f7f;
 }
 
-.error {
-    color: red;
+.display {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 20px 0;
+}
+
+.display th {
+    background-color: rgb(171, 193, 194);
+    color: #003f7f;
+    cursor: pointer;
+}
+
+.display th:hover {
+    background-color: aquamarine;
+}
+
+.display tr:nth-child(even) {
+    background-color: burlywood;
+}
+
+.display tr:nth-child(even) {
+    background-color: aliceblue;
 }
