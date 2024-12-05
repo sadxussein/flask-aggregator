@@ -173,11 +173,10 @@ class OvirtHelper(VirtProtocol):
                         "name": domain.name,
                         "engine": dpc,
                         "data_center": ' '.join(data_centers),
-                        "available": domain.available / (1024 ** 3),
-                        "used": domain.used / (1024 ** 3),
-                        "committed": domain.committed / (1024 ** 3),
-                        "total": domain.available / (1024 ** 3) 
-                                 + domain.used / (1024 ** 3),
+                        "available": domain.available,
+                        "used": domain.used,
+                        "committed": domain.committed,
+                        "total": domain.available + domain.used,
                         "percent_left": 100 - int(((100 * domain.used) 
                                         / (domain.available + domain.used))),
                         "overprovisioning": int((domain.committed * 100)

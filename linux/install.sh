@@ -21,7 +21,8 @@ pip3 install -r $SCRIPT_DIR/app/requirements.txt
 pip3 install --force-reinstall $SCRIPT_DIR/app/flask_aggregator*.whl
 
 # 4. change rights to /app folder
-chown -R aggregator:aggregator /app
+chown -R aggregator:aggregator-group /app
+chmod -R g+rx /app/*
 
 # 5. set up targets, timers and services
 cp $SCRIPT_DIR/etc/systemd/system/aggregator-gunicorn.service /etc/systemd/system/aggregator-gunicorn.service

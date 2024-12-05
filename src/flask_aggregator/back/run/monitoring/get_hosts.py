@@ -2,6 +2,8 @@
 
 Retrieves information about hosts in oVirt."""
 
+import json
+
 from flask_aggregator.back.dbmanager import DBManager
 from flask_aggregator.back.models import Host
 
@@ -17,7 +19,7 @@ def run():
             "status": host["status"]
         }
         result.append(h)
-    print(result)
+    print(json.dumps(result, ensure_ascii=False))
 
 if __name__ == "__main__":
     run()

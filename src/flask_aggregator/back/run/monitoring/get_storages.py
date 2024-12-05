@@ -24,7 +24,7 @@ def run():
             "warning_low_space_indicator": 10
         }
         result["storage_domain"].append(s)
-    print(result)
+    print(json.dumps(result, ensure_ascii=False))
 
 if __name__ == "__main__":
     run()
