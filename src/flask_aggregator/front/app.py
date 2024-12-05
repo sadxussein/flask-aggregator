@@ -47,7 +47,7 @@ class FlaskAggregator():
             page = request.args.get("page", 1, type=int)
             per_page = request.args.get("per_page", 10, type=int)
             sort_by = request.args.get("sort_by", "name")
-            order = request.args.get("order", "asc")
+            order = request.args.get("order", "desc")
             dbmanager = DBManager()
             fields = Config.DB_MODELS[model_name].get_columns_order()
             filters = {}

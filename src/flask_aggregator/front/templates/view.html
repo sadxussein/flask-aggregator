@@ -15,7 +15,7 @@
             <tr>
                 {% for column in fields %}
                     {% if column != "href" %}
-                        <th>{{ column }}</th>
+                        <th class="table-clickable-header" id="{{ column }}">{{ column }}</th>
                     {% endif %}
                 {% endfor %}
             </tr>
@@ -63,11 +63,25 @@
 <script>
     const perPage = "{{ per_page }}";
     document.getElementById("perPage").value = perPage;
-    function updatePerPage() {        
+    function updatePerPage() {
         const selectedValue = document.getElementById("perPage").value;
         const currentUrl = new URL(window.location.href);
         currentUrl.searchParams.set('per_page', selectedValue);
         window.location.href = currentUrl.toString();
-    }
+    };
+
+    const sortBy = "{{ sort_by }}";
+    var order = "{{ order }}";
+    const table_clickable_headers = document.querySelectorAll('.table-clickable-header');
+    table_clickable_headers.forEach(el => {
+        el.addEventListener('click', function () {
+            const header_id = this.id;
+            const currentUrl = new URL(window.location.href);
+            order = order === 'asc' ? 'desc' : 'asc';
+            currentUrl.searchParams.set('sort_by', header_id);
+            currentUrl.searchParams.set('order', order);
+            window.location.href = currentUrl.toString();
+        });
+    });
 </script>
 {% endblock %}
