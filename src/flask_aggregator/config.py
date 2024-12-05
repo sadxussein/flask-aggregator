@@ -34,7 +34,7 @@ class Config:
 
     # Working directories.
     ROOT_DIR = "/app"
-    LOGS_DIR = f"{ROOT_DIR}/logs"
+    LOGS_DIR = f"{ROOT_DIR}/log"
 
     # Host ovirtmgmt NIC names.
     HOST_MANAGEMENT_BONDS = [
