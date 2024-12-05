@@ -6,7 +6,10 @@ After=network.target
 User=aggregator
 Group=aggregator-group
 WorkingDirectory=/app
-ExecStart=/bin/bash -c 'source /app/flask-aggregator/bin/activate && gunicorn -w 10 -b 127.0.0.1:8000 flask_aggregator.front.app:app && deactivate'
+ExecStart=/bin/bash -c 'source /app/flask-aggregator/bin/activate && gunicorn -w 10 -b 127.0.0.1:8000 --timeout 86400 flask_aggregator.front.app:app'
+ExecStop=/bin/bash -c 'deactivate && /bin/kill -s TERM $MAINPID'
+KillMode=mixed
+TimeoutStopSec=30
 
 [Install]
 WantedBy=multi-user.target

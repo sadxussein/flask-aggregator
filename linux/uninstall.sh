@@ -5,8 +5,6 @@ DB_USER="aggregator"
 
 # 1. remove contents of /app and other files/links
 rm -rf /app/*
-rm -f /usr/local/bin/aggregator_run_gunicorn.sh
-rm -f /usr/local/bin/aggregator_run_collector.sh
 
 # 2. stop services, timers and targets
 systemctl stop aggregator-gunicorn.service
