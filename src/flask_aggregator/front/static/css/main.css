@@ -41,10 +41,17 @@ header nav ul li a:active {
     background-color: rgb(171, 193, 194);
     color: #003f7f;
     cursor: pointer;
+    border-right: 1px solid black;
+    padding: 2px;
 }
 
 .display th:hover {
     background-color: aquamarine;
+}
+
+.display td {
+    border-right: 1px solid black;
+    padding: 2px;
 }
 
 .display tr:nth-child(even) {

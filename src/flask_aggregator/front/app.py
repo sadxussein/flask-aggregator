@@ -57,7 +57,7 @@ class FlaskAggregator():
                 model, page, per_page, filters, sort_by, order
             )
             total_pages = (data_count + per_page - 1) // per_page
-
+            
             def get_pagination_url(page: int) -> str:
                 args = request.args.to_dict()
                 args["page"] = page
@@ -68,7 +68,8 @@ class FlaskAggregator():
                 filters=filters, title=model_name, page=page,
                 per_page=per_page, total_pages=total_pages,
                 get_pagination_url=get_pagination_url, getattr=getattr,
-                fields=fields, sort_by=sort_by, order=order
+                fields=fields, sort_by=sort_by, order=order,
+                total_items=data_count
             )
 
         @self.__app.route("/ovirt/cluster_list/raw_json")
