@@ -396,8 +396,6 @@ class OvirtHelper(VirtProtocol):
                                 )
                             except TypeError as e:
                                 self.__logger.log_error(f"{disk.id}: {e}.")
-                            finally:
-                                vm_data["total_space"] = 0
                             try:
                                 for sd in disk.storage_domains:
                                     storage_domain = (
