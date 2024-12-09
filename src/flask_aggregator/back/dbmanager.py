@@ -8,11 +8,14 @@ from flask_aggregator.back.models import Base
 
 class DBManager():
     """Class that operates with Postgres database."""
-    def __init__(self, env: str="prod") -> None:
-        if env == "prod":
-            self.__engine = create_engine(ProductionConfig.DB_URL)
-        else:
-            self.__engine = create_engine(DevelopmentConfig.DB_URL)
+    def __init__(self, db_url: str=None, env: str="prod") -> None:
+        if db_url == None:
+            if env == "prod":
+                self.__engine = create_engine(ProductionConfig.DB_URL)
+            else:
+                self.__engine = create_engine(DevelopmentConfig.DB_URL)
+        else: 
+            self.__engine = create_engine(db_url)
         self.__session = scoped_session(sessionmaker(bind=self.__engine))
         Base.metadata.create_all(self.__engine)
 

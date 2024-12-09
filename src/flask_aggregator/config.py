@@ -53,6 +53,13 @@ class Config:
         "data_centers": DataCenter
     }
 
+    # CB database connection.
+    CYBERBACKUP_DB_LIST = ["n32"]
+    CYBERBACKUP_DB_ADDRESSES = {"n32": "10.105.245.10"}
+    CYBERBACKUP_DB_PORT = {"n32": "5432"}
+    CYBERBACKUP_DB_NAME = {"n32": "cyberprotect_vault_manager"}
+    CYBERBACKUP_DB_USER = {"n32": "cyberbackup"}
+
 class DevelopmentConfig(Config):
     """Development flask app configuration."""
     DEBUG = True

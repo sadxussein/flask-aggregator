@@ -18,6 +18,7 @@ from flask_aggregator.config import (
 from flask_aggregator.back.models import DataCenter, Cluster
 from flask_aggregator.back.logger import Logger
 from flask_aggregator.back.virt_aggregator import VirtAggregator
+from flask_aggregator.back.ovirt_helper import OvirtHelper
 from flask_aggregator.back.file_handler import FileHandler
 from flask_aggregator.back.dbmanager import DBManager
 
@@ -57,7 +58,7 @@ class FlaskAggregator():
                 model, page, per_page, filters, sort_by, order
             )
             total_pages = (data_count + per_page - 1) // per_page
-            
+
             def get_pagination_url(page: int) -> str:
                 args = request.args.to_dict()
                 args["page"] = page
@@ -89,6 +90,36 @@ class FlaskAggregator():
             return jsonify(
                 data=data
             )
+
+        @self.__app.route("/ovirt/set_vm_ha", methods=["POST"])
+        def ovirt_set_vm_ha():
+            """Set VM high availability parameter."""
+            if "jsonfile" not in request.files:
+                return jsonify({"error": "No file part."}), 400
+
+            json_file = request.files["jsonfile"]
+
+            if json_file.name == '':
+                return jsonify({"error": "No selected file."}), 400
+
+            if json_file and json_file.filename.endswith(".json"):
+                try:
+                    ovirt_helper = OvirtHelper(dpc_list=["e15-test2"])
+                    ovirt_helper.connect_to_virtualization()
+                    result = ovirt_helper.set_vm_ha(json.load(json_file))
+                    ovirt_helper.disconnect_from_virtualization()
+                    return jsonify(result)
+                except json.JSONDecodeError as e:
+                    return (
+                        jsonify(
+                            {"JSONDecodeError": f"Invalid JSON file. {str(e)}"}
+                        ),
+                        400
+                    )
+                except KeyError as e:
+                    return jsonify({"KeyError": str(e)}), 400
+            else:
+                return jsonify({"error": "File is not a valid JSON."}), 400
 
         @self.__app.route("/ovirt/create_vm", methods=["POST"])
         def ovirt_create_vm():

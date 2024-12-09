@@ -1028,3 +1028,145 @@ class OvirtHelper(VirtProtocol):
                             )
 
         return {"response": 200, "vlan_list": vlan_list}
+
+    def set_vm_ha(self, vm_filter: dict=None) -> dict:
+        """Enable VM high availability parameter.
+        
+        Args:
+            filter (dict): By this filter VMs will be selected for HA
+                enabling. Key list in the description below. Example:
+                ```
+                {
+                    "vm_names": [],
+                    "vm_ids": [],
+                    "vm_env": ''
+                }
+                ```
+
+        Returns:
+            dict: Function reply with success/fail description.
+
+        If at least one of `vm_names`/`vm_ids` arguments (list) are set, only
+        particular VMs will be set to HA. If no VMs found error will be
+        returned in dict.
+        
+        If `vm_env` is set, only a certain group of VMs will be set to HA.
+        Viable `vm_env` parameters are 'test' and 'prod' (so far).
+
+        If no parameters are set, exception will be thrown and nothing will be
+        done.
+        """
+        result = []
+        if "vm_names" in vm_filter and vm_filter["vm_names"] is not None:
+            for dpc, connection in self.__connections.items():
+                system_service = connection.system_service()
+                vms = system_service.vms_service().list()
+                vms = (vm for vm in vms if vm.name in vm_filter["vm_names"])
+                if vms is None:
+                    self.__logger.log_error(
+                        f"No VMs with names {vm_filter['vm_name']} have been "
+                        f"found in {dpc} engine."
+                    )
+                    raise ValueError(
+                        f"No VMs with names {vm_filter['vm_name']} have been "
+                        f"found in {dpc} engine."
+                    )
+                else:
+                    for vm in vms:
+                        result.append(
+                            self.__set_vm_ha_parameter(system_service, vm)
+                        )
+        elif "vm_ids" in vm_filter and vm_filter["vm_ids"] is not None:
+            for dpc, connection in self.__connections.items():
+                system_service = connection.system_service()
+                vms = system_service.vms_service().list()
+                vms = (vm for vm in vms if vm.id in vm_filter["vm_ids"])
+                if vms is None:
+                    self.__logger.log_error(
+                        f"No VMs with ids {vm_filter['vm_ids']} have been "
+                        f"found in {dpc} engine."
+                    )
+                    raise ValueError(
+                        f"No VMs with ids {vm_filter['vm_ids']} have been "
+                        f"found in {dpc} engine."
+                    )
+                else:
+                    for vm in vms:
+                        result.append(
+                            self.__set_vm_ha_parameter(system_service, vm)
+                        )
+        elif "vm_env" in vm_filter and vm_filter["vm_env"] is not None:
+            for dpc, connection in self.__connections.items():
+                system_service = connection.system_service()
+                vms = system_service.vms_service().list()
+                vms = (vm for vm in vms if vm_filter["vm_env"] in vm.comment)
+                if vms is None:
+                    self.__logger.log_error(
+                        f"No VMs with environment {vm_filter['vm_env']} have "
+                        f"been found in {dpc} engine."
+                    )
+                    raise ValueError(
+                        f"No VMs with environment {vm_filter['vm_env']} have "
+                        f"been found in {dpc} engine."
+                    )
+                else:
+                    for vm in vms:
+                        result.append(
+                            self.__set_vm_ha_parameter(system_service, vm)
+                        )
+        else:
+            raise KeyError(
+                "Bad filter. No valid parameters specified. Valid parameters:"
+                " 'vm_name', 'vm_id', 'vm_env'"
+            )
+        return result
+
+    def __set_vm_ha_parameter(
+        self, ss: sdk.services.SystemService, vm: sdk.types.Vm
+    ) -> dict:
+        """Set HA parameter for concrete VM.
+        
+        Args:
+            ss (ovirtsdk4.services.SystemService): Connection's service.
+            vm (ovirtsdk4.types.Vm): VM entity.
+
+        Returns:
+            dict: Resulting message. Could be error or success key.
+        """
+        result = {}
+        vm_service = ss.vms_service().vm_service(vm.id)
+        disk_att_service = vm_service.disk_attachments_service()
+        disk_attachments = disk_att_service.list()
+        # Disk storage domain.
+        disk_sd = None
+        if disk_attachments:
+            for disk_attachment in disk_attachments:
+                disk = ss.disks_service().disk_service(
+                    disk_attachment.disk.id
+                ).get()
+                if disk_attachment.bootable:
+                    disk_sd = disk.storage_domains[0]
+        if disk_sd is not None:
+            self.__logger.log_info(
+                f"Enabling HA for {vm.name}."
+            )
+            vm_service.update(
+                vm=sdk.types.Vm(
+                    high_availability=sdk.types.HighAvailability(
+                        enabled=True
+                    ),
+                    lease=(
+                        sdk.types.StorageDomainLease(
+                            storage_domain=disk_sd
+                        )
+                    )
+                )
+            )
+            result["success"] = vm.name
+        else:
+            self.__logger.log_error(
+                f"Failed to enable HA for {vm.name}. No storage"
+                " domain found."
+            )
+            result["error"] = vm.name
+        return result
