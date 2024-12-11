@@ -48,14 +48,14 @@ class FlaskAggregator():
             page = request.args.get("page", 1, type=int)
             per_page = request.args.get("per_page", 10, type=int)
             sort_by = request.args.get("sort_by", "name")
-            order = request.args.get("order", "desc")
+            order = request.args.get("order", "asc")
             dbmanager = DBManager()
             fields = Config.DB_MODELS[model_name].get_columns_order()
             filters = {}
             for f in model.get_filters():
                 filters[f] = request.args.get(f)
             data_count, data = dbmanager.get_paginated_data(
-                model, page, per_page, filters, sort_by, order
+                model, page, per_page, filters, sort_by, order, fields
             )
             total_pages = (data_count + per_page - 1) // per_page
 

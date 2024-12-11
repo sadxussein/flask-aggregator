@@ -2,7 +2,9 @@
 
 import os
 
-from flask_aggregator.back.models import *
+from flask_aggregator.back.models import (
+    Vm, Host, Cluster, DataCenter, Storage, Backups
+)
 
 class Config:
     """Configuration class for Flask Aggregator app."""
@@ -50,15 +52,20 @@ class Config:
         "hosts": Host,
         "clusters": Cluster,
         "storages": Storage,
-        "data_centers": DataCenter
+        "data_centers": DataCenter,
+        "backups": Backups
     }
 
     # CB database connection.
-    CYBERBACKUP_DB_LIST = ["n32"]
-    CYBERBACKUP_DB_ADDRESSES = {"n32": "10.105.245.10"}
-    CYBERBACKUP_DB_PORT = {"n32": "5432"}
-    CYBERBACKUP_DB_NAME = {"n32": "cyberprotect_vault_manager"}
-    CYBERBACKUP_DB_USER = {"n32": "cyberbackup"}
+    CYBERBACKUP_DPC_LIST = ["e15", "n32", "k45"]
+    CYBERBACKUP_DB_ADDRESSES = {
+        "e15": "10.105.252.10",
+        "n32": "10.105.245.10",
+        "k45": "10.105.238.10"
+    }
+    CYBERBACKUP_DB_PORT = "5432"
+    CYBERBACKUP_DB_NAME = "cyberprotect_vault_manager"
+    CYBERBACKUP_DB_USER = "cyberbackup"
 
 class DevelopmentConfig(Config):
     """Development flask app configuration."""

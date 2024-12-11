@@ -1170,3 +1170,6 @@ class OvirtHelper(VirtProtocol):
             )
             result["error"] = vm.name
         return result
+
+    def set_vm_metadata(self) -> dict:
+        pass

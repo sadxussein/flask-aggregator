@@ -13,7 +13,7 @@ class OvirtEntity(Base):
     """Base class for every oVirt entity."""
     __abstract__ = True
 
-    id = Column(Integer, primary_key=True)
+    id = Column(Integer, primary_key=True, autoincrement=True)
     uuid = Column(UUID, unique=True, nullable=False)
     name = Column(String)
     engine = Column(String)
@@ -136,6 +136,35 @@ class DataCenter(OvirtEntity):
         return OvirtEntity.get_columns_order() + [
             "comment"
         ]
+
+class Backups(Base):
+    """Base class for Cyberbackup backups history."""
+    __tablename__ = "backups"
+
+    id = Column(Integer, primary_key=True)
+    uuid = Column(UUID, unique=True, nullable=False)
+    name = Column(String)
+    backup_server = Column(String)
+    resource_ids = Column(String)
+    created = Column(DateTime)
+    created_time = Column(DateTime)
+    size = Column(String)
+    source_key = Column(String)
+    disks = Column(String)
+    type = Column(String)
+
+    @staticmethod
+    def get_columns_order():
+        """Get full order of columns.""" 
+        return [
+            "name", "backup_server", "created",
+            "created_time", "size", "source_key", "type"
+        ]
+
+    @staticmethod
+    def get_filters():
+        """Full set of filters."""
+        return ["name", "backup_server", "created_time"]
 
 def get_engine(db_url):
     """Return corresponding engine to database manager class."""

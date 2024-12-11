@@ -96,7 +96,7 @@ class VirtAggregator():
         self.__logger.log_debug(f"Started thread {dpcs}-{function_name}.")
         dbmanager = DBManager()
         raw_data = getattr(virt_helper, function_name)()
-        dbmanager.add_data(Config.DB_MODELS[table], raw_data)
+        dbmanager.upsert_data(Config.DB_MODELS[table], raw_data)
         dbmanager.close()
         self.__logger.log_debug(f"Finished thread {dpcs}-{function_name}.")
 

@@ -1,6 +1,6 @@
 [Unit]
 Description=Aggregator timers target
-Requires=aggregator-collector-hosts.timer aggregator-collector-storages.timer
+Requires=aggregator-collector-hosts.timer aggregator-collector-storages.timer aggregator-collector-backups.timer
 After=timers.target
 
 [Install]

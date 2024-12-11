@@ -23,7 +23,9 @@
         <tbody>
             {% for item in data %}
             <tr>
-                <td><a href="{{ item.href }}">{{ item.uuid }}</a></td>
+                {% if item.uuid %}
+                    <td><a href="{{ item.href }}">{{ item.uuid }}</a></td>
+                {% endif %}
                 {% for column in fields %}
                     {% if column != "uuid" and column != "href" %}
                         <td>{{ getattr(item, column) }}</td>

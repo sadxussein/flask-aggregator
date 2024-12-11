@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "flask_aggregator"
-version = "2024.12.06.1"
+version = "2024.12.11"
 authors = [
     { name="krasnoschekovvd", email="krasnoschekovvd@rncb.ru" },
 ]
@@ -25,6 +25,7 @@ fa_get_hosts = "flask_aggregator.back.run.collector.get_hosts:run"
 fa_get_storages = "flask_aggregator.back.run.collector.get_storages:run"
 fa_get_clusters = "flask_aggregator.back.run.collector.get_clusters:run"
 fa_get_data_centers = "flask_aggregator.back.run.collector.get_data_centers:run"
+fa_get_backups = "flask_aggregator.back.run.collector.get_backups:run"
 fa_mon_hosts = "flask_aggregator.back.run.monitoring.get_hosts:run"
 fa_mon_storages = "flask_aggregator.back.run.monitoring.get_storages:run"
 
