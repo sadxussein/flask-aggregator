@@ -1,5 +1,6 @@
 """Database interactions module."""
 
+import os
 from datetime import datetime, timedelta
 
 from sqlalchemy import create_engine, asc, desc, text, select, func
@@ -7,20 +8,22 @@ from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import sessionmaker, scoped_session, Query
 from sqlalchemy.dialects.postgresql import insert
 from flask_aggregator.config import ProductionConfig, DevelopmentConfig
-from flask_aggregator.back.models import Base, Backups
+from flask_aggregator.back.models import Base
 from flask_aggregator.back.logger import Logger
 
 class DBManager():
     """Class that operates with Postgres database."""
     def __init__(
-        self, db_url: str=None, env: str="dev", logger=Logger()
+        self, db_url: str=None, env: str=os.getenv("FA_ENV"), logger=Logger()
     ) -> None:
         self.__logger = logger
+        # Checking if there is ENV variable `FA_ENV`. If there is and it
+        # either 'prod' or 'dev' value there - put it to `env` class variable.
         if db_url is None:
-            if env == "prod":
-                self.__engine = create_engine(ProductionConfig.DB_URL)
-            else:
+            if env == "dev":
                 self.__engine = create_engine(DevelopmentConfig.DB_URL)
+            else:
+                self.__engine = create_engine(ProductionConfig.DB_URL)
         else:
             self.__engine = create_engine(db_url)
         self.__session = scoped_session(sessionmaker(bind=self.__engine))
@@ -68,10 +71,10 @@ class DBManager():
 
     def get_old_backups(
             self, table_type, page, per_page, filters, sort_by: str,
-            order: str, fields: list
+            order: str, fields: list, backups_to_show: str
     ) -> tuple:
-        """Get backups older than 2 days.""" 
-        session = self.__session()       
+        """Get backups older than 2 days or newer than 2 days.""" 
+        session = self.__session()
         # Main query and subquery.
         subquery = (
             session.query(
@@ -89,8 +92,11 @@ class DBManager():
                 (table_type.name == subquery.c.name)
                 & (table_type.created == subquery.c.latest_created)
             )
-            .filter(table_type.created < two_days_ago)
         )
+        if backups_to_show == "older":    # older than 2 days old.
+            query = query.filter(table_type.created < two_days_ago)
+        elif backups_to_show == "less":   # less than 2 days old.
+            query = query.filter(table_type.created >= two_days_ago)
         # Adding field selection. Only selected fields will be queried.
         table_fields = [getattr(table_type, f) for f in fields]
         query = query.with_entities(*table_fields)

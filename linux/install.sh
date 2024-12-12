@@ -56,12 +56,5 @@ systemctl restart nginx
 # sudo -u postgres psql -c "alter database $DB_NAME owner to $DB_USER;"
 # sudo -u postgres psql -c "grant all privileges on database $DB_NAME to $DB_USER;"
 
-# 11. set up remote Cyberbackup database password via ENV, only if 
-#     CB_DB_PASS is not already set
-env | grep -e "CB_DB_PASS=S7G9svrT~X45H|\[xPybAV"
-if [ $? -eq 1 ]; then
-    echo "CB_DB_PASS=S7G9svrT~X45H|[xPybAV" >> /etc/environment
-fi
-
-# 12. deactivating environment
+# 11. deactivating environment
 deactivate

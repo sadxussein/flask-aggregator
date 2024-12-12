@@ -49,21 +49,20 @@ class FlaskAggregator():
             per_page = request.args.get("per_page", 10, type=int)
             sort_by = request.args.get("sort_by", "name")
             order = request.args.get("order", "asc")
-            old_backups = request.args.get("old_backups", False) == "true"
+            old_backups = request.args.get("old_backups", "all")
             dbmanager = DBManager()
             fields = Config.DB_MODELS[model_name].get_columns_order()
             filters = {}
             for f in model.get_filters():
                 filters[f] = request.args.get(f)
             data_count, data = dbmanager.get_old_backups(
-                model, page, per_page, filters, sort_by, order, fields
-            ) if model_name == "backups" and old_backups is True else (
+                model, page, per_page, filters, sort_by, order, fields,
+                old_backups
+            ) if model_name == "backups" and old_backups != "all" else (
                 dbmanager.get_paginated_data(
                     model, page, per_page, filters, sort_by, order, fields
                 )
             )
-
-            print(data)
 
             total_pages = (data_count + per_page - 1) // per_page
 
