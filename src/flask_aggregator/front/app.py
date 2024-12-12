@@ -49,14 +49,22 @@ class FlaskAggregator():
             per_page = request.args.get("per_page", 10, type=int)
             sort_by = request.args.get("sort_by", "name")
             order = request.args.get("order", "asc")
+            old_backups = request.args.get("old_backups", False) == "true"
             dbmanager = DBManager()
             fields = Config.DB_MODELS[model_name].get_columns_order()
             filters = {}
             for f in model.get_filters():
                 filters[f] = request.args.get(f)
-            data_count, data = dbmanager.get_paginated_data(
+            data_count, data = dbmanager.get_old_backups(
                 model, page, per_page, filters, sort_by, order, fields
+            ) if model_name == "backups" and old_backups is True else (
+                dbmanager.get_paginated_data(
+                    model, page, per_page, filters, sort_by, order, fields
+                )
             )
+
+            print(data)
+
             total_pages = (data_count + per_page - 1) // per_page
 
             def get_pagination_url(page: int) -> str:
@@ -70,7 +78,7 @@ class FlaskAggregator():
                 per_page=per_page, total_pages=total_pages,
                 get_pagination_url=get_pagination_url, getattr=getattr,
                 fields=fields, sort_by=sort_by, order=order,
-                total_items=data_count
+                total_items=data_count, old_backups=old_backups
             )
 
         @self.__app.route("/ovirt/cluster_list/raw_json")

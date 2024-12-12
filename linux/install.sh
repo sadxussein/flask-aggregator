@@ -18,7 +18,7 @@ source /app/flask-aggregator/bin/activate
 
 # 3. install python packages to venv
 pip3 install -r $SCRIPT_DIR/app/requirements.txt
-pip3 install --force-reinstall $SCRIPT_DIR/app/flask_aggregator*.whl
+pip3 install --force-reinstall $SCRIPT_DIR/app/flask_aggregator-$FA_VERSION-py3-none-any.whl
 
 # 4. change rights to /app folder
 chown -R aggregator:aggregator-group /app
@@ -31,6 +31,8 @@ cp $SCRIPT_DIR/etc/systemd/system/aggregator-collector-hosts.service /etc/system
 cp $SCRIPT_DIR/etc/systemd/system/aggregator-collector-hosts.timer /etc/systemd/system/aggregator-collector-hosts.timer
 cp $SCRIPT_DIR/etc/systemd/system/aggregator-collector-storages.service /etc/systemd/system/aggregator-collector-storages.service
 cp $SCRIPT_DIR/etc/systemd/system/aggregator-collector-storages.timer /etc/systemd/system/aggregator-collector-storages.timer
+cp $SCRIPT_DIR/etc/systemd/system/aggregator-collector-backups.service /etc/systemd/system/aggregator-collector-backups.service
+cp $SCRIPT_DIR/etc/systemd/system/aggregator-collector-backups.timer /etc/systemd/system/aggregator-collector-backups.timer
 
 # 6. reload systemd
 systemctl daemon-reload
@@ -56,7 +58,7 @@ systemctl restart nginx
 
 # 11. set up remote Cyberbackup database password via ENV, only if 
 #     CB_DB_PASS is not already set
-env | grep "CB_DB_PASS=S7G9svrT~X45H|[xPybAV"
+env | grep -e "CB_DB_PASS=S7G9svrT~X45H|\[xPybAV"
 if [ $? -eq 1 ]; then
     echo "CB_DB_PASS=S7G9svrT~X45H|[xPybAV" >> /etc/environment
 fi

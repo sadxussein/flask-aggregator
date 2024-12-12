@@ -1,11 +1,13 @@
 """Database interactions module."""
 
-from sqlalchemy import create_engine, asc, desc, text
+from datetime import datetime, timedelta
+
+from sqlalchemy import create_engine, asc, desc, text, select, func
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import sessionmaker, scoped_session, Query
 from sqlalchemy.dialects.postgresql import insert
 from flask_aggregator.config import ProductionConfig, DevelopmentConfig
-from flask_aggregator.back.models import Base
+from flask_aggregator.back.models import Base, Backups
 from flask_aggregator.back.logger import Logger
 
 class DBManager():
@@ -57,12 +59,55 @@ class DBManager():
         query = text(query_string)
         session = self.__session
         rows = None
-        try: 
+        try:
             result = session.execute(query)
             rows = result.fetchall()
         except OperationalError as e:
             self.__logger.log_error(e)
         return rows
+
+    def get_old_backups(
+            self, table_type, page, per_page, filters, sort_by: str,
+            order: str, fields: list
+    ) -> tuple:
+        """Get backups older than 2 days.""" 
+        session = self.__session()       
+        # Main query and subquery.
+        subquery = (
+            session.query(
+                table_type.name,
+                func.max(table_type.created).label("latest_created")
+            )
+            .group_by(table_type.name)
+            .subquery()
+        )
+        two_days_ago = datetime.now() - timedelta(days=2)
+        query = (
+            session.query(table_type)
+            .join(
+                subquery,
+                (table_type.name == subquery.c.name)
+                & (table_type.created == subquery.c.latest_created)
+            )
+            .filter(table_type.created < two_days_ago)
+        )
+        # Adding field selection. Only selected fields will be queried.
+        table_fields = [getattr(table_type, f) for f in fields]
+        query = query.with_entities(*table_fields)
+        # Setting up filters, only specified entities will be found.
+        query = self.__apply_filters(query, table_type, filters)
+        # Sorting.
+        if order == "desc":
+            query = query.order_by(desc(sort_by))
+        else:
+            query = query.order_by(asc(sort_by))
+        # Item count.
+        total_items = query.count()
+        # Paginating with offset.
+        query = query.offset((page - 1) * per_page).limit(per_page)
+        
+        data = query.all()
+        return (total_items, data)
 
     def get_paginated_data(
             self, table_type, page, per_page, filters, sort_by: str,
@@ -115,3 +160,5 @@ class DBManager():
         """Clean up and close."""
         self.__session.remove()
         self.__engine.dispose()
+
+

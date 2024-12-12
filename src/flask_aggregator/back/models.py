@@ -153,6 +153,11 @@ class Backups(Base):
     disks = Column(String)
     type = Column(String)
 
+    @property
+    def as_dict(self):
+        """Return dict from model structure."""
+        return {c.name: getattr(self, c.name) for c in self.__table__.columns}
+
     @staticmethod
     def get_columns_order():
         """Get full order of columns.""" 
@@ -164,7 +169,7 @@ class Backups(Base):
     @staticmethod
     def get_filters():
         """Full set of filters."""
-        return ["name", "backup_server", "created_time"]
+        return ["name", "backup_server", "type"]
 
 def get_engine(db_url):
     """Return corresponding engine to database manager class."""

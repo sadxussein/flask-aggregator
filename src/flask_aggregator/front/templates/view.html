@@ -6,6 +6,10 @@
         <label for="{{ key }}">{{ key }}:</label>
         <input type="text" id="{{ key }}" name="{{ key }}" value="{{ filters[key] or '' }}">
     {% endfor %}
+    {% if model_name == "backups" %}
+        <label for="">Show only VM's with old backups (>2 days):</label>
+        <input type="checkbox" name="old_backups" value="true" {% if old_backups %} checked {% endif %}>
+    {% endif %}
     <button type="submit">Search</button>
 </form>
 <hr>
