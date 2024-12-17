@@ -3,12 +3,12 @@
 import os
 from datetime import datetime, timedelta
 
-from sqlalchemy import create_engine, asc, desc, text, select, func
+from sqlalchemy import create_engine, asc, desc, text, func
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import sessionmaker, scoped_session, Query
 from sqlalchemy.dialects.postgresql import insert
 from flask_aggregator.config import ProductionConfig, DevelopmentConfig
-from flask_aggregator.back.models import Base
+from flask_aggregator.back.models import Base, ElmaVM, Backups
 from flask_aggregator.back.logger import Logger
 
 class DBManager():
@@ -31,6 +31,11 @@ class DBManager():
             Base.metadata.create_all(self.__engine)
         except OperationalError as e:
             self.__logger.log_error(e)
+
+    @property
+    def engine(self):
+        """For external use."""
+        return self.__engine
 
     def upsert_data(self, model: any, data: list) -> None:
         """Upsert data to tables based on their type."""
@@ -69,6 +74,48 @@ class DBManager():
             self.__logger.log_error(e)
         return rows
 
+    def get_elma_backups(
+            self, page, per_page, filters, sort_by: str,
+            order: str, fields: list, backups_to_show: str
+    ) -> tuple:
+        """Get Elma + Backups join and full Elma backup list."""
+        session = self.__session()
+        if backups_to_show == "join":
+            sq = (
+                    session.query(Backups.name)
+                    .filter(Backups.name == ElmaVM.name)
+                    .exists()
+                )
+            query = (
+                session.query(ElmaVM)
+                .filter(
+                    ElmaVM.should_be_backuped == "Да",
+                    ~sq.correlate(ElmaVM)
+                )
+            )
+            print(query.count())
+        else:
+            query = session.query(ElmaVM)
+        # Adding field selection. Only selected fields will be queried.
+        table_fields = [getattr(ElmaVM, f) for f in fields]
+        query = query.with_entities(*table_fields)
+        # Setting up filters, only specified entities will be found.
+        query = self.__apply_filters(query, ElmaVM, filters)
+        # Sorting.
+        if order == "desc":
+            query = query.order_by(desc(sort_by))
+        else:
+            query = query.order_by(asc(sort_by))
+        # Item count.
+        total_items = query.count()
+        print(query)
+        print(total_items)
+        # Paginating with offset.
+        query = query.offset((page - 1) * per_page).limit(per_page)
+
+        data = query.all()
+        return (total_items, data)
+
     def get_old_backups(
             self, table_type, page, per_page, filters, sort_by: str,
             order: str, fields: list, backups_to_show: str
@@ -97,6 +144,22 @@ class DBManager():
             query = query.filter(table_type.created < two_days_ago)
         elif backups_to_show == "less":   # less than 2 days old.
             query = query.filter(table_type.created >= two_days_ago)
+        elif backups_to_show == "all":      # all backups.
+            pass
+        # Showing elma and CB present backups.
+        elif backups_to_show == "elma_join":    
+            elma_query = (
+                session.query(ElmaVM)
+                .filter(
+                    ElmaVM.should_be_backuped == "Да",
+                    ElmaVM.is_deleted == "Нет"
+                )
+                .subquery()
+            )
+            query = query.join(
+                elma_query, elma_query.c.name == table_type.name
+            )
+
         # Adding field selection. Only selected fields will be queried.
         table_fields = [getattr(table_type, f) for f in fields]
         query = query.with_entities(*table_fields)

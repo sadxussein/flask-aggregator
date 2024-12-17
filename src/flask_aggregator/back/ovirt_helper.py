@@ -165,30 +165,30 @@ class OvirtHelper(VirtProtocol):
                                 .get()
                             )
                             data_centers.add(data_center.name)
+                        result.append({
+                            "uuid": domain.id,
+                            "name": domain.name,
+                            "engine": dpc,
+                            "data_center": ' '.join(data_centers),
+                            "available": domain.available,
+                            "used": domain.used,
+                            "committed": domain.committed,
+                            "total": domain.available + domain.used,
+                            "percent_left": 100 - int(((100 * domain.used) 
+                                            / (domain.available + domain.used))),
+                            "overprovisioning": int((domain.committed * 100)
+                                                    / (domain.available
+                                                    + domain.used)),
+                            "href": (
+                                f"{Config.DPC_URLS[dpc][:-3]}"
+                                "webadmin/?locale=en_US#"
+                                f"storage-general;name={domain.name}"
+                            ),
+                            "virtualization": self.pretty_name
+                        })
                     except TypeError as e:
                         self.__logger.log_error(e)
                         data_centers.add('-')
-                    result.append({
-                        "uuid": domain.id,
-                        "name": domain.name,
-                        "engine": dpc,
-                        "data_center": ' '.join(data_centers),
-                        "available": domain.available,
-                        "used": domain.used,
-                        "committed": domain.committed,
-                        "total": domain.available + domain.used,
-                        "percent_left": 100 - int(((100 * domain.used) 
-                                        / (domain.available + domain.used))),
-                        "overprovisioning": int((domain.committed * 100)
-                                                / (domain.available
-                                                   + domain.used)),
-                        "href": (
-                            f"{Config.DPC_URLS[dpc][:-3]}"
-                            "webadmin/?locale=en_US#"
-                            f"storage-general;name={domain.name}"
-                        ),
-                        "virtualization": self.pretty_name
-                    })
             self.__logger.log_info(
                 f"Finished collecting storage domains from {dpc}."
             )

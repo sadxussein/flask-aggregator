@@ -12,7 +12,15 @@
             <option value="all">all</option>
             <option value="less">less than 2 days old</option>
             <option value="older">older than 2 days</option>
+            <option value="elma_join">elma_join</option>
         </select>
+    {% endif %}
+    {% if model_name == "elma_vms" %}
+    <label for="elma_backups">Show backups:</label>        
+    <select id="elma_backups" name="elma_backups">
+        <option value="all">all</option>
+        <option value="join">absent in CB</option>
+    </select>
     {% endif %}
     <button type="submit">Search</button>
 </form>

@@ -6,6 +6,7 @@ import json
 
 from flask_aggregator.back.dbmanager import DBManager
 from flask_aggregator.back.models import Storage
+from flask_aggregator.config import Config
 
 def run():
     """External runner."""
@@ -24,7 +25,12 @@ def run():
             "warning_low_space_indicator": 10
         }
         result["storage_domain"].append(s)
-    print(json.dumps(result, ensure_ascii=False))
+    if result:
+        with open(
+            f"{Config.ROOT_DIR}/get_storages.json", 'w', encoding="utf-8"
+        ) as file:
+            json.dump(result, file, indent=4, ensure_ascii=False)
+    # print(json.dumps(result, ensure_ascii=False))
 
 if __name__ == "__main__":
     run()

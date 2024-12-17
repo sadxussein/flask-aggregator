@@ -7,4 +7,4 @@ pip3 install --upgrade $SCRIPT_DIR/app/flask_aggregator-$FA_VERSION-py3-none-any
 deactivate
 
 chown -R aggregator:aggregator-group /app
-chmod -R g+rx /app
+chmod -R g+rwx /app

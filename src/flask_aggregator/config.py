@@ -3,7 +3,7 @@
 import os
 
 from flask_aggregator.back.models import (
-    Vm, Host, Cluster, DataCenter, Storage, Backups
+    Vm, Host, Cluster, DataCenter, Storage, Backups, ElmaVM
 )
 
 class Config:
@@ -53,7 +53,8 @@ class Config:
         "clusters": Cluster,
         "storages": Storage,
         "data_centers": DataCenter,
-        "backups": Backups
+        "backups": Backups,
+        "elma_vms": ElmaVM
     }
 
     # CB database connection.

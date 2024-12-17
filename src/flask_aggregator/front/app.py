@@ -50,19 +50,32 @@ class FlaskAggregator():
             sort_by = request.args.get("sort_by", "name")
             order = request.args.get("order", "asc")
             old_backups = request.args.get("old_backups", "all")
+            elma_backups = request.args.get("elma_backups", "all")
             dbmanager = DBManager()
             fields = Config.DB_MODELS[model_name].get_columns_order()
             filters = {}
             for f in model.get_filters():
                 filters[f] = request.args.get(f)
-            data_count, data = dbmanager.get_old_backups(
-                model, page, per_page, filters, sort_by, order, fields,
-                old_backups
-            ) if model_name == "backups" and old_backups != "all" else (
+            data_count, data = None, None
+            if (
+                model_name == "backups"
+                and old_backups != "all_cb_entries"
+            ):
+                data_count, data = dbmanager.get_old_backups(
+                    model, page, per_page, filters, sort_by, order, fields,
+                    old_backups
+                )
+            elif (
+                model_name == "elma_vms"
+            ):
+                data_count, data = dbmanager.get_elma_backups(
+                    page, per_page, filters, sort_by, order, fields,
+                    elma_backups
+                )
+            else:
                 dbmanager.get_paginated_data(
                     model, page, per_page, filters, sort_by, order, fields
                 )
-            )
 
             total_pages = (data_count + per_page - 1) // per_page
 
@@ -77,7 +90,8 @@ class FlaskAggregator():
                 per_page=per_page, total_pages=total_pages,
                 get_pagination_url=get_pagination_url, getattr=getattr,
                 fields=fields, sort_by=sort_by, order=order,
-                total_items=data_count, old_backups=old_backups
+                total_items=data_count, old_backups=old_backups,
+                elma_backups=elma_backups
             )
 
         @self.__app.route("/ovirt/cluster_list/raw_json")

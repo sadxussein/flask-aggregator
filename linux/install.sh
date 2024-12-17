@@ -9,6 +9,7 @@ DB_PASS="68mLMd4WzqLQkZ1LXPd0"
 groupadd aggregator-group
 useradd -M -s /sbin/nologin aggregator
 usermod -aG aggregator-group aggregator
+usermod -ag aggregator-group zabbix
 
 # 2. set up venv
 mkdir -p /app/flask-aggregator

@@ -171,6 +171,55 @@ class Backups(Base):
         """Full set of filters."""
         return ["name", "backup_server", "type"]
 
+class ElmaVM(Base):
+    """Elma VM table."""
+    __tablename__ = "elma_vms"
+
+    id = Column(Integer, primary_key=True)
+    uuid = Column(UUID, unique=True, nullable=False)
+    name = Column(String)
+    host = Column(String)
+    ips = Column(String)
+    environment = Column(String)
+    administrators = Column(String)
+    users = Column(String)
+    info_system = Column(String)
+    software = Column(String)
+    should_be_backuped = Column(Boolean, nullable=False)
+    is_deleted = Column(Boolean, nullable=False)
+
+    @staticmethod
+    def elma_field_names():
+        """Set of fields for file validity check."""
+        return {
+            "uuid": "Уникальный код",
+            "name": "Наименование",
+            "host": "Хост",
+            "ips": "Ip адреса",
+            "environment": "Рабочее окружение",
+            "administrators": "Администраторы ИС",
+            "users": "Пользователи (функциональные группы)",
+            "info_system": "Информационные системы",
+            "software": "ПО",
+            "should_be_backuped": "Резервное копирование",
+            "is_deleted": "IsDeleted"
+        }
+
+    @property
+    def as_dict(self):
+        """Return dict from model structure."""
+        return {c.name: getattr(self, c.name) for c in self.__table__.columns}
+
+    @staticmethod
+    def get_columns_order():
+        """Get full order of columns.""" 
+        return ["name", "environment", "should_be_backuped"]
+
+    @staticmethod
+    def get_filters():
+        """Full set of filters."""
+        return ["name", "environment", "should_be_backuped"]
+
 def get_engine(db_url):
     """Return corresponding engine to database manager class."""
     return create_engine(db_url)
