@@ -55,7 +55,7 @@ class CyberbackupHelper():
                     "created": row[2],
                     "created_time": row[3],
                     "size": row[4],
-                    "source_key": row[5],
+                    "source_key": "disks" if "STOR" in row[5] else "tape",
                     "disks": row[6],
                     "type": row[7]
                 }

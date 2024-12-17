@@ -163,13 +163,13 @@ class Backups(Base):
         """Get full order of columns.""" 
         return [
             "name", "backup_server", "created",
-            "created_time", "size", "source_key", "type"
+            "size", "source_key", "type"
         ]
 
     @staticmethod
     def get_filters():
         """Full set of filters."""
-        return ["name", "backup_server", "type"]
+        return ["name", "backup_server", "source_key", "type"]
 
 class ElmaVM(Base):
     """Elma VM table."""

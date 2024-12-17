@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "flask_aggregator"
-version = "2024.12.13.1"
+version = "2024.12.17"
 authors = [
     { name="krasnoschekovvd", email="krasnoschekovvd@rncb.ru" },
 ]

@@ -9,17 +9,17 @@
     {% if model_name == "backups" %}
         <label for="old_backups">Show backups:</label>        
         <select id="old_backups" name="old_backups">
-            <option value="all">all</option>
-            <option value="less">less than 2 days old</option>
-            <option value="older">older than 2 days</option>
-            <option value="elma_join">elma_join</option>
+            <option value="all" {% if old_backups == "all" %} selected {% endif %}>all</option>
+            <option value="less" {% if old_backups == "less" %} selected {% endif %}>less than 2 days old</option>
+            <option value="older" {% if old_backups == "older" %} selected {% endif %}>older than 2 days</option>
+            <option value="elma_join" {% if old_backups == "elma_join" %} selected {% endif %}>elma_join</option>
         </select>
     {% endif %}
     {% if model_name == "elma_vms" %}
     <label for="elma_backups">Show backups:</label>        
     <select id="elma_backups" name="elma_backups">
-        <option value="all">all</option>
-        <option value="join">absent in CB</option>
+        <option value="all" {% if elma_backups == "all" %} selected {% endif %}>all</option>
+        <option value="join" {% if elma_backups == "join" %} selected {% endif %}>absent in CB</option>
     </select>
     {% endif %}
     <button type="submit">Search</button>
