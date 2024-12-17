@@ -76,26 +76,31 @@ class DBManager():
 
     def get_elma_backups(
             self, page, per_page, filters, sort_by: str,
-            order: str, fields: list, backups_to_show: str
+            order: str, fields: list, backups_to_show: str, show_dbs: str
     ) -> tuple:
         """Get Elma + Backups join and full Elma backup list."""
         session = self.__session()
+        # Main query.
+        query = session.query(ElmaVM)
+        # Showing only vms with names that contain 'db'.
+        query = self.__apply_field_like_filter(
+            ElmaVM.name, query, show_dbs, "db"
+        )
+
         if backups_to_show == "join":
             sq = (
                     session.query(Backups.name)
                     .filter(Backups.name == ElmaVM.name)
                     .exists()
                 )
-            query = (
-                session.query(ElmaVM)
-                .filter(
-                    ElmaVM.should_be_backuped == "Да",
-                    ~sq.correlate(ElmaVM)
-                )
+            query = query.filter(
+                ElmaVM.should_be_backuped == "Да",
+                ~sq.correlate(ElmaVM)
             )
             print(query.count())
         else:
             query = session.query(ElmaVM)
+
         # Adding field selection. Only selected fields will be queried.
         table_fields = [getattr(ElmaVM, f) for f in fields]
         query = query.with_entities(*table_fields)
@@ -108,13 +113,34 @@ class DBManager():
             query = query.order_by(asc(sort_by))
         # Item count.
         total_items = query.count()
-        print(query)
-        print(total_items)
         # Paginating with offset.
         query = query.offset((page - 1) * per_page).limit(per_page)
 
         data = query.all()
         return (total_items, data)
+
+    def __apply_field_like_filter(
+        self, column: any, query: Query, mode: str, value: str
+    ) -> Query:
+        """Add LIKE filter to query.
+        
+        Args:
+            column (any): ORM sqlalchemy table column.
+            query (Query): Where filter should be applied.
+            mode (str): 'show', 'hide' or 'all'. Last value disables filter if
+                if was previously enabled.
+            value (str): filtering value.
+        """
+        if mode == "all":
+            return query
+        elif mode == "show":
+            return query.filter(column.like(f"%{value}%"))
+        elif mode == "hide":
+            return query.filter(~column.like(f"%{value}%"))
+        else:
+            raise KeyError(
+                "Bad mode, should be 'all', 'show' or 'hide'. Check input."
+            )
 
     def get_old_backups(
             self, table_type, page, per_page, filters, sort_by: str,
@@ -147,7 +173,7 @@ class DBManager():
         elif backups_to_show == "all":      # all backups.
             pass
         # Showing elma and CB present backups.
-        elif backups_to_show == "elma_join":    
+        elif backups_to_show == "elma_join":
             elma_query = (
                 session.query(ElmaVM)
                 .filter(
@@ -174,7 +200,7 @@ class DBManager():
         total_items = query.count()
         # Paginating with offset.
         query = query.offset((page - 1) * per_page).limit(per_page)
-        
+
         data = query.all()
         return (total_items, data)
 

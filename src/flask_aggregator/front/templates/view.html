@@ -21,6 +21,12 @@
         <option value="all" {% if elma_backups == "all" %} selected {% endif %}>all</option>
         <option value="join" {% if elma_backups == "join" %} selected {% endif %}>absent in CB</option>
     </select>
+    <label for="show_dbs">Show databases:</label>        
+    <select id="show_dbs" name="show_dbs">
+        <option value="all" {% if show_dbs == "all" %} selected {% endif %}>all</option>
+        <option value="show" {% if show_dbs == "show" %} selected {% endif %}>databases only</option>
+        <option value="hide" {% if show_dbs == "hide" %} selected {% endif %}>hide databases</option>
+    </select>
     {% endif %}
     <button type="submit">Search</button>
 </form>

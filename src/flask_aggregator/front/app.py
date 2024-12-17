@@ -51,6 +51,7 @@ class FlaskAggregator():
             order = request.args.get("order", "asc")
             old_backups = request.args.get("old_backups", "all")
             elma_backups = request.args.get("elma_backups", "all")
+            show_dbs = request.args.get("show_dbs", "all")
             dbmanager = DBManager()
             fields = Config.DB_MODELS[model_name].get_columns_order()
             filters = {}
@@ -70,10 +71,10 @@ class FlaskAggregator():
             ):
                 data_count, data = dbmanager.get_elma_backups(
                     page, per_page, filters, sort_by, order, fields,
-                    elma_backups
+                    elma_backups, show_dbs
                 )
             else:
-                dbmanager.get_paginated_data(
+                data_count, data = dbmanager.get_paginated_data(
                     model, page, per_page, filters, sort_by, order, fields
                 )
 
@@ -91,7 +92,7 @@ class FlaskAggregator():
                 get_pagination_url=get_pagination_url, getattr=getattr,
                 fields=fields, sort_by=sort_by, order=order,
                 total_items=data_count, old_backups=old_backups,
-                elma_backups=elma_backups
+                elma_backups=elma_backups, show_dbs=show_dbs
             )
 
         @self.__app.route("/ovirt/cluster_list/raw_json")
