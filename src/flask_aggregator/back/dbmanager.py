@@ -98,8 +98,6 @@ class DBManager():
                 ~sq.correlate(ElmaVM)
             )
             print(query.count())
-        else:
-            query = session.query(ElmaVM)
 
         # Adding field selection. Only selected fields will be queried.
         table_fields = [getattr(ElmaVM, f) for f in fields]
@@ -133,14 +131,13 @@ class DBManager():
         """
         if mode == "all":
             return query
-        elif mode == "show":
+        if mode == "show":
             return query.filter(column.like(f"%{value}%"))
-        elif mode == "hide":
+        if mode == "hide":
             return query.filter(~column.like(f"%{value}%"))
-        else:
-            raise KeyError(
-                "Bad mode, should be 'all', 'show' or 'hide'. Check input."
-            )
+        raise KeyError(
+            "Bad mode, should be 'all', 'show' or 'hide'. Check input."
+        )
 
     def get_old_backups(
             self, table_type, page, per_page, filters, sort_by: str,
@@ -255,5 +252,3 @@ class DBManager():
         """Clean up and close."""
         self.__session.remove()
         self.__engine.dispose()
-
-

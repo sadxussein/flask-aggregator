@@ -5,6 +5,8 @@ __author__ = "xussein"
 
 import time
 import threading
+import json
+import re
 
 import ovirtsdk4 as sdk
 
@@ -501,8 +503,8 @@ class OvirtHelper(VirtProtocol):
             ),
             description=(
                 f"Time created: {self.__get_timestamp()},"
-                f" owner: {config['meta']['owner']}, "
-                f"ELMA task number: {config['meta']['document_num']}"
+                f" Owner: {config['meta']['owner']}, "
+                f"ELMA_task_number: {config['meta']['document_num']}"
             ),
             template=sdk.types.Template(
                 name=config["vm"]["template"]
@@ -616,7 +618,6 @@ class OvirtHelper(VirtProtocol):
             self.__logger.log_error(
                 f"Could not create VM {config['vm']['name']}. Reason: {e}."
             )
-            result = e
 
     def __extend_vm_root_disk(self, system_service, vm, vm_service, config):
         """Extend VM root disk size to one set in config dict."""
@@ -1171,5 +1172,99 @@ class OvirtHelper(VirtProtocol):
             result["error"] = vm.name
         return result
 
-    def set_vm_metadata(self) -> dict:
-        pass
+    def set_vm_description(self) -> dict:
+        """Change VM description to be JSON with correct fields for Elma."""
+        # Get VM list.
+        for dpc, connection in self.__connections.items():
+            system_service = connection.system_service()
+            vms_service = system_service.vms_service()
+            for vm in vms_service.list():
+                vm_service = vms_service.vm_service(vm.id)
+                # Get VM current description.
+                # Check if current VM description is JSON.
+                if self.__is_dict_vm_description(vm.description):
+                    self.__logger.log_debug(
+                        f"[{self.__class__.__name__}] {vm.name} "
+                        f"in {dpc} has a valid json in description."
+                    )
+                    data = self.__check_update_desc_json(
+                        json.loads(vm.description)
+                    )
+                # If false - parse current description as JSON.
+                # If true, skip this step.
+                else:
+                    self.__logger.log_error(
+                        f"[{self.__class__.__name__}] {vm.name} "
+                        f"in {dpc} has an invalid json in description."
+                    )
+                    data = self.__fix_bad_description(vm.description)
+                    data = self.__check_update_desc_json(data)
+                vm_service.update(
+                    sdk.types.Vm(
+                        description=json.dumps(data, ensure_ascii=False)
+                    )
+                )
+
+    def __is_dict_vm_description(self, desc: str) -> bool:
+        """Checking if current description can be parsed as dict/json."""
+        try:
+            json.loads(desc)
+        except json.decoder.JSONDecodeError:
+            return False
+        return True
+
+    def __fix_bad_description(self, data: str) -> dict:
+        """Try to create valid JSON based on current description string."""
+        result = {}
+        # If VM was migrated from VMWare.
+        if "Migrated by IntelSource" in data:
+            result = {
+                "Migrated": "True"
+            }
+            return result
+        # If VM was created in RV and has old description.
+        for el in ("Time created", "owner", "ELMA task numer"):
+            if el in data:
+                match = re.search(rf"{el}: \s*([^,]+)", data)
+                result[el] = match.group(1)
+        if result:
+            return result
+        # If nothing else was found put all data under 'Misc' field.
+        return {
+            "Misc": data
+        }
+
+    def __check_update_desc_json(self, data: any) -> str:
+        """Checking if current present fields of valid JSON are correct."""
+        correct_fields = set([
+            "Environment",
+            "Migrated",
+            "Misc",
+            "Time created",
+            "owner",
+            "ELMA task number"
+        ])
+        # Checking if data is not empty, which means it is not string
+        if any(data) and data != '':
+            if correct_fields == set(data.keys()):
+                return data
+            else:
+                missing_keys = correct_fields - set(data.keys())
+                for key in missing_keys:
+                    data[key] = ''
+                return data
+        else:
+            return {key: '' for key in correct_fields}
+
+    def clean_desc(self):
+        for dpc, connection in self.__connections.items():
+            system_service = connection.system_service()
+            vms_service = system_service.vms_service()
+            for vm in vms_service.list():
+                vm_service = vms_service.vm_service(vm.id)
+                if vm.description == '{"Misc": "", "Time created": "", "ELMA task number": "", "elma_os": "", "owner": "", "Environment": "", "Migrated": ""}':
+                    vm_service.update(
+                        sdk.types.Vm(
+                            description=''
+                        )
+                    )
