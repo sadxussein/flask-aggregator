@@ -85,6 +85,8 @@ class FlaskAggregator():
                 args["page"] = page
                 return f"/view/{model_name}?{urlencode(args)}"
 
+            dbmanager.close()
+
             return render_template(
                 "view.html", model_name=model_name, data=data,
                 filters=filters, title=model_name, page=page,

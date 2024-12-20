@@ -8,22 +8,74 @@ from flask_aggregator.back.models import (
 
 class Config:
     """Configuration class for Flask Aggregator app."""
+    @staticmethod
+    def get_env_var(name: str) -> str:
+        """Return value of ENV variable.
+        
+        Args:
+            name (str): Name of ENV variable.
+
+        Returns:
+            str: ENV variable value.
+
+        Raises:
+            EnvironmentError: If ENV variable is not found.
+        """
+        value = os.getenv(name)
+        if value is None:
+            raise EnvironmentError(f"ENV variable {name} not found.")
+        return value
+
+    @property
+    def rv_pass(self) -> str:
+        """RedVirt `scriptbot` user password."""
+        return self.get_env_var("RV_PASS")
+
+    @property
+    def db_pass(self) -> str:
+        """Main database password."""
+        return self.get_env_var("DB_PASS")
+
+    @property
+    def elma_pass(self) -> str:
+        """Elma API password."""
+        return self.get_env_var("ELMA_PASS")
+
+    @property
+    def cb_db_pass_n32_k45(self) -> str:
+        """Cyberbackup K45 and N32 DB password."""
+        return self.get_env_var("CB_DB_PASS_N32_K45")
+
+    @property
+    def cb_db_pass_e15(self) -> str:
+        """Cyberbackup E15 DB password."""
+        return self.get_env_var("CB_DB_PASS_E15")
+
+    @staticmethod
+    def validate_env_vars(required_vars: list[str]) -> None:
+        """Checking if all ENV variables are present."""
+        missing_vars = [v for v in required_vars if os.getenv(v) is None]
+        if missing_vars:
+            raise EnvironmentError(f"Missing ENV vars: {missing_vars}")
 
     # Core server configuration.
+    # TODO: change to what is above.
     SECRET_KEY = (
         os.environ.get("SECRET_KEY") or "some-super-secret-super-safe-key"
     )
     SERVER_IP = "10.105.253.11"
     SERVER_PORT = "6299"
     USERNAME = "scriptbot@internal"
-    PASSWORD = "CnfhnjdsqGfhjkm@1234"
+    # PASSWORD = "CnfhnjdsqGfhjkm@1234"
+
+    ELMA_USER = "RedVirt"
 
     DPC_LIST = [
-        "e15-test2", "e15", "e15-2", "e15-3", "n32", "n32-sigma", "n32-2",
-        "k45"
+        "e15-test2", "e15", "e15-2", "e15-3", "n32",
+        "n32-sigma", "n32-2", "k45"
     ]
     DPC_URLS = {
-        "e15-test2": 
+        "e15-test2":
             "https://e15-redvirt-engine-test2.rncb.ru/ovirt-engine/api",
         "e15": "https://e15-redvirt-engine1.rncb.ru/ovirt-engine/api",
         "e15-2": "https://e15-redvirt-engine2.rncb.ru/ovirt-engine/api",
@@ -74,7 +126,7 @@ class DevelopmentConfig(Config):
     TESTING = True
 
     DB_USERNAME = "aggregator"
-    DB_PASSWORD = "CnfhnjdsqGfhjkm%401234"
+    DB_PASSWORD = Config.db_pass
     DB_NAME = "aggregator_test"
     DB_ADDRESS = "10.105.253.252"
     DB_PORT = "6298"
@@ -89,7 +141,7 @@ class ProductionConfig(Config):
     TESTING = False
 
     DB_USERNAME = "aggregator"
-    DB_PASSWORD = "68mLMd4WzqLQkZ1LXPd0"
+    DB_PASSWORD = Config.db_pass
     DB_NAME = "aggregator_db"
     DB_ADDRESS = "localhost"
     DB_PORT = "5432"

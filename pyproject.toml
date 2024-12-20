@@ -1,10 +1,10 @@
 [build-system]
-requires = ["setuptools>=59.0"]
+requires = ["setuptools>=59.0", "setuptools_scm", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "flask_aggregator"
-version = "2024.12.17.1"
+dynamic = ["version"]
 authors = [
     { name="krasnoschekovvd", email="krasnoschekovvd@rncb.ru" },
 ]
@@ -32,3 +32,7 @@ fa_mon_storages = "flask_aggregator.back.run.monitoring.get_storages:run"
 [project.urls]
 Homepage = "https://gl.rncb.ru/KrasnoschekovVD/flask_aggregator"
 Issues = "https://gl.rncb.ru/KrasnoschekovVD/flask_aggregator/-/issues"
+
+[tool.setuptools_scm]
+version_scheme = "post-release"
+local_scheme = "dirty-tag"

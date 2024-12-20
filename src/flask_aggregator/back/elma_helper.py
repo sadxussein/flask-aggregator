@@ -1,6 +1,7 @@
 """Elma interactions module."""
 
 import pandas
+import requests
 
 from flask_aggregator.back.dbmanager import DBManager
 from flask_aggregator.back.logger import Logger
@@ -53,3 +54,6 @@ class ElmaHelper():
             self.__logger.log_error(
                 f"[{self.__class__.__name__}] {e}."
             )
+
+    def get_auth_token(self):
+        pass

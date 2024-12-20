@@ -20,7 +20,7 @@ class OvirtHelper(VirtProtocol):
 
     def __init__(self, dpc_list: list=Config.DPC_LIST,
                  urls_list: dict=Config.DPC_URLS,
-                 username=Config.USERNAME, password=Config.PASSWORD,
+                 username=Config.USERNAME, password=Config.rv_pass,
                  logger=Logger()
                  ):
         """Construct default class instance."""

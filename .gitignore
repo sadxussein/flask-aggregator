@@ -9,3 +9,5 @@ test_vm_description.py
 *.yml
 *.egg-info
 venv
+passwords.sh
+.env
