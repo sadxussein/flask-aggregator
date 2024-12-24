@@ -220,6 +220,23 @@ class ElmaVM(Base):
         """Full set of filters."""
         return ["name", "environment", "should_be_backuped"]
 
+class ElmaVmAccessDoc(Base):
+    """Model for VM order document (VmAccessDoc).
+    
+    Service table - should not be printed for user view.
+    """
+    __tablename__ = "elma_vm_access_doc"
+    # Field taken from Elma VmAccessDoc entity:
+    #   1. VmHostName (name)
+    #   2. HostName (dns)
+    #   3. Backup
+    #   4. Id (doc_id)
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    doc_id = Column(Integer, unique=True)
+    name = Column(String)
+    dns = Column(String)
+    backup = Column(Boolean)
+
 def get_engine(db_url):
     """Return corresponding engine to database manager class."""
     return create_engine(db_url)

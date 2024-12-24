@@ -26,30 +26,35 @@ class Config:
             raise EnvironmentError(f"ENV variable {name} not found.")
         return value
 
-    @property
-    def rv_pass(self) -> str:
+    @staticmethod
+    def get_rv_pass() -> str:
         """RedVirt `scriptbot` user password."""
-        return self.get_env_var("RV_PASS")
+        return Config.get_env_var("RV_PASS")
 
-    @property
-    def db_pass(self) -> str:
+    @staticmethod
+    def get_db_pass() -> str:
         """Main database password."""
-        return self.get_env_var("DB_PASS")
+        return Config.get_env_var("DB_PASS")
 
-    @property
-    def elma_pass(self) -> str:
+    @staticmethod
+    def get_elma_pass() -> str:
         """Elma API password."""
-        return self.get_env_var("ELMA_PASS")
+        return Config.get_env_var("ELMA_PASS")
 
-    @property
-    def cb_db_pass_n32_k45(self) -> str:
+    @staticmethod
+    def get_elma_token() -> str:
+        """Elma API token."""
+        return Config.get_env_var("ELMA_TOKEN")
+
+    @staticmethod
+    def get_cb_db_pass_n32_k45() -> str:
         """Cyberbackup K45 and N32 DB password."""
-        return self.get_env_var("CB_DB_PASS_N32_K45")
+        return Config.get_env_var("CB_DB_PASS_N32_K45")
 
-    @property
-    def cb_db_pass_e15(self) -> str:
+    @staticmethod
+    def get_cb_db_pass_e15() -> str:
         """Cyberbackup E15 DB password."""
-        return self.get_env_var("CB_DB_PASS_E15")
+        return Config.get_env_var("CB_DB_PASS_E15")
 
     @staticmethod
     def validate_env_vars(required_vars: list[str]) -> None:
@@ -126,7 +131,7 @@ class DevelopmentConfig(Config):
     TESTING = True
 
     DB_USERNAME = "aggregator"
-    DB_PASSWORD = Config.db_pass
+    DB_PASSWORD = Config.get_db_pass()
     DB_NAME = "aggregator_test"
     DB_ADDRESS = "10.105.253.252"
     DB_PORT = "6298"
@@ -141,7 +146,7 @@ class ProductionConfig(Config):
     TESTING = False
 
     DB_USERNAME = "aggregator"
-    DB_PASSWORD = Config.db_pass
+    DB_PASSWORD = Config.get_db_pass()
     DB_NAME = "aggregator_db"
     DB_ADDRESS = "localhost"
     DB_PORT = "5432"
