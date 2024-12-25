@@ -68,14 +68,12 @@ class ElmaHelper():
         """Transform data from JSON view to list of ElmaVmAccessDoc."""
         result = []
         for el in data:
-            result.append(
-                ElmaVmAccessDoc(
-                    doc_id=el["Id"],
-                    name=el["VmHostName"],
-                    dns=el["HostName"],
-                    backup=bool(el["Backup"])
-                )
-            )
+            result.append({
+                "doc_id": el["Id"],
+                "name": el["VmHostName"],
+                "dns": el["HostName"],
+                "backup": bool(el["Backup"])
+            })
         return result
 
     def import_vm_access_doc(self) -> None:
@@ -89,12 +87,16 @@ class ElmaHelper():
         data = self.__get_data_from_query_tree(
             {
                 "type": ElmaEntity.VM_ACCESS_DOC,
-                "q": "Backup = TRUE",
                 "select": ["HostName", "VmHostName", "Backup"]
             }
         )
         data = self.__prepare_vm_access_doc_data(data)
-        self.__dbmanager.add_data(data)
+        self.__dbmanager.upsert_data(
+            ElmaVmAccessDoc,
+            data,
+            ["doc_id"],
+            ["id", "doc_id"]
+        )
 
     def import_vm_list(self, table: any, file_path: str) -> None:
         """Importing file into database.

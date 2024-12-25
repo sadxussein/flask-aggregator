@@ -61,7 +61,7 @@ class CyberbackupHelper():
                 }
                 data.append(db_el)
             aggregator_db = DBManager()
-            aggregator_db.upsert_data(Backups, data)
+            aggregator_db.upsert_data(Backups, data, ["uuid"], ["id", "uuid"])
             aggregator_db.close()
         else:
             self.__logger.log_error("No data was collected.")

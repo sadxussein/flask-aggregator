@@ -37,18 +37,49 @@ class DBManager():
         """For external use."""
         return self.__engine
 
-    def upsert_data(self, model: any, data: list) -> None:
-        """Upsert data to tables based on their type."""
+    def upsert_data(
+        self,
+        model: any,
+        data: list,
+        index_elements: list,
+        included_elements: list
+    ) -> None:
+        """Upsert data to tables based on their type.
+        
+        Args:
+            model (any): ORM db of sqlalchemy (class name).
+            data (list): Data, either list of dicts (with all fields of model)
+                or list of model elements (i.e. derived from Base ORM class).
+            index_elements (list): List or strings, representing fields
+                (columns), which have to be excluded from ON CONFLICT clause
+                (to the right side of the clausee).
+            included_elements (list): List of strings, representing elements
+                to be excluded from the right side of DO UPDATE SET (these
+                elements will not be updated on conflict).
+
+        Returns:
+            None
+
+        Examples:
+            The result query will be as such:
+                ```
+                INSERT INTO elma_vm_access_doc (id, doc_id, name, dns,
+                backup) VALUES (%(id)s, %(doc_id)s, %(name)s, %(dns)s,
+                %(backup)s) ON CONFLICT (uuid) DO UPDATE SET doc_id =
+                excluded.doc_id, name = excluded.name, dns =
+                excluded.dns, backup = excluded.backup
+                ```
+        """
         session = self.__session()
         # Postgres specific "upsert".
         stmt = insert(model).values(data)
         dict_set = {
             column.name: getattr(stmt.excluded, column.name)
             for column in model.__table__.columns
-            if column.name not in ["id", "uuid"]
+            if column.name not in included_elements
         }
         stmt = stmt.on_conflict_do_update(
-            index_elements=["uuid"],
+            index_elements=index_elements,
             set_=dict_set
         )
         session.execute(stmt)
