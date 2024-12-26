@@ -72,8 +72,10 @@ class ElmaHelper():
                 "doc_id": el["Id"],
                 "name": el["VmHostName"],
                 "dns": el["HostName"],
-                "backup": bool(el["Backup"])
+                "backup": True if el["Backup"].lower() == "true" else False
             })
+            if el["VmHostName"] == "abs2-dbs-tst-pgpro-3":
+                print(el["Backup"])
         return result
 
     def import_vm_access_doc(self) -> None:

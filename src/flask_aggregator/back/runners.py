@@ -10,4 +10,3 @@ def get_elma_vm_access_doc() -> None:
     """
     elma_helper = ElmaHelper()
     elma_helper.import_vm_access_doc()
-

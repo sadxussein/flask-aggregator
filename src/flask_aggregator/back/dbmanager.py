@@ -8,7 +8,13 @@ from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import sessionmaker, scoped_session, Query
 from sqlalchemy.dialects.postgresql import insert
 from flask_aggregator.config import ProductionConfig, DevelopmentConfig
-from flask_aggregator.back.models import Base, ElmaVM, Backups
+from flask_aggregator.back.models import (
+    Base,
+    ElmaVM,
+    Backups,
+    ElmaVmAccessDoc,    # TODO: temp for testing make_join_query
+    Vm                  # TODO: temp for testing make_join_query
+)
 from flask_aggregator.back.logger import Logger
 
 class DBManager():
@@ -104,6 +110,85 @@ class DBManager():
         except OperationalError as e:
             self.__logger.log_error(e)
         return rows
+
+    def __make_join_query(
+        self,
+        # target_table: any,
+        # join_tables: list,
+        # target_fields: list,
+    ) -> Query:
+        # TODO: Check if tables are valid
+        # TODO: Check if target fields are valid
+        # Take multiple tables and multiple table fields.
+        # Check if those are valid and exist in database/tables.
+        # Generate conditions for JOIN query.
+        # Make query for join on tables.
+        # Apply filters to query. TODO: consider necessity
+        session = self.__session()
+        # sq = (
+        #     session.query(
+        #         Backups.name,
+        #         func.max(Backups.created).label("latest_created")
+        #     )
+        #     .group_by(Backups.name)
+        #     .subquery()
+        # )
+        # query = (
+        #     session.query(
+        #         Vm,
+        #         ElmaVmAccessDoc,
+        #         sq
+        #     )
+        #     .join(ElmaVmAccessDoc, Vm.name == ElmaVmAccessDoc.name)
+        #     .join(sq, ElmaVmAccessDoc.name == sq.c.name)
+        # )
+        sq = (
+            session.query(
+                Backups.name,
+                func.max(Backups.created).label("latest_created")
+            )
+            .group_by(Backups.name)
+            .subquery()
+        )
+        
+        f_query = (
+            session.query(ElmaVmAccessDoc.name)
+            .filter(ElmaVmAccessDoc.name == Vm.name)
+            .filter(ElmaVmAccessDoc.backup == True)
+            .filter(ElmaVmAccessDoc.name == sq.c.name)
+            .exists()
+        )
+        query = (
+            session.query(
+                Vm,
+                ElmaVmAccessDoc,
+                sq
+            )
+            .join(ElmaVmAccessDoc, Vm.name == ElmaVmAccessDoc.name)
+            .join(sq, ElmaVmAccessDoc.name == sq.c.name)
+            .filter(ElmaVmAccessDoc.backup == True)
+        )
+        e_query = (
+            session.query(ElmaVmAccessDoc.name)
+            .filter(ElmaVmAccessDoc.name == Vm.name)
+            .filter(ElmaVmAccessDoc.backup == True)
+            .filter(ElmaVmAccessDoc.name.like("%db%"))
+            .filter(~f_query)
+        )
+        print(e_query)
+        return e_query
+
+    def get_query_result(self) -> list:    # TODO: remove debug
+        query = self.__make_join_query()
+        # print(query.all())
+        result = []
+        # for a, b in query:
+        #     result.append({
+        #         "vm_name": a.name,
+        #         "backup": b.backup,
+        #         # "backup_date": d
+        #     })
+        return query.all()
 
     def get_elma_backups(
             self, page, per_page, filters, sort_by: str,
