@@ -3,19 +3,25 @@
 import os
 from datetime import datetime, timedelta
 
-from sqlalchemy import create_engine, asc, desc, text, func
+from sqlalchemy import (
+    create_engine, asc, desc, text, func, Table, MetaData
+)
+from sqlalchemy.sql import table
 from sqlalchemy.exc import OperationalError
-from sqlalchemy.orm import sessionmaker, scoped_session, Query
+from sqlalchemy.orm import sessionmaker, scoped_session, Query, aliased
+from sqlalchemy.schema import DDLElement
 from sqlalchemy.dialects.postgresql import insert
 from flask_aggregator.config import ProductionConfig, DevelopmentConfig
 from flask_aggregator.back.models import (
     Base,
+    BackupsView,
     ElmaVM,
     Backups,
     ElmaVmAccessDoc,    # TODO: temp for testing make_join_query
     Vm                  # TODO: temp for testing make_join_query
 )
 from flask_aggregator.back.logger import Logger
+
 
 class DBManager():
     """Class that operates with Postgres database."""
@@ -35,6 +41,43 @@ class DBManager():
         self.__session = scoped_session(sessionmaker(bind=self.__engine))
         try:
             Base.metadata.create_all(self.__engine)
+            session = self.__session()
+            # Create view cb_backups_view. First view for backups, it shows
+            # only vms that were backed up by Cyberbackup.
+            self.__create_view(
+                session,
+                "cb_backups_view",
+                Queries.get_cb_backups_view_query(session)
+            )
+            # Main view for backed up VMs. It is a join between 3 tables
+            # (two tables and one view): `vms` table (which represents VMs in
+            # RedVirt), `elma_vm_access_doc` (information about VM creation
+            # in ELMA) and `cb_backups_view` (list of VMs, backed up by
+            # Cyberbackup).
+            cb_backups_view = Table(
+                "cb_backups_view",
+                MetaData(),
+                autoload_with=self.__engine
+            )
+            self.__create_view(
+                session,
+                "backups_view",
+                Queries.get_backups_view_query(session, cb_backups_view)
+            )
+            # Get view for all VMs that need to be backed up. It is created by
+            # joining `backups_view` (all backed up VMs that should be backed
+            # up by ELMA) and `elma_vm_access_doc`.
+            backups_view = Table(
+                "backups_view",
+                MetaData(),
+                autoload_with=self.__engine
+            )
+            self.__create_view(
+                session,
+                "vms_to_be_backed_up_view",
+                Queries.get_not_backed_up_vms(session, backups_view)
+            )
+            session.close()
         except OperationalError as e:
             self.__logger.log_error(e)
 
@@ -42,6 +85,10 @@ class DBManager():
     def engine(self):
         """For external use."""
         return self.__engine
+
+    def get_cb_backups_view(self) -> Table:
+        """Return cb_backups_view view as `Table`."""
+        return Table("cb_backups_view", MetaData(), autoload_with=self.__engine)
 
     def upsert_data(
         self,
@@ -102,7 +149,7 @@ class DBManager():
     def run_simple_query(self, query_string: str) -> tuple:
         """Run simple text query and get its result."""
         query = text(query_string)
-        session = self.__session
+        session = self.__session()
         rows = None
         try:
             result = session.execute(query)
@@ -125,23 +172,6 @@ class DBManager():
         # Make query for join on tables.
         # Apply filters to query. TODO: consider necessity
         session = self.__session()
-        # sq = (
-        #     session.query(
-        #         Backups.name,
-        #         func.max(Backups.created).label("latest_created")
-        #     )
-        #     .group_by(Backups.name)
-        #     .subquery()
-        # )
-        # query = (
-        #     session.query(
-        #         Vm,
-        #         ElmaVmAccessDoc,
-        #         sq
-        #     )
-        #     .join(ElmaVmAccessDoc, Vm.name == ElmaVmAccessDoc.name)
-        #     .join(sq, ElmaVmAccessDoc.name == sq.c.name)
-        # )
         sq = (
             session.query(
                 Backups.name,
@@ -149,8 +179,7 @@ class DBManager():
             )
             .group_by(Backups.name)
             .subquery()
-        )
-        
+        )        
         f_query = (
             session.query(ElmaVmAccessDoc.name)
             .filter(ElmaVmAccessDoc.name == Vm.name)
@@ -189,6 +218,77 @@ class DBManager():
         #         # "backup_date": d
         #     })
         return query.all()
+
+    def get_data_from_view(
+        self, model: any
+    ) -> list:
+        """Get data from views only.
+        
+        If target is table ORM interaction is preferred.
+        """
+        session = self.__session()
+        metadata = MetaData()
+        view = Table(model.table_name(), metadata, autoload_with=self.__engine)
+        query = session.query(view)
+        print(query.all(), query)
+        # total_items_query = text("select count(*) from backups_view;")
+        # total_items = session.execute(total_items_query).all()
+        # print(*total_items)
+        # query = self.__prettify_query(
+        #     query, model, page, per_page, fields, filters, sort_by, order
+        # )
+        result = self.__make_view_model_list(model, query)
+        session.close()
+        return (query.count(), result)
+
+    def __make_view_model_list(
+        self,
+        model: any,
+        query: Query
+    ) -> list:
+        result = []
+        for row in query.all():
+            result.append(model(
+                id_=row[0],
+                uuid_=row[1],
+                name=row[2],
+                engine=row[3],
+            ))
+        return result
+
+    def __prettify_query(
+        self, query: Query, model: any, page: int, per_page: int,
+        fields: list, filters: list, sort_by: str, order: str
+    ) -> Query:
+        # Adding field selection. Only selected fields will be queried.
+        # table_fields = [text(f) for f in fields if f in dir(model)]
+        # query = query.with_entities(*table_fields)
+        # Setting up filters, only specified entities will be found.
+        # query = self.__apply_filters(query, model, filters)
+        # Sorting.
+        if order == "desc":
+            query = query.order_by(desc(text(sort_by)))
+        else:
+            query = query.order_by(asc(text(sort_by)))
+        # Paginating with offset.
+        query = query.offset((page - 1) * per_page).limit(per_page)
+        return query
+
+    def __create_view(
+        self,
+        session: scoped_session,
+        view_name: str,
+        query: Query
+    ) -> None:
+        """Create view based on text query."""
+        query = str(query.statement.compile(
+            dialect=session.bind.dialect,
+            compile_kwargs={"literal_binds": True}
+        ))
+        query = text(f"create or replace view {view_name} as {query};")
+        session.execute(query)
+        session.commit()
+        session.close()
 
     def get_elma_backups(
             self, page, per_page, filters, sort_by: str,
@@ -368,3 +468,59 @@ class DBManager():
         """Clean up and close."""
         self.__session.remove()
         self.__engine.dispose()
+
+class Queries:
+    """Class for storing various queries."""
+    @staticmethod
+    def get_cb_backups_view_query(session: scoped_session) -> Query:
+        """Return unique backups query."""
+        return session.query(
+            Backups.name,
+            func.max(Backups.created).label("latest_created")
+        ).group_by(Backups.name)
+
+    @staticmethod
+    def get_backups_view_query(
+        session: scoped_session,
+        cb_backups_view: Table
+    ) -> Query:
+        """Return VMs only with existent backups."""
+        query = (
+            session.query(
+                Vm.id.label("id"),
+                Vm.uuid.label("uuid"),
+                Vm.name.label("name"),
+                Vm.engine.label("engine")
+            )
+            .join(ElmaVmAccessDoc, Vm.name == ElmaVmAccessDoc.name)
+            .join(
+                cb_backups_view,
+                ElmaVmAccessDoc.name == cb_backups_view.c.name
+            )
+            .filter(ElmaVmAccessDoc.backup == True)
+        )
+        return query
+
+    @staticmethod
+    def get_not_backed_up_vms(
+        session: scoped_session,
+        backups_view: Table
+    ) -> Query:
+        """Return only not backed up VMs (but should be backed up by ELMA)."""
+        backups_view_alias = aliased(backups_view)
+        query = session.query(
+                backups_view_alias.c.id,
+                backups_view_alias.c.uuid,
+                ElmaVmAccessDoc.name,
+                backups_view_alias.c.engine
+            ).outerjoin(
+                backups_view_alias, backups_view_alias.c.name == ElmaVmAccessDoc.name
+            ).outerjoin(
+                Vm, Vm.name == ElmaVmAccessDoc.name
+            ).filter(
+                ElmaVmAccessDoc.backup == True,
+                Vm.name == None,
+                backups_view_alias.c.name == None
+            ).filter(~ElmaVmAccessDoc.name.like("%db%"))
+        print(query)
+        return query

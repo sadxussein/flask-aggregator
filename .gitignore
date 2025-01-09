@@ -11,3 +11,4 @@ test_vm_description.py
 venv
 passwords.sh
 .env
+.env.sh

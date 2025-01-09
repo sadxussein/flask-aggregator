@@ -1,5 +1,6 @@
 """Database models module."""
 
+import uuid
 from datetime import datetime, timezone, timedelta
 
 from sqlalchemy import (
@@ -66,7 +67,7 @@ class Vm(OvirtEntity):
     @staticmethod
     def get_filters():
         """Full set of filters."""
-        return OvirtEntity.get_filters() + ["ip"]
+        return OvirtEntity.get_filters() + ["ip", "storage_domains"]
 
 class Host(OvirtEntity):
     """oVirt host model class."""
@@ -236,6 +237,49 @@ class ElmaVmAccessDoc(Base):
     name = Column(String)
     dns = Column(String)
     backup = Column(Boolean)
+
+class BackupsView():
+    """Read-only view for VM's which should be backed up and are backed up."""
+    id = None 
+    uuid = None
+    name = None
+    engine = None
+
+    def __init__(self, id_: int, uuid_: uuid, name: str, engine: str):
+        self.id = id_
+        self.uuid = uuid_
+        self.name = name
+        self.engine = engine
+
+    @property
+    def as_dict(self):
+        """Return dict from model structure."""
+        return {
+            "id": self.id,
+            "uuid": self.uuid,
+            "name": self.name,
+            "engine": self.engine
+        }
+
+    @staticmethod
+    def table_name():
+        return "backups_view"
+
+    @staticmethod
+    def get_columns_order():
+        """Simply get starting order of columns of base class."""
+        return ["uuid", "name", "engine"]
+
+    @staticmethod
+    def get_filters():
+        """Default set of filters."""
+        return ["name", "engine"]
+
+class CBBackupsView:
+    """View for unique CB backups entries, based on latest entry."""
+    @staticmethod
+    def table_name():
+        return "cb_backups_view"
 
 def get_engine(db_url):
     """Return corresponding engine to database manager class."""

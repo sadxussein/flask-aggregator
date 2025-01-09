@@ -11,7 +11,6 @@ from flask import (
     Flask, request, render_template, jsonify, abort
 )
 
-
 from flask_aggregator.config import (
     Config, DevelopmentConfig, ProductionConfig
 )
@@ -67,11 +66,10 @@ class FlaskAggregator():
                     old_backups
                 )
             elif (
-                model_name == "elma_vms"
+                model_name == "backups_view"
             ):
-                data_count, data = dbmanager.get_elma_backups(
-                    page, per_page, filters, sort_by, order, fields,
-                    elma_backups, show_dbs
+                data_count, data = dbmanager.get_data_from_view(
+                    model, page, per_page, fields, filters, sort_by, order
                 )
             else:
                 data_count, data = dbmanager.get_paginated_data(
