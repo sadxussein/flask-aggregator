@@ -73,6 +73,7 @@ class Host(OvirtEntity):
     """oVirt host model class."""
     __tablename__ = "hosts"
 
+    name = Column(String, unique=True, nullable=False)
     ip = Column(String)
     cluster = Column(String)
     data_center = Column(String)
@@ -280,6 +281,48 @@ class CBBackupsView:
     @staticmethod
     def table_name():
         return "cb_backups_view"
+    
+class VmsToBeBackedUpView:
+    """View for VMs which have to be backed up be ELMA and are present in RV."""    
+    id = None 
+    uuid = None
+    name = None
+    engine = None
+
+    def __init__(self, id_: int, uuid_: uuid, name: str, engine: str):
+        self.id = id_
+        self.uuid = uuid_
+        self.name = name
+        self.engine = engine
+
+    @property
+    def as_dict(self):
+        """Return dict from model structure."""
+        return {
+            "id": self.id,
+            "uuid": self.uuid,
+            "name": self.name,
+            "engine": self.engine
+        }
+    
+    @property
+    def as_line(self):
+        """Return line from model structure."""
+        return f"{self.id}\t{self.uuid}\t{self.name}\t{self.engine}"
+
+    @staticmethod
+    def table_name():
+        return "vms_to_be_backed_up_view"
+
+    @staticmethod
+    def get_columns_order():
+        """Simply get starting order of columns of base class."""
+        return ["uuid", "name", "engine"]
+
+    @staticmethod
+    def get_filters():
+        """Default set of filters."""
+        return ["name", "engine"]
 
 def get_engine(db_url):
     """Return corresponding engine to database manager class."""

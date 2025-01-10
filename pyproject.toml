@@ -27,6 +27,7 @@ fa_get_clusters = "flask_aggregator.back.run.collector.get_clusters:run"
 fa_get_data_centers = "flask_aggregator.back.run.collector.get_data_centers:run"
 fa_get_backups = "flask_aggregator.back.run.collector.get_backups:run"
 fa-get-elma-vm-access-doc = "flask_aggregator.back.runners:get_elma_vm_access_doc"
+fa-generate-db-views = "flask_aggregator.back.runners:generate_db_views"
 fa_mon_hosts = "flask_aggregator.back.run.monitoring.get_hosts:run"
 fa_mon_storages = "flask_aggregator.back.run.monitoring.get_storages:run"
 
