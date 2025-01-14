@@ -70,6 +70,10 @@ class FlaskAggregator():
                     model, page, per_page, filters, sort_by, order, fields,
                     old_backups
                 )
+            elif model_name == "backups_view":
+                data_count, data = dbmanager.get_data_from_view(
+                    model, page, per_page, fields, filters, sort_by, order
+                )
             elif (
                 model_name == "vms_to_be_backed_up_view"
             ):

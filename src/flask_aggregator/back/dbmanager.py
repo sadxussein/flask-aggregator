@@ -283,37 +283,6 @@ class DBManager():
             query = query.filter(view.c.uuid != None)
         return (query.count(), query)
 
-    # def get_data_from_view_test(
-    #     self, model: any
-    # ) -> list:
-    #     """Get data from views only.
-        
-    #     If target is table ORM interaction is preferred.
-    #     """
-    #     session = self.__session()
-    #     metadata = MetaData()
-    #     view = Table(model.table_name(), metadata, autoload_with=self.__engine)
-    #     query = session.query(view)
-    #     item_count = query.count()
-    #     # result = self.__make_view_model_list(model, query)
-    #     session.close()
-    #     return (item_count, result)
-
-    def __make_view_model_list( # TODO: make model fields argument.
-        self,
-        model: any,
-        query: Query
-    ) -> list:
-        result = []
-        for row in query.all():
-            result.append(model(
-                id_=row[0],
-                uuid_=row[1] if row[1] is not None else "-",
-                name=row[2],
-                engine=row[3],
-            ))
-        return result
-
     def __prettify_query(
         self, query: Query, model: any, fields: list, filters: list,
         sort_by: str, order: str
