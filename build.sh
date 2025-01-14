@@ -10,6 +10,6 @@ else
     source $PROJECT_PATH/venv/bin/activate
     python3 -m build -o $PROJECT_PATH/linux/app/
     deactivate
-    ln -s $PROJECT_PATH/linux/app/flask_aggregator-$CURRENT_TAG-py3-none-any.whl $PROJECT_PATH/linux/app/latest.whl
-    ln -s $PROJECT_PATH/linux/app/flask_aggregator-$CURRENT_TAG.tar.gz $PROJECT_PATH/linux/app/latest.tar.gz
+    ln -sf $PROJECT_PATH/linux/app/flask_aggregator-$CURRENT_TAG-py3-none-any.whl $PROJECT_PATH/linux/app/latest.whl
+    ln -sf $PROJECT_PATH/linux/app/flask_aggregator-$CURRENT_TAG.tar.gz $PROJECT_PATH/linux/app/latest.tar.gz
 fi

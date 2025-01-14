@@ -18,7 +18,8 @@ from flask_aggregator.back.models import (
     ElmaVM,
     Backups,
     ElmaVmAccessDoc,    # TODO: temp for testing make_join_query
-    Vm                  # TODO: temp for testing make_join_query
+    Vm,                  # TODO: temp for testing make_join_query
+    VmsToBeBackedUpView
 )
 from flask_aggregator.back.logger import Logger
 
@@ -41,7 +42,6 @@ class DBManager():
         self.__session = scoped_session(sessionmaker(bind=self.__engine))
         try:
             Base.metadata.create_all(self.__engine)
-            
         except OperationalError as e:
             self.__logger.log_error(e)
 
@@ -50,9 +50,9 @@ class DBManager():
         """For external use."""
         return self.__engine
 
-    def get_cb_backups_view(self) -> Table:
-        """Return cb_backups_view view as `Table`."""
-        return Table("cb_backups_view", MetaData(), autoload_with=self.__engine)
+    def __get_view_as_table(self, view_name) -> Table:
+        """Return view as table by its name in database."""
+        return Table(view_name, MetaData(), autoload_with=self.__engine)
 
     def generate_views(self) -> None:
         """Create all views."""
@@ -139,7 +139,6 @@ class DBManager():
             index_elements=index_elements,
             set_=dict_set
         )
-        print(stmt)
         session.execute(stmt)
         session.commit()
         session.close()
@@ -212,41 +211,95 @@ class DBManager():
         print(e_query)
         return e_query
 
-    def get_query_result(self) -> list:    # TODO: remove debug
-        query = self.__make_join_query()
-        # print(query.all())
-        result = []
-        # for a, b in query:
-        #     result.append({
-        #         "vm_name": a.name,
-        #         "backup": b.backup,
-        #         # "backup_date": d
-        #     })
-        return query.all()
-
     def get_data_from_view(
-        self, model: any
-    ) -> list:
+        self,
+        model: any,
+        page: int,
+        per_page: int,
+        fields: list,
+        filters: list,
+        sort_by: str,
+        order: str,
+        **kwargs: any
+    ) -> tuple:
         """Get data from views only.
         
         If target is table ORM interaction is preferred.
+
+        Args:
+            model (any): Model class (described in `models.py`).
+            page (int): Current page, passed from HTML frontend to function.
+            per_page (int): Element count per page in HTML view.
+            fields (list): List of fields to be showed in HTML view.
+            filters (list): Filter list.
+            sort_by (str): Column name by which table is sorted.
+            order (str): `asc` or `desc`.
+            **kwargs (any): additional filters/parameters for function.
         """
         session = self.__session()
         metadata = MetaData()
         view = Table(model.table_name(), metadata, autoload_with=self.__engine)
         query = session.query(view)
-        # print(query.all(), query)
-        # total_items_query = text("select count(*) from backups_view;")
-        # total_items = session.execute(total_items_query).all()
-        # print(*total_items)
-        # query = self.__prettify_query(
-        #     query, model, page, per_page, fields, filters, sort_by, order
-        # )
-        result = self.__make_view_model_list(model, query)
+        # Applying main filters.
+        item_count, query = self.__prettify_query(
+            query, model, fields, filters, sort_by, order
+        )
+        # If there are any other parameters except default.
+        if kwargs:
+            item_count, query = self.__apply_custom_filters(
+                view, query, **kwargs
+            )
+        # Paginating with offset. Making this operation last so we don't lose
+        # correct item count.
+        query = query.offset((page - 1) * per_page).limit(per_page)
         session.close()
-        return (query.count(), result)
+        print(query.all())
+        return (item_count, query.all())
 
-    def __make_view_model_list(
+    def __apply_custom_filters(
+        self,
+        view: any,
+        query: Query,
+        **kwargs: any
+    ) -> tuple:
+        """Apply additional custom filters which are specific to a certain 
+        table/view.
+        """
+        # `vms_to_be_backed_up_view`, showing/hiding database VMs.
+        if (
+            "show_dbs" in kwargs
+            and isinstance(kwargs["show_dbs"], bool)
+            and not kwargs["show_dbs"]
+        ):
+            # Showing only VMs with names that don't contain `db`.
+            query = query.filter(~view.c.name.like("%db%"))
+        # `vms_to_be_backed_up_view`, showing/hiding VMs absent in oVirt.
+        if (
+            "show_absent_in_ov" in kwargs
+            and isinstance(kwargs["show_absent_in_ov"], bool)
+            and not kwargs["show_absent_in_ov"]
+        ):
+            # If VM has no uuid it means it is absent in oVirt.
+            query = query.filter(view.c.uuid != None)
+        return (query.count(), query)
+
+    # def get_data_from_view_test(
+    #     self, model: any
+    # ) -> list:
+    #     """Get data from views only.
+        
+    #     If target is table ORM interaction is preferred.
+    #     """
+    #     session = self.__session()
+    #     metadata = MetaData()
+    #     view = Table(model.table_name(), metadata, autoload_with=self.__engine)
+    #     query = session.query(view)
+    #     item_count = query.count()
+    #     # result = self.__make_view_model_list(model, query)
+    #     session.close()
+    #     return (item_count, result)
+
+    def __make_view_model_list( # TODO: make model fields argument.
         self,
         model: any,
         query: Query
@@ -255,15 +308,15 @@ class DBManager():
         for row in query.all():
             result.append(model(
                 id_=row[0],
-                uuid_=row[1],
+                uuid_=row[1] if row[1] is not None else "-",
                 name=row[2],
                 engine=row[3],
             ))
         return result
 
     def __prettify_query(
-        self, query: Query, model: any, page: int, per_page: int,
-        fields: list, filters: list, sort_by: str, order: str
+        self, query: Query, model: any, fields: list, filters: list,
+        sort_by: str, order: str
     ) -> Query:
         # Adding field selection. Only selected fields will be queried.
         # table_fields = [text(f) for f in fields if f in dir(model)]
@@ -275,9 +328,8 @@ class DBManager():
             query = query.order_by(desc(text(sort_by)))
         else:
             query = query.order_by(asc(text(sort_by)))
-        # Paginating with offset.
-        query = query.offset((page - 1) * per_page).limit(per_page)
-        return query
+        item_count = query.count()
+        return (item_count, query)
 
     def __create_view(
         self,
@@ -285,7 +337,13 @@ class DBManager():
         view_name: str,
         query: Query
     ) -> None:
-        """Create view based on text query."""
+        """Create view based on text query.
+        
+        Args:
+            sessions (scoped_session): Current database sqlalchemy session.
+            view_name (str): Desired view name.
+            query (Query): Query, by which view should be created.
+        """
         query = str(query.statement.compile(
             dialect=session.bind.dialect,
             compile_kwargs={"literal_binds": True}
@@ -519,12 +577,12 @@ class Queries:
                 ElmaVmAccessDoc.name,
                 Vm.engine
             ).outerjoin(
-                backups_view_alias, backups_view_alias.c.name == ElmaVmAccessDoc.name
+                backups_view_alias,
+                backups_view_alias.c.name == ElmaVmAccessDoc.name
             ).outerjoin(
                 Vm, Vm.name == ElmaVmAccessDoc.name
             ).filter(
                 ElmaVmAccessDoc.backup == True,
                 backups_view_alias.c.name == None
-            ).filter(ElmaVmAccessDoc.name.like("%db%"))
-        print(query)
+            )
         return query

@@ -28,6 +28,22 @@
         <option value="hide" {% if show_dbs == "hide" %} selected {% endif %}>hide databases</option>
     </select>
     {% endif %}
+<!--
+    View for VMs that should be backed up. 
+    Additional passed arguments from flask (except `filters` dict):
+        show_dbs: Decides whether show or hide databases.
+        show_absent_in_ov: Decides whether show or hide VMs that are currently absent in oVirt.
+-->
+    {% if model_name == "vms_to_be_backed_up_view" %}
+    <label>
+        <input type="checkbox" name="show_dbs" id="show_dbs" {% if show_dbs %} checked {% endif %}>
+        Show databases
+    </label>
+    <label>
+        <input type="checkbox" name="show_absent_in_ov" id="show_absent_in_ov" {% if show_absent_in_ov %} checked {% endif %}>
+        Show VMs absent in oVirt
+    </label>
+    {% endif %}
     <button type="submit">Search</button>
 </form>
 <hr>

@@ -6,8 +6,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 export HTTPS_PROXY=http://usergate5.crimea.rncb.ru:8090/
 export HTTP_PROXY=http://usergate5.crimea.rncb.ru:8090/
 
-# install zabbix-agent, postgresql, nginx
-dnf install -y zabbix-agent postgresql-server nginx python3-pip
+# install zabbix-agent, postgresql, nginx and ovirt environment
+dnf install -y postgresql-server nginx python3-pip python3-devel gcc libxml2-devel
 if [ $? -ne 0 ]; then
     echo "Failed to install required packages. Aborting."
     exit 1
@@ -28,9 +28,12 @@ cp $SCRIPT_DIR/app/.env /app/.env
 python3 -m venv /app/flask-aggregator
 source /app/flask-aggregator/bin/activate
 
+# getting passwords to env
+. $SCRIPT_DIR/app/.env.sh
+
 # install python packages to venv
 pip3 install -r $SCRIPT_DIR/app/requirements.txt
-pip3 install --force-reinstall $SCRIPT_DIR/app/latest.whl
+pip3 install --force-reinstall --find-links $SCRIPT_DIR/app/ flask-aggregator
 
 # change rights to /app folder
 chown -R aggregator:aggregator-group /app
@@ -65,10 +68,12 @@ systemctl restart nginx
 # set up postgresql config (user, pass, db)
 DB_NAME="aggregator_db"
 DB_USER="aggregator"
+echo "db pass is $DB_PASS"
 sudo -u postgres psql -c "create database $DB_NAME;"
 sudo -u postgres psql -c "create user $DB_USER with password '$DB_PASS';"
 sudo -u postgres psql -c "alter database $DB_NAME owner to $DB_USER;"
 sudo -u postgres psql -c "grant all privileges on database $DB_NAME to $DB_USER;"
+echo "[INFO] In pg_hba.conf auth method change is required from 'ident' to 'scram-sha-256'."
 
 # deactivating environment
 deactivate

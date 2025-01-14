@@ -44,13 +44,18 @@ class FlaskAggregator():
             model = Config.DB_MODELS.get(model_name)
             if model is None:
                 abort(404, description=f"Table {model_name} not found.")
+
+            kwargs = {}
+
+            # Arguments that come from flask frontend.
             page = request.args.get("page", 1, type=int)
             per_page = request.args.get("per_page", 10, type=int)
             sort_by = request.args.get("sort_by", "name")
             order = request.args.get("order", "asc")
             old_backups = request.args.get("old_backups", "all")
             elma_backups = request.args.get("elma_backups", "all")
-            show_dbs = request.args.get("show_dbs", "all")
+            # show_dbs = request.args.get("show_dbs", "all")
+
             dbmanager = DBManager()
             fields = Config.DB_MODELS[model_name].get_columns_order()
             filters = {}
@@ -66,10 +71,18 @@ class FlaskAggregator():
                     old_backups
                 )
             elif (
-                model_name == "backups_view"
+                model_name == "vms_to_be_backed_up_view"
             ):
+                show_dbs = request.args.get("show_dbs")
+                show_absent_in_ov = request.args.get("show_absent_in_ov")
+                kwargs["show_dbs"] = False if show_dbs is None else True
+                kwargs["show_absent_in_ov"] = (
+                    False if show_absent_in_ov is None else True
+                )
                 data_count, data = dbmanager.get_data_from_view(
-                    model, page, per_page, fields, filters, sort_by, order
+                    model, page, per_page, fields, filters, sort_by, order,
+                    show_dbs=kwargs["show_dbs"],
+                    show_absent_in_ov=kwargs["show_absent_in_ov"]
                 )
             else:
                 data_count, data = dbmanager.get_paginated_data(
@@ -92,7 +105,7 @@ class FlaskAggregator():
                 get_pagination_url=get_pagination_url, getattr=getattr,
                 fields=fields, sort_by=sort_by, order=order,
                 total_items=data_count, old_backups=old_backups,
-                elma_backups=elma_backups, show_dbs=show_dbs
+                elma_backups=elma_backups, **kwargs
             )
 
         @self.__app.route("/ovirt/cluster_list/raw_json")

@@ -284,7 +284,7 @@ class CBBackupsView:
     
 class VmsToBeBackedUpView:
     """View for VMs which have to be backed up be ELMA and are present in RV."""    
-    id = None 
+    id = None
     uuid = None
     name = None
     engine = None

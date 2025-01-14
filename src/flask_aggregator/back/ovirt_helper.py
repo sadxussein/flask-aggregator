@@ -191,6 +191,7 @@ class OvirtHelper(VirtProtocol):
                     except TypeError as e:
                         self.__logger.log_error(e)
                         data_centers.add('-')
+            print(f"{dpc} ended.")
             self.__logger.log_info(
                 f"Finished collecting storage domains from {dpc}."
             )

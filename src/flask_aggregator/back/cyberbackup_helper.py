@@ -49,7 +49,7 @@ class CyberbackupHelper():
                 )
                 db_el = {
                     "name": row[0],
-                    "uuid":upstert_uuid,
+                    "uuid": upstert_uuid,
                     "backup_server": self.__dpc,
                     "resource_ids": row[1],
                     "created": row[2],

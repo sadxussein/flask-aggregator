@@ -3,7 +3,8 @@
 import os
 
 from flask_aggregator.back.models import (
-    Vm, Host, Cluster, DataCenter, Storage, Backups, ElmaVM, BackupsView
+    Vm, Host, Cluster, DataCenter, Storage, Backups, ElmaVM, BackupsView,
+    VmsToBeBackedUpView
 )
 
 class Config:
@@ -71,7 +72,6 @@ class Config:
     SERVER_IP = "10.105.253.11"
     SERVER_PORT = "6299"
     USERNAME = "scriptbot@internal"
-    # PASSWORD = "CnfhnjdsqGfhjkm@1234"
 
     ELMA_USER = "RedVirt"
 
@@ -112,7 +112,8 @@ class Config:
         "data_centers": DataCenter,
         "backups": Backups,
         "elma_vms": ElmaVM,
-        "backups_view": BackupsView
+        "backups_view": BackupsView,
+        "vms_to_be_backed_up_view": VmsToBeBackedUpView
     }
 
     # CB database connection.
