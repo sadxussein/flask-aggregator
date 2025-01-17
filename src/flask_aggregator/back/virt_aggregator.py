@@ -98,20 +98,12 @@ class VirtAggregator():
         raw_data = getattr(virt_helper, function_name)()
         # TODO: consider removing next line. Its a hostfix for deduplicating hosts.
         # Some research is required to deduplicate any entity.
-        if function_name == "get_hosts":
-            dbmanager.upsert_data(
+        dbmanager.upsert_data(
             Config.DB_MODELS[table],
             raw_data,
-            ["name"],
-            ["id", "name"]
+            ["uuid"],
+            ["id", "uuid"]
         )
-        else:
-            dbmanager.upsert_data(
-                Config.DB_MODELS[table],
-                raw_data,
-                ["uuid"],
-                ["id", "uuid"]
-            )
         dbmanager.close()
         self.__logger.log_debug(f"Finished thread {dpcs}-{function_name}.")
 

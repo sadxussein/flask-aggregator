@@ -20,6 +20,8 @@ from flask_aggregator.back.virt_aggregator import VirtAggregator
 from flask_aggregator.back.ovirt_helper import OvirtHelper
 from flask_aggregator.back.file_handler import FileHandler
 from flask_aggregator.back.dbmanager import DBManager
+from flask_aggregator.back.models import Storage
+from flask_aggregator.back.controllers import DBController
 
 class FlaskAggregator():
     """Flask-based aggregator class. Used primarily for oVirt interactions."""    
@@ -88,6 +90,11 @@ class FlaskAggregator():
                     show_dbs=kwargs["show_dbs"],
                     show_absent_in_ov=kwargs["show_absent_in_ov"]
                 )
+            # elif model_name == "storages":
+            #     print(fields)
+            #     data_count, data = dbmanager.get_paginated_data(
+            #         model, page, per_page, filters, sort_by, order, fields
+            #     )
             else:
                 data_count, data = dbmanager.get_paginated_data(
                     model, page, per_page, filters, sort_by, order, fields
@@ -111,6 +118,39 @@ class FlaskAggregator():
                 total_items=data_count, old_backups=old_backups,
                 elma_backups=elma_backups, **kwargs
             )
+
+        @self.__app.route("/ovirt/storages")
+        def ovirt_storages():
+            """Show model from database."""
+
+            model = "storages"
+            controller = DBController(model)
+            data = controller.get_data()
+            total_pages = controller.get_item_count()
+            columns = controller.get_columns()
+            filter_list = controller.get_filters()
+            filters = {}
+            for f in filter_list:
+                filters[f] = request.args.get(f)
+
+            def get_pagination_url(page: int) -> str:
+                args = request.args.to_dict()
+                args["page"] = page
+                return f"/ovirt/{model}?{urlencode(args)}"
+
+            kwargs = {
+                "model": model,
+                "filters": filters,
+                "fields": columns,
+                "page": request.args.get("page", 1, type=int),
+                "per_page": request.args.get("per_page", 10, type=int),
+                "sort_by": request.args.get("sort_by", "name"),
+                "order_by": request.args.get("order_by", "asc"),
+                "total_pages": total_pages,
+                "get_pagination_url": get_pagination_url
+            }
+
+            return render_template("storages.html", data=data, **kwargs)
 
         @self.__app.route("/ovirt/cluster_list/raw_json")
         def ovirt_cluster_raw_json():
@@ -214,6 +254,27 @@ class FlaskAggregator():
             else:
                 return jsonify({"error": "File is not a valid JSON."}), 400
 
+    def __b_to_gb_storages(self, data) -> list:
+        """Transform bytes size for oVirt storages to gigabytes.
+        
+        By default database saves oVirt storage disk information in bytes.
+        This function transforms it in gigabytes representation.
+
+        Args:
+            data (list): List of tuples from database table.
+
+        Returns:
+            list: Updated list of tuples.
+        """
+        result = []
+        for row in data:
+            result.append((
+                *row[:6],
+                *(b / 1024**3 for b in row[6:10]),
+                *row[10:]
+            ))
+        return result
+
     def get_app(self) -> Flask:
         """Return Flask aggregator server."""
         env = os.getenv("FLASK_ENV", "development")
@@ -222,6 +283,10 @@ class FlaskAggregator():
         else:
             self.__app.config.from_object(DevelopmentConfig)
         return self.__app
+
+
+class URLArgs():
+    """Designated class for agruments that circle in URLs."""
 
 # If run from flask run.
 flask_aggregator = FlaskAggregator()

@@ -16,7 +16,7 @@
         </select>
     {% endif %}
     {% if model_name == "elma_vms" %}
-    <label for="elma_backups">Show backups:</label>        
+    <label for="elma_backups">Show backups:</label>
     <select id="elma_backups" name="elma_backups">
         <option value="all" {% if elma_backups == "all" %} selected {% endif %}>all</option>
         <option value="join" {% if elma_backups == "join" %} selected {% endif %}>absent in CB</option>

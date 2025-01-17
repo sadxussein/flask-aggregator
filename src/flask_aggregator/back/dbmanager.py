@@ -14,6 +14,7 @@ from sqlalchemy.dialects.postgresql import insert
 from flask_aggregator.config import ProductionConfig, DevelopmentConfig
 from flask_aggregator.back.models import (
     Base,
+    Storage,
     BackupsView,
     ElmaVM,
     Backups,
@@ -253,7 +254,6 @@ class DBManager():
         # correct item count.
         query = query.offset((page - 1) * per_page).limit(per_page)
         session.close()
-        print(query.all())
         return (item_count, query.all())
 
     def __apply_custom_filters(
@@ -485,6 +485,28 @@ class DBManager():
         session.close()
         return dict_data
 
+    def get_data(self, table_type) -> list:
+        """Get raw data from table."""
+        session = self.__session()
+        data = session.query(table_type).all()
+        session.close()
+        return data
+
+    def get_item_count(self, table_type) -> int:
+        """Get item count for current query."""
+        session = self.__session()
+        query = session.query(table_type)
+        session.close()
+        return query.count()
+
+    def get_model_filters(self, table_type) -> list:
+        """Get filters from model."""
+        return table_type.get_filters()
+    
+    def get_model_columns(self, table_type) -> list:
+        """Get fields from model."""
+        return table_type.get_columns_order()
+
     def __apply_filters(
         self, query: Query, table_type: any, filters: dict
     ) -> Query:
@@ -500,6 +522,7 @@ class DBManager():
         """Clean up and close."""
         self.__session.remove()
         self.__engine.dispose()
+
 
 class Queries:
     """Class for storing various queries."""
@@ -555,3 +578,11 @@ class Queries:
                 backups_view_alias.c.name == None
             )
         return query
+
+    @staticmethod
+    def get_all_data(
+        session: scoped_session,
+        table_: Table
+    ) -> Query:
+        """Return query `select * from table;`."""
+        return session.query(table_).all()

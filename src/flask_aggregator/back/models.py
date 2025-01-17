@@ -7,6 +7,7 @@ from sqlalchemy import (
     Column, Integer, String, Float, Boolean, UUID, DateTime, create_engine
 )
 from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.ext.hybrid import hybrid_property
 
 Base = declarative_base()
 
@@ -118,13 +119,37 @@ class Storage(OvirtEntity):
     percent_left = Column(Float)
     overprovisioning = Column(Float)
 
+    @hybrid_property
+    def available_gb(self):
+        return self.available / 1024**3
+
+    @hybrid_property
+    def used_gb(self):
+        return self.used / 1024**3
+
+    @hybrid_property
+    def committed_gb(self):
+        return self.committed / 1024**3
+
+    @hybrid_property
+    def total_gb(self):
+        return self.total / 1024**3
+
     @staticmethod
     def get_columns_order():
         """Get full order of columns."""
         return OvirtEntity.get_columns_order() + [
-            "data_center", "available", "used", "committed", "total",
-            "percent_left", "overprovisioning"
+            "data_center", "available", "used", "committed",
+            "total", "percent_left", "overprovisioning"
         ]
+
+    # @staticmethod
+    # def get_html_columns_order():
+    #     """Get full order of columns for HTML view."""
+    #     return OvirtEntity.get_columns_order() + [
+    #         "data_center", "available_gb", "used_gb", "committed_gb",
+    #         "total_gb", "percent_left", "overprovisioning"
+    #     ]
 
 class DataCenter(OvirtEntity):
     """oVirt data center model class."""

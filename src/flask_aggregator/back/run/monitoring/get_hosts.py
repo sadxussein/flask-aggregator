@@ -27,7 +27,6 @@ def run():
                 "time_created": host["time_created"]
             }
     keys_to_ignore = ["time_created"]
-    host_list = list(latest_records.values())
     result = [
         {
             k: v for k, v in values.items()
