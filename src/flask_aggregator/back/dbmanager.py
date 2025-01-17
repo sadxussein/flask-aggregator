@@ -524,6 +524,59 @@ class DBManager():
         self.__engine.dispose()
 
 
+class QueryBuilder():
+    """Class for constructing complicated SQLAlchemy queries."""
+    def __init__(self, session: scoped_session, base_query: Query):
+        self.__session = session
+        self.__base_query = base_query
+        self.__filters = []
+        self.__sorts = []
+        self.__limit = None
+        self.__offset = None
+
+    def add_filter(self, condition):
+        """Add filter to query."""
+        self.__filters.append(condition)
+        return self
+
+    def add_sort(self, column, desc_=False):
+        """Add sorting statement."""
+        if desc_:
+            self.__sorts.append(column.desc())
+        else:
+            self.__sorts.append(column.asc())
+        return self
+
+    def add_pagination(self, limit, offset):
+        """Add 'pagination'."""
+        self.__limit = limit
+        self.__offset = offset
+        return self
+
+    def build(self):
+        """Make query."""
+        query = self.__base_query
+        if self.__filters:
+            query.filter(*self.__filters)
+        if self.__sorts:
+            query.order_by(*self.__sorts)
+        if self.__limit is not None:
+            query = query.limit(self.__limit)
+        if self.__offset is not None:
+            query = query.offset(self.__offset)
+        return query
+
+    def execute(self):
+        """Execute query."""
+        query = self.build()
+
+        data = self.__session.execute(query).scalars().all()
+
+        item_count = self.__base_query.filter(*self.__filters).count()
+
+        return data, item_count
+
+
 class Queries:
     """Class for storing various queries."""
     @staticmethod

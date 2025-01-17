@@ -59,10 +59,34 @@ class DBController(ControllerInterface):
 
 class DataTransformer(ABC):
     """Transformer class/interface for flask HTML view."""
-    def transform(self, data: any) -> list:
+    @abstractmethod
+    def transform(self, data: any) -> None:
         """Transform data by certain algorythm."""
 
+
 class GBTransformer(DataTransformer):
+    """Transforming bytes to gigabytes.
+    
+    Only valid for `storage` table so far.
+    """
+    def transform(self, data) -> None:
+        if isinstance(data[0], Storage):
+            for i, el in enumerate(data):
+                d = el.__dict__.copy()
+                d.pop("_sa_instance_state")
+                d["available"] = d["available"] / 1024**3
+                d["used"] = d["used"] / 1024**3
+                d["total"] = d["total"] / 1024**3
+                d["committed"] = d["committed"] / 1024**3
+                data[i] = el.__class__(**d)
+        else:
+            raise ValueError(
+                f"Data invalid. Class {self.__class__.__name__} accepts only "
+                "'storage' table."
+            )
+
+
+class TestTransformer(DataTransformer):
     """Transforming bytes to gigabytes.
     
     Only valid for `storage` table so far.
@@ -81,26 +105,6 @@ class GBTransformer(DataTransformer):
                 "'storage' table."
             )
 
-class TestTransformer(DataTransformer):
-    """Transforming bytes to gigabytes.
-    
-    Only valid for `storage` table so far.
-    """
-    def transform(self, data) -> None:
-        if isinstance(data[0], Storage):
-            for i, el in enumerate(data):
-                d = data[i].__dict__.copy()
-                d.pop("_sa_instance_state")
-                d["available"] = d["available"] / 1024**3
-                d["used"] = d["used"] / 1024**3
-                d["total"] = d["total"] / 1024**3
-                d["committed"] = d["committed"] / 1024**3
-                data[i] = el.__class__(**d)
-        else:
-            raise ValueError(
-                f"Data invalid. Class {self.__class__.__name__} accepts only "
-                "'storage' table."
-            )
 
 class DataView(ABC):
     """View class."""
@@ -116,9 +120,11 @@ class DataView(ABC):
     def _render_view(self, data):
         """Render view for external use."""
 
-class TestView(DataView):
+
+class StorageView(DataView):
     def _render_view(self, data):
         return data
+
 
 # class DefaultView(DataView):
 #     pass

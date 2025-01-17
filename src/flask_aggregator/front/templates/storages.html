@@ -28,7 +28,7 @@
                 {% endif %}
                 {% for column in fields %}
                     {% if column != "uuid" and column != "href" %}
-                        <td>{{ item.column }}</td>
+                        <td>{{ item[column] }}</td>
                     {% endif %}
                 {% endfor %}
             </tr>
@@ -61,4 +61,31 @@
     <label for="totalItems">Total items:</label>
     <span id="totalItems">{{ total_items }}</span>
 </div>
+{% endblock %}
+
+{% block script %}
+<script>
+    const perPage = "{{ per_page }}";
+    document.getElementById("perPage").value = perPage;
+    function updatePerPage() {
+        const selectedValue = document.getElementById("perPage").value;
+        const currentUrl = new URL(window.location.href);
+        currentUrl.searchParams.set('per_page', selectedValue);
+        window.location.href = currentUrl.toString();
+    };
+
+    const sortBy = "{{ sort_by }}";
+    var order = "{{ order }}";
+    const table_clickable_headers = document.querySelectorAll('.table-clickable-header');
+    table_clickable_headers.forEach(el => {
+        el.addEventListener('click', function () {
+            const header_id = this.id;
+            const currentUrl = new URL(window.location.href);
+            order = order === 'asc' ? 'desc' : 'asc';
+            currentUrl.searchParams.set('sort_by', header_id);
+            currentUrl.searchParams.set('order', order);
+            window.location.href = currentUrl.toString();
+        });
+    });
+</script>
 {% endblock %}

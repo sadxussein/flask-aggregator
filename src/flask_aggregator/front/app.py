@@ -21,7 +21,9 @@ from flask_aggregator.back.ovirt_helper import OvirtHelper
 from flask_aggregator.back.file_handler import FileHandler
 from flask_aggregator.back.dbmanager import DBManager
 from flask_aggregator.back.models import Storage
-from flask_aggregator.back.controllers import DBController
+from flask_aggregator.back.controllers import (
+    DBController, StorageView, GBTransformer
+)
 
 class FlaskAggregator():
     """Flask-based aggregator class. Used primarily for oVirt interactions."""    
@@ -122,13 +124,16 @@ class FlaskAggregator():
         @self.__app.route("/ovirt/storages")
         def ovirt_storages():
             """Show model from database."""
-
             model = "storages"
             controller = DBController(model)
-            data = controller.get_data()
-            total_pages = controller.get_item_count()
             columns = controller.get_columns()
             filter_list = controller.get_filters()
+            data_trs = [
+                GBTransformer()
+            ]
+            view_ = StorageView(data_trs)
+            data = view_.update_view(controller.data)
+            print(data[0].__dict__)
             filters = {}
             for f in filter_list:
                 filters[f] = request.args.get(f)
@@ -145,8 +150,8 @@ class FlaskAggregator():
                 "page": request.args.get("page", 1, type=int),
                 "per_page": request.args.get("per_page", 10, type=int),
                 "sort_by": request.args.get("sort_by", "name"),
-                "order_by": request.args.get("order_by", "asc"),
-                "total_pages": total_pages,
+                "order": request.args.get("order", "asc"),
+                "total_pages": controller.item_count,
                 "get_pagination_url": get_pagination_url
             }
 
