@@ -463,7 +463,7 @@ class DBManager():
     def get_taped_vms(self, table_type, **filters: any) -> None:
         """Get data by query and 'beautify' it."""
         query = Queries.get_tape_only_backups(self.__session)
-        query = self.__apply_filters(query, table_type, filters)
+        query = self.__apply_filters(query, table_type, filters["filters"])
         # Sorting.
         if filters["order"] == "desc":
             query = query.order_by(desc(filters["sort_by"]))
@@ -483,6 +483,7 @@ class DBManager():
     ) -> Query:
         """Apply query filters."""
         for k, v in filters.items():
+            print(k,v)
             if v != '' and v is not None:
                 column = getattr(table_type, k, None)
                 if column is not None:

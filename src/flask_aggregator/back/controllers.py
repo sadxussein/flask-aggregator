@@ -150,7 +150,6 @@ class GBAdapter(Adapter):
 class Object():
     pass
 
-
 class BackupTypeAdapter(Adapter):
     """Change long source_key url to short 'tape'/'disk'."""
     def adapt(self, data: list) -> None:
