@@ -96,8 +96,7 @@ class VirtAggregator():
         self.__logger.log_debug(f"Started thread {dpcs}-{function_name}.")
         dbmanager = DBManager()
         raw_data = getattr(virt_helper, function_name)()
-        # TODO: consider removing next line. Its a hostfix for deduplicating hosts.
-        # Some research is required to deduplicate any entity.
+        # TODO: Some research is required to deduplicate any entity.
         dbmanager.upsert_data(
             Config.DB_MODELS[table],
             raw_data,
@@ -195,3 +194,7 @@ class VirtAggregator():
                 self.__virt_helpers.append(OvirtHelper(
                     dpc_list=[dpc], logger=self.__logger
                 ))
+
+    def collect_user_vms_list(self):
+        """Test function, to be removed eventually."""
+        

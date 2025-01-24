@@ -113,7 +113,8 @@ class Config:
         "backups": Backups,
         "elma_vms": ElmaVM,
         "backups_view": BackupsView,
-        "vms_to_be_backed_up_view": VmsToBeBackedUpView
+        "vms_to_be_backed_up_view": VmsToBeBackedUpView,
+        "backups_tape": Backups
     }
 
     # CB database connection.
@@ -134,9 +135,9 @@ class DevelopmentConfig(Config):
 
     DB_USERNAME = "aggregator"
     DB_PASSWORD = Config.get_db_pass()
-    DB_NAME = "aggregator_test"
-    DB_ADDRESS = "10.105.253.252"
-    DB_PORT = "6298"
+    DB_NAME = "aggregator_db"
+    DB_ADDRESS = "10.105.239.11"
+    DB_PORT = "5432"
     DB_URL = (
         f"postgresql+psycopg2://{DB_USERNAME}:{DB_PASSWORD}@{DB_ADDRESS}"
         f":{DB_PORT}/{DB_NAME}"

@@ -2,9 +2,12 @@
 
 from abc import ABC, abstractmethod
 
+import pandas as pd
+
 from flask_aggregator.config import Config as cfg
 from flask_aggregator.back.dbmanager import DBManager
 from flask_aggregator.back.models import Storage
+from flask_aggregator.back.ovirt_helper import OvirtHelper
 
 
 class ControllerInterface(ABC):
@@ -33,7 +36,7 @@ class ControllerInterface(ABC):
 class DBController(ControllerInterface):
     """MVC Controller class for view-database interactions.
     
-    Concrete class for 
+    Concrete class for database.
     """
     def __init__(self, table_name: str):
         super().__init__()
@@ -56,20 +59,69 @@ class DBController(ControllerInterface):
     def get_columns(self) -> list:
         return self.__dbmanager.get_model_columns(self.__table)
 
+class OvirtController(ControllerInterface):
+    """MVC Controller class for oVirt interactions."""
+    def __init__(self, dpc_list: list):
+        """Always should have `dpc_list` parameter, otherwise no meaning."""
+        self.__ovirt_helper = OvirtHelper(dpc_list=dpc_list)
+        self.__data = None
+        self.__item_count = None
 
-class DataTransformer(ABC):
-    """Transformer class/interface for flask HTML view."""
+    @property
+    def data(self) -> any:
+        return self.__data
+
+    @property
+    def item_count(self) -> int:
+        return self.__item_count
+
+    def get_filters(self):
+        pass
+
+    def get_columns(self):
+        pass
+
+    def get_user_vm_list(self) -> None:
+        self.__ovirt_helper.connect_to_virtualization()
+        self.__data = self.__ovirt_helper.get_user_vm_list()
+        self.__item_count = len(self.__data)
+        self.__ovirt_helper.disconnect_from_virtualization()
+
+# Transformers.
+class Adapter(ABC):
+    """Adapter class/interface for any view."""
     @abstractmethod
-    def transform(self, data: any) -> None:
-        """Transform data by certain algorythm."""
+    def adapt(self, data: list) -> None:
+        """
+        Transform data by certain algorythm.
 
+        Args:
+            data (list): JSON-formatted data.
 
-class GBTransformer(DataTransformer):
+        Data is transformed in place, meaning that adapt fuction returns
+        nothing.
+        
+        Data should be used in JSON format - e.g.
+        ```
+        [
+            {
+                "field1": data1,
+                "field2": data2
+            },
+            {
+                "field1": data3,
+                "field2": data4
+            }
+        ]
+        ```
+        """
+
+class GBAdapter(Adapter):
     """Transforming bytes to gigabytes.
     
     Only valid for `storage` table so far.
     """
-    def transform(self, data) -> None:
+    def adapt(self, data) -> None:
         if isinstance(data[0], Storage):
             for i, el in enumerate(data):
                 d = el.__dict__.copy()
@@ -85,46 +137,43 @@ class GBTransformer(DataTransformer):
                 "'storage' table."
             )
 
-
-class TestTransformer(DataTransformer):
-    """Transforming bytes to gigabytes.
-    
-    Only valid for `storage` table so far.
-    """
-    def transform(self, data) -> list:
-        if isinstance(data[0], Storage):
-            result = []
-            for el in data:
-                f = el.__dict__.copy()
-                result.append(
-                    el.__class__(**f)
-                )
-        else:
-            raise ValueError(
-                f"Data invalid. Class {self.__class__.__name__} accepts only "
-                "'storage' table."
-            )
+class TestAdapter(Adapter):
+    """Transforming list of dicts (JSON) to pandas dataframe."""
+    def adapt(self, data) -> pd.DataFrame:
+        return pd.DataFrame(data)
 
 
+# Views.
 class DataView(ABC):
     """View class."""
     def __init__(self, transformers: list):
         self.__tfs = transformers
 
+    @abstractmethod
     def update_view(self, data):
-        for tf in self.__tfs:
-            tf.transform(data)
-        return self._render_view(data)
+        """Update view for data."""
 
     @abstractmethod
     def _render_view(self, data):
         """Render view for external use."""
 
-
 class StorageView(DataView):
+    def update_view(self, data):
+        for tf in self.__tfs:
+            tf.transform(data)
+        return self._render_view(data)
+
     def _render_view(self, data):
         return data
 
+class DataFrameView(DataView):
+    def __init__(self, transformers: list):
+        self.__tfs = transformers
 
-# class DefaultView(DataView):
-#     pass
+    def update_view(self, data):
+        for tf in self.__tfs:
+            data = tf.transform(data)
+        return self._render_view(data)
+
+    def _render_view(self, data):
+        return data

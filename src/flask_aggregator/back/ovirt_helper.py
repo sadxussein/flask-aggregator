@@ -1269,3 +1269,25 @@ class OvirtHelper(VirtProtocol):
                             description=''
                         )
                     )
+
+    def get_user_vm_list(self) -> list:
+        """Get a list of VMs that user owns (has permission to operate
+        with).
+        """
+        result = []
+        for dpc, connection in self.__connections.items():
+            # Accessing user, permissions and VMs services.
+            users_service = connection.system_service().users_service()
+            vms_service = connection.system_service().vms_service()
+            # Main loop.
+            for user in users_service.list():
+                user_perms = connection.follow_link(user.permissions)
+                for perm in user_perms:
+                    if perm.vm:
+                        vm = vms_service.vm_service(perm.vm.id).get()
+                        result.append({
+                            "user_name": str.split(user.user_name, '@')[0],
+                            "vm_name": vm.name,
+                            "engine": dpc
+                        })
+        return result

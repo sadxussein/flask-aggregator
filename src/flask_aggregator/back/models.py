@@ -349,6 +349,3 @@ class VmsToBeBackedUpView:
         """Default set of filters."""
         return ["name", "engine"]
 
-def get_engine(db_url):
-    """Return corresponding engine to database manager class."""
-    return create_engine(db_url)

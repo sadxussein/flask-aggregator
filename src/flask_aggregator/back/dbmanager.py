@@ -6,10 +6,8 @@ from datetime import datetime, timedelta
 from sqlalchemy import (
     create_engine, asc, desc, text, func, Table, MetaData
 )
-from sqlalchemy.sql import table
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import sessionmaker, scoped_session, Query, aliased
-from sqlalchemy.schema import DDLElement
 from sqlalchemy.dialects.postgresql import insert
 from flask_aggregator.config import ProductionConfig, DevelopmentConfig
 from flask_aggregator.back.models import (
@@ -50,10 +48,6 @@ class DBManager():
     def engine(self):
         """For external use."""
         return self.__engine
-
-    def __get_view_as_table(self, view_name) -> Table:
-        """Return view as table by its name in database."""
-        return Table(view_name, MetaData(), autoload_with=self.__engine)
 
     def generate_views(self) -> None:
         """Create all views."""
@@ -162,55 +156,6 @@ class DBManager():
         except OperationalError as e:
             self.__logger.log_error(e)
         return rows
-
-    def __make_join_query(
-        self,
-        # target_table: any,
-        # join_tables: list,
-        # target_fields: list,
-    ) -> Query:
-        # TODO: Check if tables are valid
-        # TODO: Check if target fields are valid
-        # Take multiple tables and multiple table fields.
-        # Check if those are valid and exist in database/tables.
-        # Generate conditions for JOIN query.
-        # Make query for join on tables.
-        # Apply filters to query. TODO: consider necessity
-        session = self.__session()
-        sq = (
-            session.query(
-                Backups.name,
-                func.max(Backups.created).label("latest_created")
-            )
-            .group_by(Backups.name)
-            .subquery()
-        )        
-        f_query = (
-            session.query(ElmaVmAccessDoc.name)
-            .filter(ElmaVmAccessDoc.name == Vm.name)
-            .filter(ElmaVmAccessDoc.backup == True)
-            .filter(ElmaVmAccessDoc.name == sq.c.name)
-            .exists()
-        )
-        query = (
-            session.query(
-                Vm,
-                ElmaVmAccessDoc,
-                sq
-            )
-            .join(ElmaVmAccessDoc, Vm.name == ElmaVmAccessDoc.name)
-            .join(sq, ElmaVmAccessDoc.name == sq.c.name)
-            .filter(ElmaVmAccessDoc.backup == True)
-        )
-        e_query = (
-            session.query(ElmaVmAccessDoc.name)
-            .filter(ElmaVmAccessDoc.name == Vm.name)
-            .filter(ElmaVmAccessDoc.backup == True)
-            .filter(ElmaVmAccessDoc.name.like("%db%"))
-            .filter(~f_query)
-        )
-        print(e_query)
-        return e_query
 
     def get_data_from_view(
         self,
@@ -402,6 +347,7 @@ class DBManager():
             .group_by(table_type.name)
             .subquery()
         )
+        month_ago = datetime.now() - timedelta(days=30)
         two_days_ago = datetime.now() - timedelta(days=2)
         query = (
             session.query(table_type)
@@ -412,7 +358,11 @@ class DBManager():
             )
         )
         if backups_to_show == "older":    # older than 2 days old.
-            query = query.filter(table_type.created < two_days_ago)
+            query = (
+                query
+                .filter(table_type.created < two_days_ago)
+                .filter(table_type.created > month_ago)
+            )
         elif backups_to_show == "less":   # less than 2 days old.
             query = query.filter(table_type.created >= two_days_ago)
         elif backups_to_show == "all":      # all backups.
@@ -506,6 +456,33 @@ class DBManager():
     def get_model_columns(self, table_type) -> list:
         """Get fields from model."""
         return table_type.get_columns_order()
+
+    def get_data_by_query(
+        self,
+        query: Query,
+        table_type: any,
+        **filters: any
+    ) -> list:
+        pass
+
+    def get_taped_vms(self, table_type, **filters: any) -> None:
+        """Get data by query and 'beautify' it."""
+        query = Queries.get_tape_only_backups(self.__session)
+        print(query.all())
+        query = self.__apply_filters(query, table_type, filters)
+        # Sorting.
+        if filters["order"] == "desc":
+            query = query.order_by(desc(filters["sort_by"]))
+        else:
+            query = query.order_by(asc(filters["sort_by"]))
+        # Item count.
+        total_items = query.count()
+        # Paginating with offset.
+        query = query.offset(
+            (filters["page"] - 1) * filters["per_page"]
+        ).limit(filters["per_page"])
+        data = query.all()
+        return total_items, data
 
     def __apply_filters(
         self, query: Query, table_type: any, filters: dict
@@ -639,3 +616,41 @@ class Queries:
     ) -> Query:
         """Return query `select * from table;`."""
         return session.query(table_).all()
+
+    @staticmethod
+    def get_tape_only_backups(
+        session: scoped_session
+    ) -> Query:
+        """Return only those VMs that are backed up to tape."""        
+        filtered_query = session.query(Backups).filter(
+            Backups.source_key.like("%POOL%")
+        )
+        subquery = (
+            filtered_query
+            .with_entities(
+                Backups.name,
+                func.max(Backups.created).label("latest_created")
+            )
+            .group_by(Backups.name)
+        )
+        print(subquery.count())
+        subquery = subquery.subquery()
+        # subquery = session.query(
+        #     session.query(
+        #         Backups.name,
+        #         func.max(Backups.created).label("latest_created")
+        #     )
+        #     .group_by(Backups.name)
+        #     .subquery()
+        # )
+        # print(dir(subquery))
+        query = (
+            session.query(Backups)
+            .join(
+                subquery,
+                (Backups.name == subquery.c.name)
+                & (Backups.created == subquery.c.latest_created)
+                & (Backups.source_key.like("%POOL%"))
+            )
+        )
+        return query

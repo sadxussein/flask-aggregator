@@ -22,7 +22,7 @@ from flask_aggregator.back.file_handler import FileHandler
 from flask_aggregator.back.dbmanager import DBManager
 from flask_aggregator.back.models import Storage
 from flask_aggregator.back.controllers import (
-    DBController, StorageView, GBTransformer
+    DBController, StorageView, GBAdapter
 )
 
 class FlaskAggregator():
@@ -78,6 +78,20 @@ class FlaskAggregator():
                 data_count, data = dbmanager.get_data_from_view(
                     model, page, per_page, fields, filters, sort_by, order
                 )
+            elif model_name == "backups_tape":
+                fields = ["uuid", "name", "backup_server", "created", "size"]
+                filters = {"name": None, "backup_server": None}
+                for f in filters:
+                    filters[f] = request.args.get(f)
+                data_count, data = dbmanager.get_taped_vms(
+                    model,
+                    page=page,
+                    per_page=per_page,
+                    fields=fields,
+                    filters=filters,
+                    sort_by=sort_by,
+                    order=order
+                )
             elif (
                 model_name == "vms_to_be_backed_up_view"
             ):
@@ -129,7 +143,7 @@ class FlaskAggregator():
             columns = controller.get_columns()
             filter_list = controller.get_filters()
             data_trs = [
-                GBTransformer()
+                GBAdapter()
             ]
             view_ = StorageView(data_trs)
             data = view_.update_view(controller.data)
