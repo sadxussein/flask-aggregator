@@ -22,7 +22,7 @@ from flask_aggregator.back.file_handler import FileHandler
 from flask_aggregator.back.dbmanager import DBManager
 from flask_aggregator.back.models import Storage
 from flask_aggregator.back.controllers import (
-    DBController, StorageView, GBAdapter
+    DBController, StorageView, GBAdapter, BackupsView, BackupTypeAdapter
 )
 
 class FlaskAggregator():
@@ -70,15 +70,29 @@ class FlaskAggregator():
                 model_name == "backups"
                 and old_backups != "all_cb_entries"
             ):
-                data_count, data = dbmanager.get_old_backups(
-                    model, page, per_page, filters, sort_by, order, fields,
-                    old_backups
+                # data_count, data = dbmanager.get_old_backups(
+                #     model, page, per_page, filters, sort_by, order, fields,
+                #     old_backups
+                # )
+                dbctrl = DBController("backups")
+                dbctrl.get_old_backups(
+                    model,
+                    page=page,
+                    per_page=per_page,
+                    fields=fields,
+                    filters=filters,
+                    sort_by=sort_by,
+                    order=order,
+                    backups_to_show=old_backups
                 )
+                view = BackupsView(transformers=[BackupTypeAdapter()])
+                data = view.update_view(dbctrl.data)
+                data_count = dbctrl.item_count
             elif model_name == "backups_view":
                 data_count, data = dbmanager.get_data_from_view(
                     model, page, per_page, fields, filters, sort_by, order
                 )
-            elif model_name == "backups_tape":
+            elif model_name == "backups_tape":      # TODO: remove temporary Kulshenko measure!
                 fields = ["uuid", "name", "backup_server", "created", "size"]
                 filters = {"name": None, "backup_server": None}
                 for f in filters:
@@ -147,7 +161,6 @@ class FlaskAggregator():
             ]
             view_ = StorageView(data_trs)
             data = view_.update_view(controller.data)
-            print(data[0].__dict__)
             filters = {}
             for f in filter_list:
                 filters[f] = request.args.get(f)

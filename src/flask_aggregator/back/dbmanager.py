@@ -457,18 +457,12 @@ class DBManager():
         """Get fields from model."""
         return table_type.get_columns_order()
 
-    def get_data_by_query(
-        self,
-        query: Query,
-        table_type: any,
-        **filters: any
-    ) -> list:
+    def get_data_by_query(self) -> list:
         pass
 
     def get_taped_vms(self, table_type, **filters: any) -> None:
         """Get data by query and 'beautify' it."""
         query = Queries.get_tape_only_backups(self.__session)
-        print(query.all())
         query = self.__apply_filters(query, table_type, filters)
         # Sorting.
         if filters["order"] == "desc":
@@ -635,15 +629,6 @@ class Queries:
         )
         print(subquery.count())
         subquery = subquery.subquery()
-        # subquery = session.query(
-        #     session.query(
-        #         Backups.name,
-        #         func.max(Backups.created).label("latest_created")
-        #     )
-        #     .group_by(Backups.name)
-        #     .subquery()
-        # )
-        # print(dir(subquery))
         query = (
             session.query(Backups)
             .join(

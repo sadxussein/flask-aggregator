@@ -6,7 +6,7 @@ import pandas as pd
 
 from flask_aggregator.config import Config as cfg
 from flask_aggregator.back.dbmanager import DBManager
-from flask_aggregator.back.models import Storage
+from flask_aggregator.back.models import Storage, Backups
 from flask_aggregator.back.ovirt_helper import OvirtHelper
 
 
@@ -52,6 +52,16 @@ class DBController(ControllerInterface):
     @property
     def item_count(self) -> int:
         return self.__item_count
+
+    def get_taped_vms(self, model: any, **kwargs: any) -> list:
+        self.__item_count, self.__data = (
+            self.__dbmanager.get_taped_vms(model, **kwargs)
+        )
+
+    def get_old_backups(self, model: any, **kwargs: any) -> list:
+        self.__item_count, self.__data = (
+            self.__dbmanager.get_old_backups(model, **kwargs)
+        )
 
     def get_filters(self) -> list:
         return self.__dbmanager.get_model_filters(self.__table)
@@ -121,7 +131,7 @@ class GBAdapter(Adapter):
     
     Only valid for `storage` table so far.
     """
-    def adapt(self, data) -> None:
+    def adapt(self, data: list) -> None:
         if isinstance(data[0], Storage):
             for i, el in enumerate(data):
                 d = el.__dict__.copy()
@@ -136,6 +146,31 @@ class GBAdapter(Adapter):
                 f"Data invalid. Class {self.__class__.__name__} accepts only "
                 "'storage' table."
             )
+
+class Object():
+    pass
+
+
+class BackupTypeAdapter(Adapter):
+    """Change long source_key url to short 'tape'/'disk'."""
+    def adapt(self, data: list) -> None:
+        for i, el in enumerate(data):
+            new_el = Object()
+            for k in el._mapping.keys():
+                print(k)
+                if k == "source_key":
+                    setattr(
+                        new_el,
+                        k,
+                        "tape" if "POOL" in el.source_key else "disk"
+                    )
+                else:
+                    setattr(
+                        new_el,
+                        k,
+                        getattr(el, k)
+                    )
+            data[i] = new_el
 
 class TestAdapter(Adapter):
     """Transforming list of dicts (JSON) to pandas dataframe."""
@@ -158,9 +193,24 @@ class DataView(ABC):
         """Render view for external use."""
 
 class StorageView(DataView):
+    def __init__(self, transformers: list):
+        self.__tfs = transformers
+
     def update_view(self, data):
         for tf in self.__tfs:
-            tf.transform(data)
+            tf.adapt(data)
+        return self._render_view(data)
+
+    def _render_view(self, data):
+        return data
+
+class BackupsView(DataView):
+    def __init__(self, transformers: list):
+        self.__tfs = transformers
+
+    def update_view(self, data):
+        for tf in self.__tfs:
+            tf.adapt(data)
         return self._render_view(data)
 
     def _render_view(self, data):
@@ -172,7 +222,7 @@ class DataFrameView(DataView):
 
     def update_view(self, data):
         for tf in self.__tfs:
-            data = tf.transform(data)
+            data = tf.adapt(data)
         return self._render_view(data)
 
     def _render_view(self, data):
