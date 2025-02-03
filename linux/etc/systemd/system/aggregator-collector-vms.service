@@ -1,0 +1,8 @@
+[Unit]
+Description=Collecting vms info from virtualization
+
+[Service]
+User=aggregator
+WorkingDirectory=/app
+EnvironmentFile=/app/.env
+ExecStart=/bin/bash -c 'source /app/flask-aggregator/bin/activate && fa_get_vms && deactivate'

@@ -1,0 +1,9 @@
+[Unit]
+Description=Elma VmAccessDoc collector timer
+
+[Timer]
+OnCalendar=*-*-* 12:00:00
+Persistent=true
+
+[Install]
+WantedBy=aggregator.target
