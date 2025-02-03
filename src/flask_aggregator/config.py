@@ -157,3 +157,16 @@ class ProductionConfig(Config):
         f"postgresql+psycopg2://{DB_USERNAME}:{DB_PASSWORD}@{DB_ADDRESS}"
         f":{DB_PORT}/{DB_NAME}"
     )
+
+class AggregatorDBConfig(Config):
+    """Production flask app database URL configuration."""
+
+    DB_USERNAME = "aggregator"
+    DB_PASSWORD = Config.get_db_pass()
+    DB_NAME = "aggregator_db"
+    DB_ADDRESS = "localhost"
+    DB_PORT = "5432"
+    DB_URL = (
+        f"postgresql+psycopg2://{DB_USERNAME}:{DB_PASSWORD}@{DB_ADDRESS}"
+        f":{DB_PORT}/{DB_NAME}"
+    )

@@ -1,6 +1,10 @@
 [Unit]
 Description=Aggregator timers target
-Requires=aggregator-collector-hosts.timer aggregator-collector-storages.timer aggregator-collector-backups.timer
+Requires=aggregator-collector-hosts.timer
+Requires=aggregator-collector-storages.timer
+Requires=aggregator-collector-backups.timer
+Requires=aggregator-collector-vms.timer
+Requires=aggregator-collector-elma-vm-access-doc.timer
 After=timers.target
 
 [Install]

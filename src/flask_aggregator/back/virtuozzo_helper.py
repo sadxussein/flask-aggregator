@@ -8,4 +8,3 @@ class VirtuozzoHelper(VirtProtocol):
     """Main helper class."""
     def __init__(self):
         pass
-
