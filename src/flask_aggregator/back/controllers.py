@@ -4,98 +4,57 @@ from abc import ABC, abstractmethod
 
 import pandas as pd
 
-from flask_aggregator.config import Config as cfg
+import flask_aggregator.config as cfg
 from flask_aggregator.back.dbmanager import DBManager
 from flask_aggregator.back.models import Storage, Backups
 from flask_aggregator.back.ovirt_helper import OvirtHelper
 
-
-class ControllerInterface(ABC):
-    """Abstract class/interface for all controllers."""
-    @property
-    @abstractmethod
-    def data(self) -> any:
-        """Controller always holds some data to present for view."""
-
-    @property
-    @abstractmethod
-    def item_count(self) -> int:
-        """Since this controller operates only with table-like entities it
-        always returns item count (row count).
-        """
-
-    @abstractmethod
-    def get_filters(self) -> None:
-        """Set filters to view."""
-
-    @abstractmethod
-    def get_columns(self) -> None:
-        """Set columns in order set in model."""
+from flask_aggregator.back.db import DBConnection, DBRepositoryFactory
 
 
-class DBController(ControllerInterface):
-    """MVC Controller class for view-database interactions.
+class Controller(ABC):
+    """Abstract controller method.
     
-    Concrete class for database.
+    Acts as a mediator between 'model' and 'view'.
+    Provides standart interface for client to use data from backend, whatever
+    it is.
     """
-    def __init__(self, table_name: str):
-        super().__init__()
-        self.__dbmanager = DBManager()
-        self.__table = cfg.DB_MODELS[table_name]
-        self.__data = self.__dbmanager.get_data(self.__table)
-        self.__item_count = self.__dbmanager.get_item_count(self.__table)
+    def __init__(self, source, target):
+        self._source = source
+        self._target = target
 
-    @property
-    def data(self) -> any:
+    @abstractmethod
+    def get_data(self):
+        """Get data from source."""
+
+    @abstractmethod
+    def set_data(self):
+        """Set data in target."""
+
+class DBController():
+    """Controller for database set/get interactions."""
+    def __init__(self, repo_name: str):
+        db_con = DBConnection(cfg.DevelopmentConfig.DB_URL)
+        repo_factory = DBRepositoryFactory()
+        repo_factory.set_connection(db_con)
+        repo = repo_factory.make_repo(repo_name)
+        self.__n, self.__data = repo.build()
+
+    def get_data(self):
+        """Get result from database repository (table/view)."""
         return self.__data
 
-    @property
-    def item_count(self) -> int:
-        return self.__item_count
+    def get_item_count(self):
+        """Get item count from current repo query."""
+        return self.__n
 
-    def get_taped_vms(self, model: any, **kwargs: any) -> list:
-        self.__item_count, self.__data = (
-            self.__dbmanager.get_taped_vms(model, **kwargs)
-        )
+    def set_data(self):
+        """Set data in the database (upsert)."""
 
-    def get_old_backups(self, model: any, **kwargs: any) -> list:
-        self.__item_count, self.__data = (
-            self.__dbmanager.get_old_backups(model, **kwargs)
-        )
+class Object():
+    pass
 
-    def get_filters(self) -> list:
-        return self.__dbmanager.get_model_filters(self.__table)
 
-    def get_columns(self) -> list:
-        return self.__dbmanager.get_model_columns(self.__table)
-
-class OvirtController(ControllerInterface):
-    """MVC Controller class for oVirt interactions."""
-    def __init__(self, dpc_list: list):
-        """Always should have `dpc_list` parameter, otherwise no meaning."""
-        self.__ovirt_helper = OvirtHelper(dpc_list=dpc_list)
-        self.__data = None
-        self.__item_count = None
-
-    @property
-    def data(self) -> any:
-        return self.__data
-
-    @property
-    def item_count(self) -> int:
-        return self.__item_count
-
-    def get_filters(self):
-        pass
-
-    def get_columns(self):
-        pass
-
-    def get_user_vm_list(self) -> None:
-        self.__ovirt_helper.connect_to_virtualization()
-        self.__data = self.__ovirt_helper.get_user_vm_list()
-        self.__item_count = len(self.__data)
-        self.__ovirt_helper.disconnect_from_virtualization()
 
 # Transformers.
 class Adapter(ABC):
@@ -147,15 +106,20 @@ class GBAdapter(Adapter):
                 "'storage' table."
             )
 
-class Object():
-    pass
+
+class DBTableToDictAdapter(Adapter):
+    """Translate data from ORM to dict type."""
+    def adapt(self, data: list) -> None:
+        for i, el in enumerate(data):
+            data[i] = el.as_dict
+
 
 class BackupTypeAdapter(Adapter):
     """Change long source_key url to short 'tape'/'disk'."""
     def adapt(self, data: list) -> None:
         for i, el in enumerate(data):
             new_el = Object()
-            for k in el._mapping.keys():
+            for k in Backups.__table__.columns:
                 print(k)
                 if k == "source_key":
                     setattr(
@@ -177,52 +141,38 @@ class TestAdapter(Adapter):
         return pd.DataFrame(data)
 
 
-# Views.
-class DataView(ABC):
-    """View class."""
-    def __init__(self, transformers: list):
-        self.__tfs = transformers
+# class Controller(ABC):
+#     """Abstract controller class."""
+#     def __init__(self):
+#         self._adapters = []
+#         # self._view = None
+#         self._model = None
 
-    @abstractmethod
-    def update_view(self, data):
-        """Update view for data."""
+#     def add_adapter(self, adapter: Adapter):
+#         """Add adapter which can change data passed to view."""
+#         self._adapters.append(adapter)
 
-    @abstractmethod
-    def _render_view(self, data):
-        """Render view for external use."""
+#     def set_model(self, model: any):
+#         """Set model for controller from which controller will take data."""
+#         self._model = model
 
-class StorageView(DataView):
-    def __init__(self, transformers: list):
-        self.__tfs = transformers
+#     @abstractmethod
+#     def get_data(self):
+#         """Get data from model source."""
 
-    def update_view(self, data):
-        for tf in self.__tfs:
-            tf.adapt(data)
-        return self._render_view(data)
+#     @abstractmethod
+#     def update_data(self):
+#         """Update data in model."""
 
-    def _render_view(self, data):
-        return data
 
-class BackupsView(DataView):
-    def __init__(self, transformers: list):
-        self.__tfs = transformers
+# class DBController(Controller):
+#     """Concrete database controller."""
+#     def get_data(self):
+#         d = self._model.data
+#         if self._adapters:
+#             for a in self._adapters:
+#                 a.adapt(d)
+#         return d
 
-    def update_view(self, data):
-        for tf in self.__tfs:
-            tf.adapt(data)
-        return self._render_view(data)
-
-    def _render_view(self, data):
-        return data
-
-class DataFrameView(DataView):
-    def __init__(self, transformers: list):
-        self.__tfs = transformers
-
-    def update_view(self, data):
-        for tf in self.__tfs:
-            data = tf.adapt(data)
-        return self._render_view(data)
-
-    def _render_view(self, data):
-        return data
+#     def update_data(self):
+#         pass

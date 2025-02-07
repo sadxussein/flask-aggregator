@@ -11,6 +11,10 @@ from sqlalchemy.ext.hybrid import hybrid_property
 
 Base = declarative_base()
 
+def get_base():
+    """For external use."""
+    return Base
+
 class OvirtEntity(Base):
     """Base class for every oVirt entity."""
     __abstract__ = True
@@ -189,8 +193,7 @@ class Backups(Base):
     def get_columns_order():
         """Get full order of columns.""" 
         return [
-            "name", "backup_server", "created",
-            "size", "source_key", "type"
+            "name", "backup_server", "created", "size", "source_key", "type"
         ]
 
     @staticmethod

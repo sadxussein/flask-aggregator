@@ -21,8 +21,9 @@ from flask_aggregator.back.ovirt_helper import OvirtHelper
 from flask_aggregator.back.file_handler import FileHandler
 from flask_aggregator.back.dbmanager import DBManager
 from flask_aggregator.back.models import Storage
-from flask_aggregator.back.controllers import (
-    DBController, StorageView, GBAdapter, BackupsView, BackupTypeAdapter
+# from flask_aggregator.back.controllers import DBController
+from flask_aggregator.back.db import (
+    DBRepositoryFactory, DBRepository, DBConnection
 )
 
 class FlaskAggregator():
@@ -70,24 +71,25 @@ class FlaskAggregator():
                 model_name == "backups"
                 and old_backups != "all_cb_entries"
             ):
+                pass
                 # data_count, data = dbmanager.get_old_backups(
                 #     model, page, per_page, filters, sort_by, order, fields,
                 #     old_backups
                 # )
-                dbctrl = DBController("backups")
-                dbctrl.get_old_backups(
-                    model,
-                    page=page,
-                    per_page=per_page,
-                    fields=fields,
-                    filters=filters,
-                    sort_by=sort_by,
-                    order=order,
-                    backups_to_show=old_backups
-                )
-                view = BackupsView(transformers=[BackupTypeAdapter()])
-                data = view.update_view(dbctrl.data)
-                data_count = dbctrl.item_count
+                # dbctrl = DBController("backups")
+                # dbctrl.get_old_backups(
+                #     model,
+                #     page=page,
+                #     per_page=per_page,
+                #     fields=fields,
+                #     filters=filters,
+                #     sort_by=sort_by,
+                #     order=order,
+                #     backups_to_show=old_backups
+                # )
+                # view = BackupsView(transformers=[BackupTypeAdapter()])
+                # data = view.update_view(dbctrl.data)
+                # data_count = dbctrl.item_count
             elif model_name == "backups_view":
                 data_count, data = dbmanager.get_data_from_view(
                     model, page, per_page, fields, filters, sort_by, order
@@ -149,40 +151,83 @@ class FlaskAggregator():
                 elma_backups=elma_backups, **kwargs
             )
 
-        @self.__app.route("/ovirt/storages")
-        def ovirt_storages():
-            """Show model from database."""
-            model = "storages"
-            controller = DBController(model)
-            columns = controller.get_columns()
-            filter_list = controller.get_filters()
-            data_trs = [
-                GBAdapter()
-            ]
-            view_ = StorageView(data_trs)
-            data = view_.update_view(controller.data)
-            filters = {}
-            for f in filter_list:
-                filters[f] = request.args.get(f)
+        # @self.__app.route("/ovirt/storages")
+        # def ovirt_storages():
+        #     """Show model from database."""
+        #     model = "storages"
+        #     controller = DBController(model)
+        #     columns = controller.get_columns()
+        #     filter_list = controller.get_filters()
+        #     data_trs = [
+        #         GBAdapter()
+        #     ]
+        #     view_ = StorageView(data_trs)
+        #     data = view_.update_view(controller.data)
+        #     filters = {}
+        #     for f in filter_list:
+        #         filters[f] = request.args.get(f)
 
+        #     def get_pagination_url(page: int) -> str:
+        #         args = request.args.to_dict()
+        #         args["page"] = page
+        #         return f"/ovirt/{model}?{urlencode(args)}"
+
+        #     kwargs = {
+        #         "model": model,
+        #         "filters": filters,
+        #         "fields": columns,
+        #         "page": request.args.get("page", 1, type=int),
+        #         "per_page": request.args.get("per_page", 10, type=int),
+        #         "sort_by": request.args.get("sort_by", "name"),
+        #         "order": request.args.get("order", "asc"),
+        #         "total_pages": controller.item_count,
+        #         "get_pagination_url": get_pagination_url
+        #     }
+
+        #     return render_template("storages.html", data=data, **kwargs)
+
+        @self.__app.route("/test/<model_name>")
+        def test(model_name):
+            # Set up connection and correct repository for database
+            # interactions.
+            db_con = DBConnection(DevelopmentConfig.DB_URL)
+            repo_factory = DBRepositoryFactory()
+            repo_factory.set_connection(db_con)
+            repo = repo_factory.make_repo(model_name)
+            # Get filters from frontend.
+            filters = {}
+            for f in repo.filter_fields:
+                filters[f] = request.args.get(f)
+            # Pass filters to database backend.
+            repo.add_filter(
+                filters=filters,
+                sort_by=request.args.get("order", "asc"),
+                sort_order=request.args.get("sort_by", "name"),
+                page=request.args.get("page", 1, type=int),
+                per_page=request.args.get("per_page", 10, type=int)
+            )
+            # Make data from repository.
+            data, item_count = repo.build()
+            # Make pagination function, which is being passed to frontend.
             def get_pagination_url(page: int) -> str:
                 args = request.args.to_dict()
                 args["page"] = page
-                return f"/ovirt/{model}?{urlencode(args)}"
-
+                return f"/test/{model_name}?{urlencode(args)}"
+            # Make arguments from template frontend. They will be both passed
+            # to database backend and circled back to frontend.
             kwargs = {
-                "model": model,
+                "model_name": model_name,
                 "filters": filters,
-                "fields": columns,
+                "fields": repo.col_order,
                 "page": request.args.get("page", 1, type=int),
                 "per_page": request.args.get("per_page", 10, type=int),
                 "sort_by": request.args.get("sort_by", "name"),
                 "order": request.args.get("order", "asc"),
-                "total_pages": controller.item_count,
+                "total_pages": len(repo.data),
                 "get_pagination_url": get_pagination_url
             }
 
-            return render_template("storages.html", data=data, **kwargs)
+            return render_template("test.html", data=data, **kwargs)
 
         @self.__app.route("/ovirt/cluster_list/raw_json")
         def ovirt_cluster_raw_json():
@@ -286,27 +331,6 @@ class FlaskAggregator():
             else:
                 return jsonify({"error": "File is not a valid JSON."}), 400
 
-    def __b_to_gb_storages(self, data) -> list:
-        """Transform bytes size for oVirt storages to gigabytes.
-        
-        By default database saves oVirt storage disk information in bytes.
-        This function transforms it in gigabytes representation.
-
-        Args:
-            data (list): List of tuples from database table.
-
-        Returns:
-            list: Updated list of tuples.
-        """
-        result = []
-        for row in data:
-            result.append((
-                *row[:6],
-                *(b / 1024**3 for b in row[6:10]),
-                *row[10:]
-            ))
-        return result
-
     def get_app(self) -> Flask:
         """Return Flask aggregator server."""
         env = os.getenv("FLASK_ENV", "development")
@@ -316,9 +340,6 @@ class FlaskAggregator():
             self.__app.config.from_object(DevelopmentConfig)
         return self.__app
 
-
-class URLArgs():
-    """Designated class for agruments that circle in URLs."""
 
 # If run from flask run.
 flask_aggregator = FlaskAggregator()
