@@ -6,8 +6,26 @@
     <label for="{{ key }}">{{ key }}:</label>
     <input type="text" id="{{ key }}" name="{{ key }}" value="{{ filters[key] or '' }}">
     {% endfor %}
+    <!--
+    View for VMs that should be backed up. 
+    Additional passed arguments from flask (except `filters` dict):
+        show_dbs: Decides whether show or hide databases.
+        show_absent_in_ov: Decides whether show or hide VMs that are currently absent in oVirt.
+    -->
+    {% if model_name == "ToBeBackedUpVms" %}
+    <label>
+        <input type="checkbox" name="show_dbs" id="show_dbs" {% if show_dbs %} checked {% endif %}>
+        Show databases
+    </label>
+    <label>
+        <input type="checkbox" name="show_absent_in_ov" id="show_absent_in_ov" {% if show_absent_in_ov %} checked {% endif %}>
+        Show VMs absent in oVirt
+    </label>
+    {% endif %}
     <button type="submit">Search</button>
 </form>
+<hr>
+{{ filter_container.render() | safe }}
 <hr>
 <div class="container">
     <table id="{{ model_name }}" class="display">
@@ -23,13 +41,8 @@
         <tbody>
             {% for item in data %}
             <tr>
-                {% if item.uuid %}
-                    <td><a href="{{ item.href }}">{{ item.uuid }}</a></td>
-                {% endif %}
                 {% for column in fields %}
-                    {% if column != "uuid" and column != "href" %}
-                        <td>{{ item[column] }}</td>
-                    {% endif %}
+                    <td>{{ item[column] }}</td>
                 {% endfor %}
             </tr>
             {% endfor %}

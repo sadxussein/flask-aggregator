@@ -25,6 +25,14 @@ from flask_aggregator.back.models import Storage
 from flask_aggregator.back.db import (
     DBRepositoryFactory, DBRepository, DBConnection
 )
+from flask_aggregator.back.view_object import ViewObjectFactory, ViewObject
+from flask_aggregator.front.view import (
+    TextField,
+    DropDownField,
+    UIContainer,
+    SubmitButton,
+    CheckBox
+)
 
 class FlaskAggregator():
     """Flask-based aggregator class. Used primarily for oVirt interactions."""    
@@ -201,13 +209,15 @@ class FlaskAggregator():
             # Pass filters to database backend.
             repo.add_filter(
                 filters=filters,
-                sort_by=request.args.get("order", "asc"),
-                sort_order=request.args.get("sort_by", "name"),
+                sort_by=request.args.get("sort_by", "name"),
+                sort_order=request.args.get("order", "asc"),
                 page=request.args.get("page", 1, type=int),
                 per_page=request.args.get("per_page", 10, type=int)
             )
             # Make data from repository.
-            data, item_count = repo.build()
+            raw_data, item_count = repo.build()
+            raw_view_objects = [ViewObjectFactory.create_obj(obj) for obj in raw_data]
+            data = [obj.to_dict() for obj in raw_view_objects]
             # Make pagination function, which is being passed to frontend.
             def get_pagination_url(page: int) -> str:
                 args = request.args.to_dict()
@@ -215,19 +225,58 @@ class FlaskAggregator():
                 return f"/test/{model_name}?{urlencode(args)}"
             # Make arguments from template frontend. They will be both passed
             # to database backend and circled back to frontend.
+            page = request.args.get("page", 1, type=int)
+            per_page = request.args.get("per_page", 10, type=int)
+            show_dbs = request.args.get("show_dbs")
+            show_absent_in_ov = request.args.get("show_absent_in_ov")
             kwargs = {
                 "model_name": model_name,
                 "filters": filters,
                 "fields": repo.col_order,
-                "page": request.args.get("page", 1, type=int),
-                "per_page": request.args.get("per_page", 10, type=int),
+                "page": page,
+                "per_page": per_page,
                 "sort_by": request.args.get("sort_by", "name"),
                 "order": request.args.get("order", "asc"),
-                "total_pages": len(repo.data),
+                "total_pages": (item_count + per_page - 1) // per_page,
+                "total_items": item_count,
+                "show_dbs": False if show_dbs is None else True,
+                "show_absent_in_ov": (
+                    False if show_absent_in_ov is None else True
+                ),
                 "get_pagination_url": get_pagination_url
             }
 
-            return render_template("test.html", data=data, **kwargs)
+            # UI attempt.
+            filter_container = UIContainer(
+                id_="filter-container",
+                name="filter-container",
+                tag="form"
+            )
+            for f in repo.filter_fields:
+                filter_container.add_component(TextField(
+                    id_=f,
+                    name=f,
+                    label=f
+                ))
+            filter_container.add_component(DropDownField(
+                id_="engine",
+                name="engine",
+                label="engine",
+                items={"e15": "e15", "e15-2": "e15-2", "n32": "n32", "k45": "k45"}
+            ))
+            filter_container.add_component(CheckBox(
+                name="show_dbs",
+                id_="show_dbs",
+                class_="show_dbs",
+                label="Show databases"
+            ))
+            filter_container.add_component(SubmitButton(name="Search"))
+            return render_template(
+                "test.html",
+                data=data,
+                filter_container=filter_container,
+                **kwargs
+            )
 
         @self.__app.route("/ovirt/cluster_list/raw_json")
         def ovirt_cluster_raw_json():

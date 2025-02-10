@@ -13,8 +13,9 @@ from flask_aggregator.back.models import (
     Cluster,
     DataCenter,
     ElmaVM,
-    ElmaVmAccessDoc,
+    ElmaVmAccessDoc
 )
+
 
 class DBConnection:
     """Handles database connections via SQLAlchemy."""
@@ -38,7 +39,8 @@ class DBConnection:
 
 
 class DBManager(ABC):
-    """Abstract class for managing table/view creation."""    
+    """Abstract class for managing table/view creation."""
+
     # @abstractmethod
     # def upsert_data(
     #     self, data: list, index_elements: list, included_elements: list
@@ -129,7 +131,7 @@ class DBRepository(ABC):
 
     @property
     def item_count(self) -> int:
-        """Return """
+        """Return"""
         if self._query is None:
             raise ValueError("Query is empty!")
         if self._query.all() is None:
@@ -210,6 +212,7 @@ class LatestBackupRepository(DBRepository):
     First we make filtered query in order to drop all `POOL`-like entries
     (ie taped backups). Then grouping them by latest data creation.
     """
+
     def __init__(self, conn):
         super().__init__(conn)
         self._col_order = ["uuid", "name", "size", "source_key", "type"]
@@ -235,9 +238,7 @@ class LatestBackupRepository(DBRepository):
 
     def set_filter(self):
         if self._query is None:
-            raise ValueError(
-                "Query is 'None'. Can't apply filter to empty query."
-            )
+            raise ValueError("Query is 'None'. Can't apply filter to empty query.")
         if self._filter and self._filter.filters:
             for k, v in self._filter.filters.items():
                 if v != "" and v is not None:
@@ -249,9 +250,7 @@ class LatestBackupRepository(DBRepository):
 
     def set_order(self):
         if self._query is None:
-            raise ValueError(
-                "Query is 'None'. Can't apply order_by to empty query."
-            )
+            raise ValueError("Query is 'None'. Can't apply order_by to empty query.")
         if self._filter and self._filter.sort_by and self._filter.sort_order:
             sb = self._filter.sort_by
             so = self._filter.sort_order
@@ -266,8 +265,7 @@ class LatestBackupRepository(DBRepository):
     def set_pagination(self):
         if self._query is None:
             raise ValueError(
-                "Query is 'None'. Can't apply offset and limit to empty "
-                "query."
+                "Query is 'None'. Can't apply offset and limit to empty " "query."
             )
         if self._filter and self._filter.page and self._filter.per_page:
             p = self._filter.page
@@ -351,22 +349,108 @@ class LatestBackupOvirtRepository(DBRepository):
         return self
 
 
-class VmOvirtRepository(DBRepository):
-    """Vm list from database."""
+class ToBeBackedUpVmsRepository(DBRepository):
+    """A join of VMs which have to be backed up by cyberbackup.
+    
+    Tables involved: 'backups', 'elma_vm_access_doc', 'vms'.
+    """
     def set_base_query(self):
-        self._query = self._s.query(Vm)
+        backups_subq = (
+            self._s.query(Backups.name)
+            .group_by(Backups.name)
+            .subquery()
+        )
+        elma_q = (
+            self._s.query(
+                Vm.id.label("id"),
+                Vm.uuid.label("uuid"),
+                Vm.name.label("name"),
+                Vm.engine.label("engine"),
+            )
+            .join(ElmaVmAccessDoc, Vm.name == ElmaVmAccessDoc.name)
+            .join(backups_subq, ElmaVmAccessDoc.name == backups_subq.c.name)
+            .filter(ElmaVmAccessDoc.backup == True)
+            .subquery()
+        )
+        self._query = (
+            self._s.query(
+                Vm.id,
+                Vm.uuid,
+                ElmaVmAccessDoc.name,
+                Vm.engine
+            )
+            .outerjoin(
+                elma_q,
+                elma_q.c.name == ElmaVmAccessDoc.name
+            )
+            .outerjoin(
+                Vm, Vm.name == ElmaVmAccessDoc.name
+            )
+            .filter(
+                ElmaVmAccessDoc.backup == True,
+                elma_q.c.name == None
+            )
+        )
+        return self
 
     def set_filter(self):
-        pass
+        if self._query is None:
+            raise ValueError(
+                "Query is 'None'. Can't apply filter to empty query."
+            )
+        if self._filter and self._filter.filters:
+            for k, v in self._filter.filters.items():
+                if v != "" and v is not None:
+                    col = next((c for c in self._col_order if c == k), None)
+                    if col != "name":
+                        col = getattr(Vm, col, None)
+                    else:
+                        col = getattr(ElmaVmAccessDoc, col, None)
+                    if col is not None:
+                        # TODO: need to think about strict and non-strict search
+                        self._query = self._query.filter(col.like(f"%{v}%"))
+                    # If in the frontend the button is in "disabled" state.
+                    if k == "show_dbs" and not v:
+                        self._query = self._query.filter(
+                            ElmaVmAccessDoc.name.like("%db%")
+                        )
+                    # If in the frontend the button is in "disabled" state.
+                    if k == "show_absent_in_ov" and not v:
+                        self._query = self._query.filter(Vm.uuid != None)
+        return self
 
     def set_order(self):
-        pass
+        if self._query is None:
+            raise ValueError(
+                "Query is 'None'. Can't apply order_by to empty query."
+            )
+        if self._filter and self._filter.sort_by and self._filter.sort_order:
+            sb = self._filter.sort_by
+            so = self._filter.sort_order
+            col = next((c for c in self._col_order if c == sb), None)
+            if col is not None:
+                if so == "asc":
+                    self._query = self._query.order_by(asc(col))
+                else:
+                    self._query = self._query.order_by(desc(col))
+        return self
 
     def set_pagination(self):
-        pass
+        if self._query is None:
+            raise ValueError(
+                "Query is 'None'. Can't apply offset and limit to empty "
+                "query."
+            )
+        if self._filter and self._filter.page and self._filter.per_page:
+            p = self._filter.page
+            pp = self._filter.per_page
+            self._query = self._query.offset((p - 1) * pp).limit(pp)
+        return self
+
 
 class DBBasicRepository(DBRepository):
     """Interactions with base SQLAlchemy models."""
+
     def __init__(self, conn):
         super().__init__(conn)
         self.__m = None
@@ -381,9 +465,7 @@ class DBBasicRepository(DBRepository):
 
     def set_filter(self):
         if self._query is None:
-            raise ValueError(
-                "Query is 'None'. Can't apply filter to empty query."
-            )
+            raise ValueError("Query is 'None'. Can't apply filter to empty query.")
         if self._filter and self._filter.filters:
             for k, v in self._filter.filters.items():
                 if v != "" and v is not None:
@@ -395,31 +477,29 @@ class DBBasicRepository(DBRepository):
 
     def set_order(self):
         if self._query is None:
-            raise ValueError(
-                "Query is 'None'. Can't apply order_by to empty query."
-            )
+            raise ValueError("Query is 'None'. Can't apply order_by to empty query.")
         if self._filter and self._filter.sort_by and self._filter.sort_order:
             sb = self._filter.sort_by
             so = self._filter.sort_order
             col = getattr(self.__m, sb, None)
             if col is not None:
                 if so == "asc":
-                    self._query.order_by(asc(col))
+                    self._query = self._query.order_by(asc(col))
                 else:
-                    self._query.order_by(desc(col))
+                    self._query = self._query.order_by(desc(col))
         return self
 
     def set_pagination(self):
         if self._query is None:
             raise ValueError(
-                "Query is 'None'. Can't apply offset and limit to empty "
-                "query."
+                "Query is 'None'. Can't apply offset and limit to empty " "query."
             )
         if self._filter and self._filter.page and self._filter.per_page:
             p = self._filter.page
             pp = self._filter.per_page
             self._query = self._query.offset((p - 1) * pp).limit(pp)
         return self
+
 
 class DBRepositoryFactory:
     """Factory for creating various database interactions endpoints."""
@@ -478,7 +558,9 @@ class DBRepositoryFactory:
         if repo_name == "StorageOvirt":
             repo = DBBasicRepository(self.__db_conn)
             repo.set_model(Storage)
-            repo.set_col_order(["uuid", "name", "engine"])
+            repo.set_col_order(
+                ["uuid", "name", "engine", "total", "available"]
+            )
             repo.set_filter_fields(["uuid", "name", "engine"])
             return repo
         if repo_name == "Backups":
@@ -500,5 +582,10 @@ class DBRepositoryFactory:
             repo.set_model(ElmaVmAccessDoc)
             repo.set_col_order(["id", "doc_id", "name", "dns", "backup"])
             repo.set_filter_fields(["id", "doc_id", "name", "dns", "backup"])
+            return repo
+        if repo_name == "ToBeBackedUpVms":
+            repo = ToBeBackedUpVmsRepository(self.__db_conn)
+            repo.set_col_order(["uuid", "name", "engine"])
+            repo.set_filter_fields(["name", "engine"])
             return repo
         raise ValueError("'repo_name' is invalid.")
