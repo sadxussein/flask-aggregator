@@ -66,7 +66,6 @@ class FlaskAggregator():
             filters = {}
             for fltr in repo.filter_fields:
                 filters[fltr["name"]] = request.args.get(fltr["name"])
-            print(filters)
             # Pass filters to database backend.
             repo.add_filter(
                 filters=filters,

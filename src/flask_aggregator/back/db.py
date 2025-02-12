@@ -244,8 +244,6 @@ class LatestBackupRepository(DBRepository):
 
     def __init__(self, conn):
         super().__init__(conn)
-        self._col_order = ["uuid", "name", "size", "source_key", "type"]
-        self._filter_fields = ["name", "source_key", "type"]
 
     def set_base_query(self):
         filtered_query = self._s.query(Backups).filter(
@@ -286,9 +284,9 @@ class LatestBackupRepository(DBRepository):
             col = getattr(Backups, sb, None)
             if col is not None:
                 if so == "asc":
-                    self._query.order_by(asc(col))
+                    self._query = self._query.order_by(asc(col))
                 else:
-                    self._query.order_by(desc(col))
+                    self._query = self._query.order_by(desc(col))
         return self
 
     def set_pagination(self):
@@ -547,7 +545,7 @@ class TapedOnlyVmsRepository(DBRepository):
             pp = self._filter.per_page
             self._query = self._query.offset((p - 1) * pp).limit(pp)
         return self
-        
+
 
 class DBBasicRepository(DBRepository):
     """Interactions with base SQLAlchemy models."""
@@ -624,7 +622,7 @@ class DBRepositoryFactory:
         """
         if repo_name == "LatestBackup":
             repo = LatestBackupRepository(self.__db_conn)
-            repo.set_col_order(["uuid", "name", "size", "source_key", "type"])
+            repo.set_col_order(["name", "size", "source_key", "type"])
             repo.set_filter_fields([
                 {"name": "name", "type": "text", "default_value": ''},
                 {"name": "type", "type": "option", "options":
