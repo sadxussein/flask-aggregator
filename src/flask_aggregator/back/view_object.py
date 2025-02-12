@@ -1,6 +1,6 @@
 """View objects with decorators."""
 
-from collections import namedtuple
+from collections import OrderedDict
 from abc import ABC, abstractmethod
 
 from sqlalchemy import Row
@@ -53,25 +53,29 @@ class ViewObject(ABC):
     def get_obj_attrs(self):
         """Get object attributes as list."""
 
+    @abstractmethod
+    def set_obj_attrs(self, lst: list[str]):
+        """Set object attributes from list."""
+
 class ViewObjectFactory:
     """Simple factory to get view objects."""
     @staticmethod
-    def create_obj(obj) -> ViewObject:
+    def create_obj(obj, cols) -> ViewObject:
         """Return concrete view object."""
         if isinstance(obj, Row):
-            return SQLTupleViewObject(obj)
+            return SQLTupleViewObject(obj, cols)
         if issubclass(obj.__class__, get_base()):
-            return SQLModelViewObject(obj)
+            return SQLModelViewObject(obj, cols)
         raise ValueError("Unknown object class instance.")
 
 class SQLModelViewObject(ViewObject):
     """Concrete SQLAlchemy model (table) view object."""
-    def __init__(self, model):
+    def __init__(self, model, cols):
         # Copying source class attributes to this one.
         # This might be redundant, but I want to have some flexibility if
         # ViewObject class functionality will be extended. Working with class
         # attributes is more 'clean' (IMO).
-        self.__cols = [f.name for f in model.__table__.columns]
+        self.__cols = cols
         for col in self.__cols:
             setattr(self, col, getattr(model, col))
 
@@ -80,7 +84,7 @@ class SQLModelViewObject(ViewObject):
     @convert_bytes("available", "GB")
     def to_dict(self):
         return (
-            dict(
+            OrderedDict(
                 zip(
                     self.__cols, (
                         getattr(self, col) for col in self.__cols
@@ -89,17 +93,20 @@ class SQLModelViewObject(ViewObject):
             )
         )
 
+    def set_obj_attrs(self, lst: list[str]):
+        self.__cols = lst
+
     def get_obj_attrs(self):
         return self.__cols
 
 class SQLTupleViewObject(ViewObject):
     """Concrete SQLAlchemy tuple (query result) view object."""
-    def __init__(self, row_obj):
+    def __init__(self, row_obj, cols):
         # Copying source class attributes to this one.
         # This might be redundant, but I want to have some flexibility if
         # ViewObject class functionality will be extended. Working with class
         # attributes is more 'clean' (IMO).
-        self.__cols = list(row_obj._fields)
+        self.__cols = cols
         for col in self.__cols:
             setattr(self, col, getattr(row_obj, col))
 
@@ -108,7 +115,7 @@ class SQLTupleViewObject(ViewObject):
     @convert_bytes("available", "GB")
     def to_dict(self):
         return (
-            dict(
+            OrderedDict(
                 zip(
                     self.__cols, (
                         getattr(self, col) for col in self.__cols
@@ -116,6 +123,9 @@ class SQLTupleViewObject(ViewObject):
                 )
             )
         )
+
+    def set_obj_attrs(self, lst: list[str]):
+        self.__cols = lst
 
     def get_obj_attrs(self):
         return self.__cols

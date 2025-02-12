@@ -1,11 +1,14 @@
 """Test module for database interactions architecture."""
 
 from abc import ABC, abstractmethod
+from collections import OrderedDict
 
 from sqlalchemy import create_engine, func, asc, desc
+from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import scoped_session, sessionmaker
 
 from flask_aggregator.back.models import (
+    get_base,
     Backups,
     Vm,
     Host,
@@ -13,7 +16,8 @@ from flask_aggregator.back.models import (
     Cluster,
     DataCenter,
     ElmaVM,
-    ElmaVmAccessDoc
+    ElmaVmAccessDoc,
+    OvirtEngine
 )
 
 
@@ -39,37 +43,66 @@ class DBConnection:
 
 
 class DBManager(ABC):
-    """Abstract class for managing table/view creation."""
+    """Class for managing table/view creation."""
+    def __init__(self, model: any, conn: DBConnection):
+        self.__m = model
+        self.__s = conn.get_scoped_session()
 
-    # @abstractmethod
-    # def upsert_data(
-    #     self, data: list, index_elements: list, included_elements: list
-    # ) -> None:
-    #     """Upsert data to tables based on their type.
+        # Make table (if it doesn't exist) via DeclarativeBase from 'models'
+        # module.
+        get_base().metadata.create_all(
+            bind=conn.get_engine(),
+            tables=[model.__table__]
+        )
 
-    #     Args:
-    #         data (list): Data, either list of dicts (with all fields of model)
-    #             or list of model elements (i.e. derived from Base ORM class).
-    #         index_elements (list): List or strings, representing fields
-    #             (columns), which have to be excluded from ON CONFLICT clause
-    #             (to the right side of the clausee).
-    #         included_elements (list): List of strings, representing elements
-    #             to be excluded from the right side of DO UPDATE SET (these
-    #             elements will not be updated on conflict).
+    def upsert_data(
+        self, data: list, index_elements: list, included_elements: list
+    ) -> None:
+        """Upsert data to tables based on their type.
 
-    #     Returns:
-    #         None
+        Args:
+            data (list): Data, either list of dicts (with all fields of
+                model) or list of model elements (i.e. derived from Base ORM
+                class).
+            index_elements (list): List or strings, representing fields
+                (columns), based on which `ON CONFLICT` clause in constructed.
+                Basically its a list of columns which have to be checked for 
+                conflict. If it changes - do update for other columns. In
+                example its `(uuid)` after `ON CONFLICT` clause.
+            included_elements (list): From this list of elements will be 
+                created list of excluded ones for the right side of 
+                `DO UPDATE SET`. Only for elements that have 'unique' 
+                constraint. In example below they are not present, since these
+                elements are to be excluded from all elements. In other words:
+                (excluded_elements = all_elements - included_elements)
 
-    #     Examples:
-    #         The result query will be as such:
-    #             ```
-    #             INSERT INTO elma_vm_access_doc (id, doc_id, name, dns,
-    #             backup) VALUES (%(id)s, %(doc_id)s, %(name)s, %(dns)s,
-    #             %(backup)s) ON CONFLICT (uuid) DO UPDATE SET doc_id =
-    #             excluded.doc_id, name = excluded.name, dns =
-    #             excluded.dns, backup = excluded.backup
-    #             ```
-    #     """
+        Returns:
+            None
+
+        Examples:
+            The result query will be as such:
+                ```
+                INSERT INTO elma_vm_access_doc (id, doc_id, name, dns,
+                backup) VALUES (%(id)s, %(doc_id)s, %(name)s, %(dns)s,
+                %(backup)s) ON CONFLICT (uuid) DO UPDATE SET doc_id =
+                excluded.doc_id, name = excluded.name, dns =
+                excluded.dns, backup = excluded.backup
+                ```
+        """
+        # Postgres specific "upsert".
+        stmt = insert(self.__m).values(data)
+        dict_set = {
+            column.name: getattr(stmt.excluded, column.name)
+            for column in self.__m.__table__.columns
+            if column.name not in included_elements
+        }
+        stmt = stmt.on_conflict_do_update(
+            index_elements=index_elements,
+            set_=dict_set
+        )
+        self.__s.execute(stmt)
+        self.__s.commit()
+        self.__s.close()
 
     # @abstractmethod
     # def get_raw_data(self):
@@ -117,7 +150,7 @@ class DBRepository(ABC):
         self._s = self._conn.get_scoped_session()
         self._filter = DBFilter()
         self._col_order = []
-        self._filter_fields = []
+        self._filter_fields = [{}]
         self._query = None
 
     @property
@@ -163,8 +196,20 @@ class DBRepository(ABC):
         """Set column order for repository."""
         self._col_order = lst
 
-    def set_filter_fields(self, lst: list[str] = None):
-        """Set filter fields (columns) for repository."""
+    def set_filter_fields(self, lst: list[dict[str, str]] = None):
+        """Set filter fields (columns) for repository.
+        
+        Base format for list:
+            ```
+            [
+                {
+                    "name": "field_1",
+                    "type": "text"
+                    "default_value":
+                }
+            ]
+            ```
+        """
         self._filter_fields = lst
 
     def build(self) -> tuple[list, int]:
@@ -402,21 +447,21 @@ class ToBeBackedUpVmsRepository(DBRepository):
             for k, v in self._filter.filters.items():
                 if v != "" and v is not None:
                     col = next((c for c in self._col_order if c == k), None)
-                    if col != "name":
-                        col = getattr(Vm, col, None)
-                    else:
-                        col = getattr(ElmaVmAccessDoc, col, None)
                     if col is not None:
+                        if col != "name":
+                            col = getattr(Vm, col, None)
+                        else:
+                            col = getattr(ElmaVmAccessDoc, col, None)
                         # TODO: need to think about strict and non-strict search
                         self._query = self._query.filter(col.like(f"%{v}%"))
                     # If in the frontend the button is in "disabled" state.
-                    if k == "show_dbs" and not v:
-                        self._query = self._query.filter(
-                            ElmaVmAccessDoc.name.like("%db%")
-                        )
-                    # If in the frontend the button is in "disabled" state.
-                    if k == "show_absent_in_ov" and not v:
-                        self._query = self._query.filter(Vm.uuid != None)
+                if k == "show_dbs" and not v:
+                    self._query = self._query.filter(
+                        ~ElmaVmAccessDoc.name.like("%db%")
+                    )
+                # If in the frontend the button is in "disabled" state.
+                if k == "show_absent_in_ov" and not v:
+                    self._query = self._query.filter(Vm.uuid != None)
         return self
 
     def set_order(self):
@@ -447,6 +492,11 @@ class ToBeBackedUpVmsRepository(DBRepository):
             self._query = self._query.offset((p - 1) * pp).limit(pp)
         return self
 
+
+class TapedOnlyVmsRepository(DBRepository):
+    """Only for VMs that have been taped by Cyberbackup."""
+    def set_base_query(self):
+        pass
 
 class DBBasicRepository(DBRepository):
     """Interactions with base SQLAlchemy models."""
@@ -524,44 +574,111 @@ class DBRepositoryFactory:
         if repo_name == "LatestBackup":
             repo = LatestBackupRepository(self.__db_conn)
             repo.set_col_order(["uuid", "name", "size", "source_key", "type"])
-            repo.set_filter_fields(["name", "source_key", "type"])
+            repo.set_filter_fields([
+                {"name": "name", "type": "text", "default_value": ''},
+                {"name": "type", "type": "option", "options":
+                    {"":"all", "full": "full", "incremental": "incremental"}
+                }
+            ])
             return repo
         if repo_name == "LatestBackupOvirt":
             repo = LatestBackupOvirtRepository(self.__db_conn)
             repo.set_col_order(["uuid", "name", "engine"])
+            engines_repo = DBBasicRepository(self.__db_conn)
+            engines_repo.set_model(OvirtEngine)
+            engines_repo.set_base_query()
+            engines, _ = engines_repo.build()
+            engines = OrderedDict([("", "all")] + list(engines.items()))
+            repo.set_filter_fields([
+                {"name": "name", "type": "text", "default_value": ''},
+                {"name": "engine", "type": "option", "options": engines}
+            ])
             repo.set_filter_fields(["name", "engine"])
             return repo
         if repo_name == "VmOvirt":
             repo = DBBasicRepository(self.__db_conn)
             repo.set_model(Vm)
             repo.set_col_order(["uuid", "name", "engine", "ip"])
-            repo.set_filter_fields(["uuid", "name", "engine", "ip"])
+            engines_repo = DBBasicRepository(self.__db_conn)
+            engines_repo.set_model(OvirtEngine)
+            engines_repo.set_base_query()
+            engines, _ = engines_repo.build()
+            engines = {engine.name: engine.name for engine in engines}
+            engines = OrderedDict([("", "all")] + list(engines.items()))
+            repo.set_filter_fields([
+                {"name": "uuid", "type": "text", "default_value": ''},
+                {"name": "name", "type": "text", "default_value": ''},
+                {"name": "ip", "type": "text", "default_value": ''},
+                {"name": "engine", "type": "option", "options": engines}
+            ])
             return repo
         if repo_name == "HostOvirt":
             repo = DBBasicRepository(self.__db_conn)
             repo.set_model(Host)
             repo.set_col_order(["uuid", "name", "engine", "ip"])
-            repo.set_filter_fields(["uuid", "name", "engine", "ip"])
+            engines_repo = DBBasicRepository(self.__db_conn)
+            engines_repo.set_model(OvirtEngine)
+            engines_repo.set_base_query()
+            engines, _ = engines_repo.build()
+            engines = {engine.name: engine.name for engine in engines}
+            engines = OrderedDict([("", "all")] + list(engines.items()))
+            repo.set_filter_fields([
+                {"name": "uuid", "type": "text", "default_value": ''},
+                {"name": "name", "type": "text", "default_value": ''},
+                {"name": "ip", "type": "text", "default_value": ''},
+                {"name": "engine", "type": "option", "options": engines}
+            ])
             return repo
         if repo_name == "ClusterOvirt":
             repo = DBBasicRepository(self.__db_conn)
             repo.set_model(Cluster)
             repo.set_col_order(["uuid", "name", "engine"])
-            repo.set_filter_fields(["uuid", "name", "engine"])
+            engines_repo = DBBasicRepository(self.__db_conn)
+            engines_repo.set_model(OvirtEngine)
+            engines_repo.set_base_query()
+            engines, _ = engines_repo.build()
+            engines = {engine.name: engine.name for engine in engines}
+            engines = OrderedDict([("", "all")] + list(engines.items()))
+            repo.set_filter_fields([
+                {"name": "uuid", "type": "text", "default_value": ''},
+                {"name": "name", "type": "text", "default_value": ''},
+                {"name": "engine", "type": "option", "options": engines}
+            ])
             return repo
         if repo_name == "DataCenterOvirt":
             repo = DBBasicRepository(self.__db_conn)
             repo.set_model(DataCenter)
             repo.set_col_order(["uuid", "name", "engine"])
-            repo.set_filter_fields(["uuid", "name", "engine"])
+            engines_repo = DBBasicRepository(self.__db_conn)
+            engines_repo.set_model(OvirtEngine)
+            engines_repo.set_base_query()
+            engines, _ = engines_repo.build()
+            engines = {engine.name: engine.name for engine in engines}
+            engines = OrderedDict([("", "all")] + list(engines.items()))
+            repo.set_filter_fields([
+                {"name": "uuid", "type": "text", "default_value": ''},
+                {"name": "name", "type": "text", "default_value": ''},
+                {"name": "engine", "type": "option", "options": engines}
+            ])
             return repo
         if repo_name == "StorageOvirt":
             repo = DBBasicRepository(self.__db_conn)
             repo.set_model(Storage)
-            repo.set_col_order(
-                ["uuid", "name", "engine", "total", "available"]
-            )
-            repo.set_filter_fields(["uuid", "name", "engine"])
+            repo.set_col_order([
+                "uuid", "name", "engine", "available", "used", "committed",
+                "total", "percent_left"
+            ])
+            engines_repo = DBBasicRepository(self.__db_conn)
+            engines_repo.set_model(OvirtEngine)
+            engines_repo.set_base_query()
+            engines, _ = engines_repo.build()
+            engines = {engine.name: engine.name for engine in engines}
+            engines = OrderedDict([("", "all")] + list(engines.items()))
+            repo.set_filter_fields([
+                {"name": "uuid", "type": "text", "default_value": ''},
+                {"name": "name", "type": "text", "default_value": ''},
+                {"name": "engine", "type": "option", "options": engines},
+            ])
             return repo
         if repo_name == "Backups":
             repo = DBBasicRepository(self.__db_conn)
@@ -569,23 +686,54 @@ class DBRepositoryFactory:
             repo.set_col_order(
                 ["name", "created", "type", "size", "source_key"]
             )
-            repo.set_filter_fields(["name", "type"])
+            repo.set_filter_fields([
+                {"name": "uuid", "type": "text", "default_value": ''},
+                {"name": "name", "type": "text", "default_value": ''}
+            ])
             return repo
         if repo_name == "ElmaVm":
             repo = DBBasicRepository(self.__db_conn)
             repo.set_model(ElmaVM)
             repo.set_col_order(["id", "name", "administrators"])
-            repo.set_filter_fields(["id", "name"])
+            repo.set_filter_fields([
+                {"name": "id", "type": "text", "default_value": ''},
+                {"name": "name", "type": "text", "default_value": ''}
+            ])
             return repo
         if repo_name == "ElmaVmAccessDoc":
             repo = DBBasicRepository(self.__db_conn)
             repo.set_model(ElmaVmAccessDoc)
             repo.set_col_order(["id", "doc_id", "name", "dns", "backup"])
-            repo.set_filter_fields(["id", "doc_id", "name", "dns", "backup"])
+            repo.set_filter_fields([
+                {"name": "id", "type": "text", "default_value": ''},
+                {"name": "doc_id", "type": "text", "default_value": ''},
+                {"name": "name", "type": "text", "default_value": ''},
+                {"name": "dns", "type": "text", "default_value": ''},
+                {"name": "backup", "type": "text", "default_value": ''}
+            ])
             return repo
         if repo_name == "ToBeBackedUpVms":
             repo = ToBeBackedUpVmsRepository(self.__db_conn)
             repo.set_col_order(["uuid", "name", "engine"])
-            repo.set_filter_fields(["name", "engine"])
+            engines_repo = DBBasicRepository(self.__db_conn)
+            engines_repo.set_model(OvirtEngine)
+            engines_repo.set_base_query()
+            engines, _ = engines_repo.build()
+            engines = {engine.name: engine.name for engine in engines}
+            engines = OrderedDict([("", "all")] + list(engines.items()))
+            repo.set_filter_fields([
+                {"name": "name", "type": "text", "default_value": ''},
+                {"name": "engine", "type": "option", "options": engines},
+                {"name": "show_dbs", "type": "check"},
+                {"name": "show_absent_in_ov", "type": "check"},
+            ])
             return repo
+        if repo_name == "OvirtEngines":
+            repo = DBBasicRepository(self.__db_conn)
+            repo.set_model(OvirtEngine)
+            repo.set_col_order(["id", "name", "href"])
+            repo.set_filter_fields({})
+            return repo
+        if repo_name == "TapedOnlyVms":
+            repo =
         raise ValueError("'repo_name' is invalid.")

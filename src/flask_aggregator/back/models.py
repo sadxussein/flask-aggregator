@@ -15,6 +15,14 @@ def get_base():
     """For external use."""
     return Base
 
+class OvirtEngine(Base):
+    """Ovirt engines list."""
+    __tablename__ = "ovirt_engines"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String, unique=True, nullable=False)
+    href = Column(String)
+
 class OvirtEntity(Base):
     """Base class for every oVirt entity."""
     __abstract__ = True

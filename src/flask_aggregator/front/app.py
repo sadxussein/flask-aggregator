@@ -31,7 +31,10 @@ from flask_aggregator.front.view import (
     DropDownField,
     UIContainer,
     SubmitButton,
-    CheckBox
+    CheckBox,
+    Table,
+    TableRow,
+    TableCell
 )
 
 class FlaskAggregator():
@@ -48,116 +51,116 @@ class FlaskAggregator():
             """Show index page."""
             return render_template("index.html")
 
-        @self.__app.route("/view/<model_name>")
-        def view(model_name):
-            """Show model list from database.
+        # @self.__app.route("/view/<model_name>")
+        # def view(model_name):
+        #     """Show model list from database.
             
-            Model list is defined in DM_MODELS dictionary of this class.
-            """
-            model = Config.DB_MODELS.get(model_name)
-            if model is None:
-                abort(404, description=f"Table {model_name} not found.")
+        #     Model list is defined in DM_MODELS dictionary of this class.
+        #     """
+        #     model = Config.DB_MODELS.get(model_name)
+        #     if model is None:
+        #         abort(404, description=f"Table {model_name} not found.")
 
-            kwargs = {}
+        #     kwargs = {}
 
-            # Arguments that come from flask frontend.
-            page = request.args.get("page", 1, type=int)
-            per_page = request.args.get("per_page", 10, type=int)
-            sort_by = request.args.get("sort_by", "name")
-            order = request.args.get("order", "asc")
-            old_backups = request.args.get("old_backups", "all")
-            elma_backups = request.args.get("elma_backups", "all")
-            # show_dbs = request.args.get("show_dbs", "all")
+        #     # Arguments that come from flask frontend.
+        #     page = request.args.get("page", 1, type=int)
+        #     per_page = request.args.get("per_page", 10, type=int)
+        #     sort_by = request.args.get("sort_by", "name")
+        #     order = request.args.get("order", "asc")
+        #     old_backups = request.args.get("old_backups", "all")
+        #     elma_backups = request.args.get("elma_backups", "all")
+        #     # show_dbs = request.args.get("show_dbs", "all")
 
-            dbmanager = DBManager()
-            fields = Config.DB_MODELS[model_name].get_columns_order()
-            filters = {}
-            for f in model.get_filters():
-                filters[f] = request.args.get(f)
-            data_count, data = None, None
-            if (
-                model_name == "backups"
-                and old_backups != "all_cb_entries"
-            ):
-                pass
-                # data_count, data = dbmanager.get_old_backups(
-                #     model, page, per_page, filters, sort_by, order, fields,
-                #     old_backups
-                # )
-                # dbctrl = DBController("backups")
-                # dbctrl.get_old_backups(
-                #     model,
-                #     page=page,
-                #     per_page=per_page,
-                #     fields=fields,
-                #     filters=filters,
-                #     sort_by=sort_by,
-                #     order=order,
-                #     backups_to_show=old_backups
-                # )
-                # view = BackupsView(transformers=[BackupTypeAdapter()])
-                # data = view.update_view(dbctrl.data)
-                # data_count = dbctrl.item_count
-            elif model_name == "backups_view":
-                data_count, data = dbmanager.get_data_from_view(
-                    model, page, per_page, fields, filters, sort_by, order
-                )
-            elif model_name == "backups_tape":      # TODO: remove temporary Kulshenko measure!
-                fields = ["uuid", "name", "backup_server", "created", "size"]
-                filters = {"name": None, "backup_server": None}
-                for f in filters:
-                    filters[f] = request.args.get(f)
-                data_count, data = dbmanager.get_taped_vms(
-                    model,
-                    page=page,
-                    per_page=per_page,
-                    fields=fields,
-                    filters=filters,
-                    sort_by=sort_by,
-                    order=order
-                )
-            elif (
-                model_name == "vms_to_be_backed_up_view"
-            ):
-                show_dbs = request.args.get("show_dbs")
-                show_absent_in_ov = request.args.get("show_absent_in_ov")
-                kwargs["show_dbs"] = False if show_dbs is None else True
-                kwargs["show_absent_in_ov"] = (
-                    False if show_absent_in_ov is None else True
-                )
-                data_count, data = dbmanager.get_data_from_view(
-                    model, page, per_page, fields, filters, sort_by, order,
-                    show_dbs=kwargs["show_dbs"],
-                    show_absent_in_ov=kwargs["show_absent_in_ov"]
-                )
-            # elif model_name == "storages":
-            #     print(fields)
-            #     data_count, data = dbmanager.get_paginated_data(
-            #         model, page, per_page, filters, sort_by, order, fields
-            #     )
-            else:
-                data_count, data = dbmanager.get_paginated_data(
-                    model, page, per_page, filters, sort_by, order, fields
-                )
+        #     dbmanager = DBManager()
+        #     fields = Config.DB_MODELS[model_name].get_columns_order()
+        #     filters = {}
+        #     for f in model.get_filters():
+        #         filters[f] = request.args.get(f)
+        #     data_count, data = None, None
+        #     if (
+        #         model_name == "backups"
+        #         and old_backups != "all_cb_entries"
+        #     ):
+        #         pass
+        #         # data_count, data = dbmanager.get_old_backups(
+        #         #     model, page, per_page, filters, sort_by, order, fields,
+        #         #     old_backups
+        #         # )
+        #         # dbctrl = DBController("backups")
+        #         # dbctrl.get_old_backups(
+        #         #     model,
+        #         #     page=page,
+        #         #     per_page=per_page,
+        #         #     fields=fields,
+        #         #     filters=filters,
+        #         #     sort_by=sort_by,
+        #         #     order=order,
+        #         #     backups_to_show=old_backups
+        #         # )
+        #         # view = BackupsView(transformers=[BackupTypeAdapter()])
+        #         # data = view.update_view(dbctrl.data)
+        #         # data_count = dbctrl.item_count
+        #     elif model_name == "backups_view":
+        #         data_count, data = dbmanager.get_data_from_view(
+        #             model, page, per_page, fields, filters, sort_by, order
+        #         )
+        #     elif model_name == "backups_tape":      # TODO: remove temporary Kulshenko measure!
+        #         fields = ["uuid", "name", "backup_server", "created", "size"]
+        #         filters = {"name": None, "backup_server": None}
+        #         for f in filters:
+        #             filters[f] = request.args.get(f)
+        #         data_count, data = dbmanager.get_taped_vms(
+        #             model,
+        #             page=page,
+        #             per_page=per_page,
+        #             fields=fields,
+        #             filters=filters,
+        #             sort_by=sort_by,
+        #             order=order
+        #         )
+        #     elif (
+        #         model_name == "vms_to_be_backed_up_view"
+        #     ):
+        #         show_dbs = request.args.get("show_dbs")
+        #         show_absent_in_ov = request.args.get("show_absent_in_ov")
+        #         kwargs["show_dbs"] = False if show_dbs is None else True
+        #         kwargs["show_absent_in_ov"] = (
+        #             False if show_absent_in_ov is None else True
+        #         )
+        #         data_count, data = dbmanager.get_data_from_view(
+        #             model, page, per_page, fields, filters, sort_by, order,
+        #             show_dbs=kwargs["show_dbs"],
+        #             show_absent_in_ov=kwargs["show_absent_in_ov"]
+        #         )
+        #     # elif model_name == "storages":
+        #     #     print(fields)
+        #     #     data_count, data = dbmanager.get_paginated_data(
+        #     #         model, page, per_page, filters, sort_by, order, fields
+        #     #     )
+        #     else:
+        #         data_count, data = dbmanager.get_paginated_data(
+        #             model, page, per_page, filters, sort_by, order, fields
+        #         )
 
-            total_pages = (data_count + per_page - 1) // per_page
+        #     total_pages = (data_count + per_page - 1) // per_page
 
-            def get_pagination_url(page: int) -> str:
-                args = request.args.to_dict()
-                args["page"] = page
-                return f"/view/{model_name}?{urlencode(args)}"
+        #     def get_pagination_url(page: int) -> str:
+        #         args = request.args.to_dict()
+        #         args["page"] = page
+        #         return f"/view/{model_name}?{urlencode(args)}"
 
-            dbmanager.close()
+        #     dbmanager.close()
 
-            return render_template(
-                "view.html", model_name=model_name, data=data,
-                filters=filters, title=model_name, page=page,
-                per_page=per_page, total_pages=total_pages,
-                get_pagination_url=get_pagination_url, getattr=getattr,
-                fields=fields, sort_by=sort_by, order=order,
-                total_items=data_count, old_backups=old_backups,
-                elma_backups=elma_backups, **kwargs
-            )
+        #     return render_template(
+        #         "view.html", model_name=model_name, data=data,
+        #         filters=filters, title=model_name, page=page,
+        #         per_page=per_page, total_pages=total_pages,
+        #         get_pagination_url=get_pagination_url, getattr=getattr,
+        #         fields=fields, sort_by=sort_by, order=order,
+        #         total_items=data_count, old_backups=old_backups,
+        #         elma_backups=elma_backups, **kwargs
+        #     )
 
         # @self.__app.route("/ovirt/storages")
         # def ovirt_storages():
@@ -194,8 +197,8 @@ class FlaskAggregator():
 
         #     return render_template("storages.html", data=data, **kwargs)
 
-        @self.__app.route("/test/<model_name>")
-        def test(model_name):
+        @self.__app.route("/view/<model_name>")
+        def view(model_name):
             # Set up connection and correct repository for database
             # interactions.
             db_con = DBConnection(DevelopmentConfig.DB_URL)
@@ -204,8 +207,9 @@ class FlaskAggregator():
             repo = repo_factory.make_repo(model_name)
             # Get filters from frontend.
             filters = {}
-            for f in repo.filter_fields:
-                filters[f] = request.args.get(f)
+            for fltr in repo.filter_fields:
+                filters[fltr["name"]] = request.args.get(fltr["name"])
+            print(filters)
             # Pass filters to database backend.
             repo.add_filter(
                 filters=filters,
@@ -216,7 +220,10 @@ class FlaskAggregator():
             )
             # Make data from repository.
             raw_data, item_count = repo.build()
-            raw_view_objects = [ViewObjectFactory.create_obj(obj) for obj in raw_data]
+            raw_view_objects = [
+                ViewObjectFactory.create_obj(obj, repo.col_order)
+                for obj in raw_data
+            ]
             data = [obj.to_dict() for obj in raw_view_objects]
             # Make pagination function, which is being passed to frontend.
             def get_pagination_url(page: int) -> str:
@@ -247,34 +254,78 @@ class FlaskAggregator():
             }
 
             # UI attempt.
+            # Filter.
             filter_container = UIContainer(
                 id_="filter-container",
                 name="filter-container",
                 tag="form"
             )
-            for f in repo.filter_fields:
-                filter_container.add_component(TextField(
-                    id_=f,
-                    name=f,
-                    label=f
-                ))
-            filter_container.add_component(DropDownField(
-                id_="engine",
-                name="engine",
-                label="engine",
-                items={"e15": "e15", "e15-2": "e15-2", "n32": "n32", "k45": "k45"}
-            ))
-            filter_container.add_component(CheckBox(
-                name="show_dbs",
-                id_="show_dbs",
-                class_="show_dbs",
-                label="Show databases"
-            ))
+            for fltr in repo.filter_fields:
+                if fltr["type"] == "text":
+                    cur_val = request.args.get(fltr["name"])
+                    filter_container.add_component(TextField(
+                        id_=fltr["name"],
+                        name=fltr["name"],
+                        label=fltr["name"],
+                        value=cur_val if cur_val else fltr["default_value"]
+                    ))
+                elif fltr["type"] == "option":
+                    cur_option = request.args.get(fltr["name"])
+                    filter_container.add_component(DropDownField(
+                        id_=fltr["name"],
+                        name=fltr["name"],
+                        label=fltr["name"],
+                        items=fltr["options"],
+                        cur_option=cur_option if cur_option else ''
+                    ))
+                if fltr["type"] == "check":
+                    cur_state = request.args.get(fltr["name"])
+                    filter_container.add_component(CheckBox(
+                        id_=fltr["name"],
+                        name=fltr["name"],
+                        label=fltr["name"],
+                        checked=True if cur_state else False
+                    ))
             filter_container.add_component(SubmitButton(name="Search"))
+            # Table.
+            table_container = UIContainer(
+                id_="table-container",
+                name="table-container"
+            )
+            table = Table(
+                id_="table-view",
+                name="table-view"
+            )
+            table_header_container = UIContainer(tag="thead")
+            table_body_container = UIContainer(tag="tbody")
+            table_container.add_component(table)
+            table.add_component(table_header_container)
+            table.add_component(table_body_container)
+            table_header = TableRow()
+            for k in repo.col_order:
+                table_header.add_component(TableCell(
+                    k,
+                    is_header=True,
+                    id_=k,
+                    class_="table-clickable-header"
+                ))
+            table_header_container.add_component(table_header)
+            for row in data:
+                table_row = TableRow()
+                for k, v in row.items():
+                    if k in repo.col_order:
+                        table_row.add_component(TableCell(v))
+                table_body_container.add_component(table_row)
+            layout = UIContainer(
+                id_="view",
+                name="view"
+            )
+            layout.add_component(filter_container)
+            layout.add_component(table_container)
+
             return render_template(
                 "test.html",
-                data=data,
-                filter_container=filter_container,
+                layout=layout,
                 **kwargs
             )
 

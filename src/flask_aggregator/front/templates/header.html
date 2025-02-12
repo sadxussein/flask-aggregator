@@ -2,13 +2,15 @@
     <h1>Virt aggregator</h1>
     <nav>
         <ul>
-            <li><a href="{{ url_for('view', model_name='vms') }}">VMs</a></li>
-            <li><a href="{{ url_for('view', model_name='hosts') }}">Hosts</a></li>
-            <li><a href="{{ url_for('view', model_name='clusters') }}">Clusters</a></li>
-            <li><a href="{{ url_for('view', model_name='storages') }}">Storages</a></li>
-            <li><a href="{{ url_for('view', model_name='data_centers') }}">Data centers</a></li>
-            <li><a href="{{ url_for('view', model_name='backups') }}">Latest Backups</a></li>
-            <li><a href="{{ url_for('view', model_name='vms_to_be_backed_up_view') }}">Elma TODO backups</a></li>
+            <li><a href="{{ url_for('view', model_name='OvirtEngines') }}">Engines</a></li>
+            <li><a href="{{ url_for('view', model_name='VmOvirt') }}">VMs</a></li>
+            <li><a href="{{ url_for('view', model_name='HostOvirt') }}">Hosts</a></li>
+            <li><a href="{{ url_for('view', model_name='ClusterOvirt') }}">Clusters</a></li>
+            <li><a href="{{ url_for('view', model_name='StorageOvirt') }}">Storages</a></li>
+            <li><a href="{{ url_for('view', model_name='DataCenterOvirt') }}">Data centers</a></li>
+            <li><a href="{{ url_for('view', model_name='Backups') }}">All backups</a></li>
+            <li><a href="{{ url_for('view', model_name='LatestBackup') }}">Latest Backups</a></li>
+            <li><a href="{{ url_for('view', model_name='ToBeBackedUpVms') }}">Elma TODO backups</a></li>
             <li><a href="{{ url_for('view', model_name='backups_tape') }}">Taped only backups</a></li>
         </ul>
     </nav>

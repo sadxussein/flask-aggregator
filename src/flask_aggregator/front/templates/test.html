@@ -1,54 +1,8 @@
 {% extends "base.html" %}
 
 {% block content %}
-<form method="get" action="/test/{{ model_name }}">
-    {% for key in filters.keys() %}
-    <label for="{{ key }}">{{ key }}:</label>
-    <input type="text" id="{{ key }}" name="{{ key }}" value="{{ filters[key] or '' }}">
-    {% endfor %}
-    <!--
-    View for VMs that should be backed up. 
-    Additional passed arguments from flask (except `filters` dict):
-        show_dbs: Decides whether show or hide databases.
-        show_absent_in_ov: Decides whether show or hide VMs that are currently absent in oVirt.
-    -->
-    {% if model_name == "ToBeBackedUpVms" %}
-    <label>
-        <input type="checkbox" name="show_dbs" id="show_dbs" {% if show_dbs %} checked {% endif %}>
-        Show databases
-    </label>
-    <label>
-        <input type="checkbox" name="show_absent_in_ov" id="show_absent_in_ov" {% if show_absent_in_ov %} checked {% endif %}>
-        Show VMs absent in oVirt
-    </label>
-    {% endif %}
-    <button type="submit">Search</button>
-</form>
 <hr>
-{{ filter_container.render() | safe }}
-<hr>
-<div class="container">
-    <table id="{{ model_name }}" class="display">
-        <thead>
-            <tr>
-                {% for column in fields %}
-                    {% if column != "href" %}
-                        <th class="table-clickable-header" id="{{ column }}">{{ column }}</th>
-                    {% endif %}
-                {% endfor %}
-            </tr>
-        </thead>
-        <tbody>
-            {% for item in data %}
-            <tr>
-                {% for column in fields %}
-                    <td>{{ item[column] }}</td>
-                {% endfor %}
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-</div>
+{{ layout.render() | safe }}
 <div class="pagination">
     {% if page > 1 %}
         <a href="{{ get_pagination_url(page - 1) }}">Previous</a>
@@ -74,6 +28,7 @@
     <label for="totalItems">Total items:</label>
     <span id="totalItems">{{ total_items }}</span>
 </div>
+
 {% endblock %}
 
 {% block script %}
@@ -90,6 +45,7 @@
     const sortBy = "{{ sort_by }}";
     var order = "{{ order }}";
     const table_clickable_headers = document.querySelectorAll('.table-clickable-header');
+    console.log(table_clickable_headers);
     table_clickable_headers.forEach(el => {
         el.addEventListener('click', function () {
             const header_id = this.id;

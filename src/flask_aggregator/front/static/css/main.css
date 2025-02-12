@@ -31,13 +31,13 @@ header nav ul li a:active {
     background-color: #003f7f;
 }
 
-.display {
+.table-primary {
     width: 100%;
     border-collapse: collapse;
     margin: 20px 0;
 }
 
-.display th {
+.table-primary th {
     background-color: rgb(171, 193, 194);
     color: #003f7f;
     cursor: pointer;
@@ -45,19 +45,19 @@ header nav ul li a:active {
     padding: 2px;
 }
 
-.display th:hover {
+.table-primary th:hover {
     background-color: aquamarine;
 }
 
-.display td {
+.table-primary td {
     border-right: 1px solid black;
     padding: 2px;
 }
 
-.display tr:nth-child(even) {
+.table-primary tr:nth-child(even) {
     background-color: burlywood;
 }
 
-.display tr:nth-child(even) {
+.table-primary tr:nth-child(even) {
     background-color: aliceblue;
 }
