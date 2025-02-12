@@ -6,9 +6,11 @@ Used primarily for aggregating oVirt information.
 import json
 import os
 from urllib.parse import urlencode
+import io
 
+import pandas as pd
 from flask import (
-    Flask, request, render_template, jsonify, abort
+    Flask, request, render_template, jsonify, send_file
 )
 
 from flask_aggregator.config import (
@@ -34,7 +36,8 @@ from flask_aggregator.front.view import (
     CheckBox,
     Table,
     TableRow,
-    TableCell
+    TableCell,
+    LinkButton
 )
 
 class FlaskAggregator():
@@ -49,153 +52,7 @@ class FlaskAggregator():
         @self.__app.route('/')
         def index():
             """Show index page."""
-            return render_template("index.html")
-
-        # @self.__app.route("/view/<model_name>")
-        # def view(model_name):
-        #     """Show model list from database.
-            
-        #     Model list is defined in DM_MODELS dictionary of this class.
-        #     """
-        #     model = Config.DB_MODELS.get(model_name)
-        #     if model is None:
-        #         abort(404, description=f"Table {model_name} not found.")
-
-        #     kwargs = {}
-
-        #     # Arguments that come from flask frontend.
-        #     page = request.args.get("page", 1, type=int)
-        #     per_page = request.args.get("per_page", 10, type=int)
-        #     sort_by = request.args.get("sort_by", "name")
-        #     order = request.args.get("order", "asc")
-        #     old_backups = request.args.get("old_backups", "all")
-        #     elma_backups = request.args.get("elma_backups", "all")
-        #     # show_dbs = request.args.get("show_dbs", "all")
-
-        #     dbmanager = DBManager()
-        #     fields = Config.DB_MODELS[model_name].get_columns_order()
-        #     filters = {}
-        #     for f in model.get_filters():
-        #         filters[f] = request.args.get(f)
-        #     data_count, data = None, None
-        #     if (
-        #         model_name == "backups"
-        #         and old_backups != "all_cb_entries"
-        #     ):
-        #         pass
-        #         # data_count, data = dbmanager.get_old_backups(
-        #         #     model, page, per_page, filters, sort_by, order, fields,
-        #         #     old_backups
-        #         # )
-        #         # dbctrl = DBController("backups")
-        #         # dbctrl.get_old_backups(
-        #         #     model,
-        #         #     page=page,
-        #         #     per_page=per_page,
-        #         #     fields=fields,
-        #         #     filters=filters,
-        #         #     sort_by=sort_by,
-        #         #     order=order,
-        #         #     backups_to_show=old_backups
-        #         # )
-        #         # view = BackupsView(transformers=[BackupTypeAdapter()])
-        #         # data = view.update_view(dbctrl.data)
-        #         # data_count = dbctrl.item_count
-        #     elif model_name == "backups_view":
-        #         data_count, data = dbmanager.get_data_from_view(
-        #             model, page, per_page, fields, filters, sort_by, order
-        #         )
-        #     elif model_name == "backups_tape":      # TODO: remove temporary Kulshenko measure!
-        #         fields = ["uuid", "name", "backup_server", "created", "size"]
-        #         filters = {"name": None, "backup_server": None}
-        #         for f in filters:
-        #             filters[f] = request.args.get(f)
-        #         data_count, data = dbmanager.get_taped_vms(
-        #             model,
-        #             page=page,
-        #             per_page=per_page,
-        #             fields=fields,
-        #             filters=filters,
-        #             sort_by=sort_by,
-        #             order=order
-        #         )
-        #     elif (
-        #         model_name == "vms_to_be_backed_up_view"
-        #     ):
-        #         show_dbs = request.args.get("show_dbs")
-        #         show_absent_in_ov = request.args.get("show_absent_in_ov")
-        #         kwargs["show_dbs"] = False if show_dbs is None else True
-        #         kwargs["show_absent_in_ov"] = (
-        #             False if show_absent_in_ov is None else True
-        #         )
-        #         data_count, data = dbmanager.get_data_from_view(
-        #             model, page, per_page, fields, filters, sort_by, order,
-        #             show_dbs=kwargs["show_dbs"],
-        #             show_absent_in_ov=kwargs["show_absent_in_ov"]
-        #         )
-        #     # elif model_name == "storages":
-        #     #     print(fields)
-        #     #     data_count, data = dbmanager.get_paginated_data(
-        #     #         model, page, per_page, filters, sort_by, order, fields
-        #     #     )
-        #     else:
-        #         data_count, data = dbmanager.get_paginated_data(
-        #             model, page, per_page, filters, sort_by, order, fields
-        #         )
-
-        #     total_pages = (data_count + per_page - 1) // per_page
-
-        #     def get_pagination_url(page: int) -> str:
-        #         args = request.args.to_dict()
-        #         args["page"] = page
-        #         return f"/view/{model_name}?{urlencode(args)}"
-
-        #     dbmanager.close()
-
-        #     return render_template(
-        #         "view.html", model_name=model_name, data=data,
-        #         filters=filters, title=model_name, page=page,
-        #         per_page=per_page, total_pages=total_pages,
-        #         get_pagination_url=get_pagination_url, getattr=getattr,
-        #         fields=fields, sort_by=sort_by, order=order,
-        #         total_items=data_count, old_backups=old_backups,
-        #         elma_backups=elma_backups, **kwargs
-        #     )
-
-        # @self.__app.route("/ovirt/storages")
-        # def ovirt_storages():
-        #     """Show model from database."""
-        #     model = "storages"
-        #     controller = DBController(model)
-        #     columns = controller.get_columns()
-        #     filter_list = controller.get_filters()
-        #     data_trs = [
-        #         GBAdapter()
-        #     ]
-        #     view_ = StorageView(data_trs)
-        #     data = view_.update_view(controller.data)
-        #     filters = {}
-        #     for f in filter_list:
-        #         filters[f] = request.args.get(f)
-
-        #     def get_pagination_url(page: int) -> str:
-        #         args = request.args.to_dict()
-        #         args["page"] = page
-        #         return f"/ovirt/{model}?{urlencode(args)}"
-
-        #     kwargs = {
-        #         "model": model,
-        #         "filters": filters,
-        #         "fields": columns,
-        #         "page": request.args.get("page", 1, type=int),
-        #         "per_page": request.args.get("per_page", 10, type=int),
-        #         "sort_by": request.args.get("sort_by", "name"),
-        #         "order": request.args.get("order", "asc"),
-        #         "total_pages": controller.item_count,
-        #         "get_pagination_url": get_pagination_url
-        #     }
-
-        #     return render_template("storages.html", data=data, **kwargs)
+            return render_template("header.html")
 
         @self.__app.route("/view/<model_name>")
         def view(model_name):
@@ -320,13 +177,46 @@ class FlaskAggregator():
                 id_="view",
                 name="view"
             )
+            view_footer_container = UIContainer(class_="view-footer-container")
+            download_btn = LinkButton(
+                label="Download as CSV",
+                href=f"/download/{model_name}"
+            )
+            view_footer_container.add_component(download_btn)
             layout.add_component(filter_container)
             layout.add_component(table_container)
+            layout.add_component(view_footer_container)
 
             return render_template(
                 "test.html",
                 layout=layout,
                 **kwargs
+            )
+
+        @self.__app.route("/download/<model_name>")
+        def view_csv(model_name):
+            """Get file from frontend."""
+            db_con = DBConnection(DevelopmentConfig.DB_URL)
+            repo_factory = DBRepositoryFactory()
+            repo_factory.set_connection(db_con)
+            repo = repo_factory.make_repo(model_name)
+            # Make data from repository.
+            raw_data, _ = repo.build()
+            raw_view_objects = [
+                ViewObjectFactory.create_obj(obj, repo.col_order)
+                for obj in raw_data
+            ]
+            data = [obj.to_dict() for obj in raw_view_objects]
+            # Saving as .csv file.
+            df = pd.DataFrame(data)
+            memory_output = io.BytesIO()
+            df.to_csv(memory_output, index=False, encoding="utf-8-sig")
+            memory_output.seek(0)
+            return send_file(
+                memory_output,
+                mimetype="text/csv",
+                as_attachment=True,
+                download_name=f"{model_name}.csv"
             )
 
         @self.__app.route("/ovirt/cluster_list/raw_json")

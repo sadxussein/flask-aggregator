@@ -31,6 +31,26 @@ class FlaskUIComponent(ABC):
     def render(self):
         """Return HTML representation of the UI element."""
 
+class LinkButton(FlaskUIComponent):
+    """Simple button with link attached."""
+    def __init__(
+        self,
+        label: str,
+        href: str,
+        id_: str=None,
+        name: str=None,
+        class_: str="btn-primary"
+    ):
+        self.__ui_meta = UIMeta(id_, class_, name)
+        self.__label = label
+        self.__href = href
+
+    def render(self):
+        return (
+            f'<a href="{self.__href}"><button {self.__ui_meta.render()}>'
+            f'{self.__label}</button>'
+        )
+
 class TextField(FlaskUIComponent):
     """Simple text field UI element."""
     def __init__(

@@ -104,22 +104,6 @@ class DBManager(ABC):
         self.__s.commit()
         self.__s.close()
 
-    # @abstractmethod
-    # def get_raw_data(self):
-    #     """Return all data rows from query."""
-
-    # @abstractmethod
-    # def get_filtered_data(self) -> list:
-    #     """Return filtered data from table."""
-
-    # @abstractmethod
-    # def get_paginated_data(self) -> list:
-    #     """Return paginated and filtered data from table."""
-
-    # @abstractmethod
-    # def truncate(self) -> None:
-    #     """Drop all rows from table."""
-
 
 class DBFilter:
     """Database-specific filters."""
@@ -496,7 +480,74 @@ class ToBeBackedUpVmsRepository(DBRepository):
 class TapedOnlyVmsRepository(DBRepository):
     """Only for VMs that have been taped by Cyberbackup."""
     def set_base_query(self):
-        pass
+        filtered_query = self._s.query(Backups).filter(
+            Backups.source_key.like("%POOL%")
+        )
+        subquery = (
+            filtered_query
+            .with_entities(
+                Backups.name,
+                func.max(Backups.created).label("latest_created")
+            )
+            .group_by(Backups.name)
+        )
+        subquery = subquery.subquery()
+        self._query = (
+            self._s.query(Backups)
+            .join(
+                subquery,
+                (Backups.name == subquery.c.name)
+                & (Backups.created == subquery.c.latest_created)
+                & (Backups.source_key.like("%POOL%"))
+            )
+        )
+        return self
+    
+    def set_filter(self):
+        if self._query is None:
+            raise ValueError(
+                "Query is 'None'. Can't apply filter to empty query."
+            )
+        if self._filter and self._filter.filters:
+            for k, v in self._filter.filters.items():
+                if v != "" and v is not None:
+                    col = next((c for c in self._col_order if c == k), None)
+                    if col is not None:
+                        if col != "name":
+                            col = getattr(Vm, col, None)
+                        else:
+                            col = getattr(ElmaVmAccessDoc, col, None)
+                        # TODO: need to think about strict and non-strict search
+                        self._query = self._query.filter(col.like(f"%{v}%"))
+
+    def set_order(self):
+        if self._query is None:
+            raise ValueError(
+                "Query is 'None'. Can't apply order_by to empty query."
+            )
+        if self._filter and self._filter.sort_by and self._filter.sort_order:
+            sb = self._filter.sort_by
+            so = self._filter.sort_order
+            col = next((c for c in self._col_order if c == sb), None)
+            if col is not None:
+                if so == "asc":
+                    self._query = self._query.order_by(asc(col))
+                else:
+                    self._query = self._query.order_by(desc(col))
+        return self
+
+    def set_pagination(self):
+        if self._query is None:
+            raise ValueError(
+                "Query is 'None'. Can't apply offset and limit to empty "
+                "query."
+            )
+        if self._filter and self._filter.page and self._filter.per_page:
+            p = self._filter.page
+            pp = self._filter.per_page
+            self._query = self._query.offset((p - 1) * pp).limit(pp)
+        return self
+        
 
 class DBBasicRepository(DBRepository):
     """Interactions with base SQLAlchemy models."""
@@ -735,5 +786,13 @@ class DBRepositoryFactory:
             repo.set_filter_fields({})
             return repo
         if repo_name == "TapedOnlyVms":
-            repo =
+            repo = TapedOnlyVmsRepository(self.__db_conn)
+            repo.set_col_order(["uuid", "name", "size", "source_key", "type"])
+            repo.set_filter_fields([
+                {"name": "name", "type": "text", "default_value": ''},
+                {"name": "type", "type": "option", "options":
+                    {"":"all", "full": "full", "incremental": "incremental"}
+                }
+            ])
+            return repo
         raise ValueError("'repo_name' is invalid.")
