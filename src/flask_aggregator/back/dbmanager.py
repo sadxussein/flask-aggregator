@@ -628,7 +628,6 @@ class Queries:
             )
             .group_by(Backups.name)
         )
-        print(subquery.count())
         subquery = subquery.subquery()
         query = (
             session.query(Backups)

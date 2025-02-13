@@ -2,6 +2,7 @@
 
 from abc import ABC, abstractmethod
 from collections import OrderedDict
+from datetime import datetime, timedelta
 
 from sqlalchemy import create_engine, func, asc, desc
 from sqlalchemy.dialects.postgresql import insert
@@ -266,11 +267,25 @@ class LatestBackupRepository(DBRepository):
             )
         if self._filter and self._filter.filters:
             for k, v in self._filter.filters.items():
+                print(k)
                 if v != "" and v is not None:
                     col = getattr(Backups, k, None)
                     if col is not None:
                         # TODO: need to think about strict and non-strict search
                         self._query = self._query.filter(col.like(f"%{v}%"))
+                if k == "show_backups":
+                    month_ago = datetime.now() - timedelta(days=30)
+                    two_days_ago = datetime.now() - timedelta(days=2)
+                    if v == "older":
+                        self._query = (
+                            self._query
+                            .filter(Backups.created < two_days_ago)
+                            .filter(Backups.created > month_ago)
+                        )
+                    elif v == "newer":
+                        self._query = self._query.filter(
+                            Backups.created >= two_days_ago
+                        )
         return self
 
     def set_order(self):
@@ -628,7 +643,12 @@ class DBRepositoryFactory:
                 {"name": "name", "type": "text", "default_value": ''},
                 {"name": "type", "type": "option", "options":
                     {"":"all", "full": "full", "incremental": "incremental"}
-                }
+                },
+                {"name": "show_backups", "type": "option", "options": {
+                    "":"all",
+                    "older": "older than 2 days (<)",
+                    "newer": "newer than 2 days (>=)"
+                }},
             ])
             return repo
         if repo_name == "LatestBackupOvirt":

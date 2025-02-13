@@ -128,6 +128,7 @@ class FlaskAggregator():
                     ))
                 elif fltr["type"] == "option":
                     cur_option = request.args.get(fltr["name"])
+                    print(cur_option)
                     filter_container.add_component(DropDownField(
                         id_=fltr["name"],
                         name=fltr["name"],
