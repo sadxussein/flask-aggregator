@@ -105,6 +105,11 @@ class DBManager(ABC):
         self.__s.commit()
         self.__s.close()
 
+    def truncate_table(self):
+        """Drop all rows from current model."""
+        self.__s.query(self.__m).delete()
+        self.__s.commit()
+        self.__s.close()
 
 class DBFilter:
     """Database-specific filters."""
