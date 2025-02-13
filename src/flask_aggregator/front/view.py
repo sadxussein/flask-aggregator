@@ -31,6 +31,21 @@ class FlaskUIComponent(ABC):
     def render(self):
         """Return HTML representation of the UI element."""
 
+class LinkWrapper(FlaskUIComponent):
+    """Simple 'a' tag wrapper for single element.
+    
+    If constructor is empty it does nothing.
+    """
+    def __init__(self, element: FlaskUIComponent, href: str=None):
+        self.__href = href
+        self.__el = element
+
+    def render(self):
+        return (
+            f'<a href="{self.__href}">{self.__el}</a>' 
+            if self.__href else self.__el
+        )
+
 class LinkButton(FlaskUIComponent):
     """Simple button with link attached."""
     def __init__(
@@ -48,7 +63,7 @@ class LinkButton(FlaskUIComponent):
     def render(self):
         return (
             f'<a href="{self.__href}"><button {self.__ui_meta.render()}>'
-            f'{self.__label}</button>'
+            f'{self.__label}</button></a>'
         )
 
 class TextField(FlaskUIComponent):
@@ -202,18 +217,21 @@ class TableCell(FlaskUIComponent):
         id_: str=None,
         name: str=None,
         class_: str="table-cell-primary",
-        is_header: bool=False
+        is_header: bool=False,
+        link: str=''
     ):
         self.__ui_meta = UIMeta(id_, class_, name)
-        self.__value = value
         self.__is_header = is_header
+        # If link is empty, wrapper returns simple value.
+        self.__link_wrap = LinkWrapper(value, link)
 
     def render(self):
         if self.__is_header:
             return (
-                f'<th {self.__ui_meta.render()}>{self.__value}</th>'
+                f'<th {self.__ui_meta.render()}>{self.__link_wrap.render()}'
+                '</th>'
             )
-        return f'<td>{self.__value}</td>'
+        return f'<td>{self.__link_wrap.render()}</td>'
 
 
 class UIContainer(FlaskUIComponent):

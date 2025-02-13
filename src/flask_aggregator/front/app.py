@@ -37,7 +37,8 @@ from flask_aggregator.front.view import (
     Table,
     TableRow,
     TableCell,
-    LinkButton
+    LinkButton,
+    LinkWrapper
 )
 
 class FlaskAggregator():
@@ -85,7 +86,7 @@ class FlaskAggregator():
             def get_pagination_url(page: int) -> str:
                 args = request.args.to_dict()
                 args["page"] = page
-                return f"/test/{model_name}?{urlencode(args)}"
+                return f"/view/{model_name}?{urlencode(args)}"
             # Make arguments from template frontend. They will be both passed
             # to database backend and circled back to frontend.
             page = request.args.get("page", 1, type=int)
@@ -169,7 +170,12 @@ class FlaskAggregator():
             for row in data:
                 table_row = TableRow()
                 for k, v in row.items():
-                    if k in repo.col_order:
+                    if k == "href":
+                        table_row.add_component(TableCell(
+                            "ovirt engine link",
+                            link=v
+                        ))
+                    else:
                         table_row.add_component(TableCell(v))
                 table_body_container.add_component(table_row)
             layout = UIContainer(

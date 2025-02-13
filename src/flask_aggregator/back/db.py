@@ -241,10 +241,6 @@ class LatestBackupRepository(DBRepository):
     First we make filtered query in order to drop all `POOL`-like entries
     (ie taped backups). Then grouping them by latest data creation.
     """
-
-    def __init__(self, conn):
-        super().__init__(conn)
-
     def set_base_query(self):
         filtered_query = self._s.query(Backups).filter(
             Backups.source_key.not_like("%POOL%")
@@ -265,7 +261,9 @@ class LatestBackupRepository(DBRepository):
 
     def set_filter(self):
         if self._query is None:
-            raise ValueError("Query is 'None'. Can't apply filter to empty query.")
+            raise ValueError(
+                "Query is 'None'. Can't apply filter to empty query."
+            )
         if self._filter and self._filter.filters:
             for k, v in self._filter.filters.items():
                 if v != "" and v is not None:
@@ -277,7 +275,9 @@ class LatestBackupRepository(DBRepository):
 
     def set_order(self):
         if self._query is None:
-            raise ValueError("Query is 'None'. Can't apply order_by to empty query.")
+            raise ValueError(
+                "Query is 'None'. Can't apply order_by to empty query."
+            )
         if self._filter and self._filter.sort_by and self._filter.sort_order:
             sb = self._filter.sort_by
             so = self._filter.sort_order
@@ -292,7 +292,8 @@ class LatestBackupRepository(DBRepository):
     def set_pagination(self):
         if self._query is None:
             raise ValueError(
-                "Query is 'None'. Can't apply offset and limit to empty " "query."
+                "Query is 'None'. Can't apply offset and limit to empty "
+                "query."
             )
         if self._filter and self._filter.page and self._filter.per_page:
             p = self._filter.page
@@ -647,7 +648,7 @@ class DBRepositoryFactory:
         if repo_name == "VmOvirt":
             repo = DBBasicRepository(self.__db_conn)
             repo.set_model(Vm)
-            repo.set_col_order(["uuid", "name", "engine", "ip"])
+            repo.set_col_order(["uuid", "name", "engine", "ip", "href"])
             engines_repo = DBBasicRepository(self.__db_conn)
             engines_repo.set_model(OvirtEngine)
             engines_repo.set_base_query()
@@ -664,7 +665,7 @@ class DBRepositoryFactory:
         if repo_name == "HostOvirt":
             repo = DBBasicRepository(self.__db_conn)
             repo.set_model(Host)
-            repo.set_col_order(["uuid", "name", "engine", "ip"])
+            repo.set_col_order(["uuid", "name", "engine", "ip", "href"])
             engines_repo = DBBasicRepository(self.__db_conn)
             engines_repo.set_model(OvirtEngine)
             engines_repo.set_base_query()
@@ -681,7 +682,7 @@ class DBRepositoryFactory:
         if repo_name == "ClusterOvirt":
             repo = DBBasicRepository(self.__db_conn)
             repo.set_model(Cluster)
-            repo.set_col_order(["uuid", "name", "engine"])
+            repo.set_col_order(["uuid", "name", "engine", "href"])
             engines_repo = DBBasicRepository(self.__db_conn)
             engines_repo.set_model(OvirtEngine)
             engines_repo.set_base_query()
@@ -697,7 +698,7 @@ class DBRepositoryFactory:
         if repo_name == "DataCenterOvirt":
             repo = DBBasicRepository(self.__db_conn)
             repo.set_model(DataCenter)
-            repo.set_col_order(["uuid", "name", "engine"])
+            repo.set_col_order(["uuid", "name", "engine", "href"])
             engines_repo = DBBasicRepository(self.__db_conn)
             engines_repo.set_model(OvirtEngine)
             engines_repo.set_base_query()
@@ -715,7 +716,7 @@ class DBRepositoryFactory:
             repo.set_model(Storage)
             repo.set_col_order([
                 "uuid", "name", "engine", "available", "used", "committed",
-                "total", "percent_left"
+                "total", "percent_left", "href"
             ])
             engines_repo = DBBasicRepository(self.__db_conn)
             engines_repo.set_model(OvirtEngine)

@@ -82,6 +82,8 @@ class SQLModelViewObject(ViewObject):
     @convert_backup_type("source_key")
     @convert_bytes("total", "GB")
     @convert_bytes("available", "GB")
+    @convert_bytes("used", "GB")
+    @convert_bytes("committed", "GB")
     def to_dict(self):
         return (
             OrderedDict(
@@ -113,6 +115,8 @@ class SQLTupleViewObject(ViewObject):
     @convert_backup_type("source_key")
     @convert_bytes("total", "GB")
     @convert_bytes("available", "GB")
+    @convert_bytes("used", "GB")
+    @convert_bytes("committed", "GB")
     def to_dict(self):
         return (
             OrderedDict(
