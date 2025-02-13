@@ -1,1 +1,0 @@
-/home/krasnoschekovvd/flask-aggregator/requirements.txt
