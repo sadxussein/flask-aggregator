@@ -272,13 +272,12 @@ class LatestBackupRepository(DBRepository):
             )
         if self._filter and self._filter.filters:
             for k, v in self._filter.filters.items():
-                print(k)
-                if v != "" and v is not None:
+                if v != "" and v is not None and k != "source_key":
                     col = getattr(Backups, k, None)
                     if col is not None:
                         # TODO: need to think about strict and non-strict search
                         self._query = self._query.filter(col.like(f"%{v}%"))
-                if k == "show_backups":
+                if k == "show_backups" and v != "" and v is not None:
                     month_ago = datetime.now() - timedelta(days=30)
                     two_days_ago = datetime.now() - timedelta(days=2)
                     if v == "older":
@@ -291,6 +290,15 @@ class LatestBackupRepository(DBRepository):
                         self._query = self._query.filter(
                             Backups.created >= two_days_ago
                         )
+                if k == "source_key" and v != "" and v is not None:
+                    if v == "disk":
+                        self._query = (self._query.filter(
+                                ~Backups.source_key.like("%POOL%")
+                        ))
+                    elif v == "tape":
+                        self._query = (self._query.filter(
+                                Backups.source_key.like("%POOL%")
+                        ))
         return self
 
     def set_order(self):
@@ -643,11 +651,14 @@ class DBRepositoryFactory:
         """
         if repo_name == "LatestBackup":
             repo = LatestBackupRepository(self.__db_conn)
-            repo.set_col_order(["name", "size", "source_key", "type"])
+            repo.set_col_order(["name", "created", "size", "source_key", "type"])
             repo.set_filter_fields([
                 {"name": "name", "type": "text", "default_value": ''},
                 {"name": "type", "type": "option", "options":
                     {"":"all", "full": "full", "incremental": "incremental"}
+                },
+                {"name": "source_key", "type": "option", "options":
+                    {"":"all", "disk": "disk", "tape": "tape"}
                 },
                 {"name": "show_backups", "type": "option", "options": {
                     "":"all",

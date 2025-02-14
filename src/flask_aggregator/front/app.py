@@ -37,8 +37,7 @@ from flask_aggregator.front.view import (
     Table,
     TableRow,
     TableCell,
-    LinkButton,
-    LinkWrapper
+    LinkButton
 )
 
 class FlaskAggregator():
@@ -59,7 +58,11 @@ class FlaskAggregator():
         def view(model_name):
             # Set up connection and correct repository for database
             # interactions.
-            db_con = DBConnection(DevelopmentConfig.DB_URL)
+            db_con = DBConnection(
+                DevelopmentConfig.DB_URL
+                if os.getenv("FA_ENV") == "dev"
+                else ProductionConfig.DB_URL
+            )
             repo_factory = DBRepositoryFactory()
             repo_factory.set_connection(db_con)
             repo = repo_factory.make_repo(model_name)
@@ -134,7 +137,9 @@ class FlaskAggregator():
                         name=fltr["name"],
                         label=fltr["name"],
                         items=fltr["options"],
-                        cur_option=cur_option if cur_option else ''
+                        cur_option=(
+                            fltr["options"][cur_option] if cur_option else ''
+                        )
                     ))
                 if fltr["type"] == "check":
                     cur_state = request.args.get(fltr["name"])
@@ -202,7 +207,11 @@ class FlaskAggregator():
         @self.__app.route("/download/<model_name>")
         def view_csv(model_name):
             """Get file from frontend."""
-            db_con = DBConnection(DevelopmentConfig.DB_URL)
+            db_con = DBConnection(
+                DevelopmentConfig.DB_URL
+                if os.getenv("FA_ENV") == "dev"
+                else ProductionConfig.DB_URL
+            )
             repo_factory = DBRepositoryFactory()
             repo_factory.set_connection(db_con)
             repo = repo_factory.make_repo(model_name)
