@@ -343,7 +343,13 @@ class OvirtHelper(VirtProtocol):
                     if device.ips:
                         for ip in device.ips:
                             if ip.version == sdk.types.IpVersion.V4:
-                                vm_data["ip"] = ip.address
+                                if vm_data["name"] == "abs2-k8s-prod-nifi-m2":
+                                    print(ip.address)
+                                vm_data["ip"] = ' '.join(
+                                    [vm_data["ip"], ip.address]
+                                )
+                if vm_data["name"] == "abs2-k8s-prod-nifi-m2":
+                    print(vm_data["ip"])
 
                 # engine
                 vm_data["engine"] = dpc

@@ -651,7 +651,9 @@ class DBRepositoryFactory:
         """
         if repo_name == "LatestBackup":
             repo = LatestBackupRepository(self.__db_conn)
-            repo.set_col_order(["name", "created", "size", "source_key", "type"])
+            repo.set_col_order(
+                ["name", "created", "size", "source_key", "type"]
+            )
             repo.set_filter_fields([
                 {"name": "name", "type": "text", "default_value": ''},
                 {"name": "type", "type": "option", "options":

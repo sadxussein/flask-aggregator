@@ -10,6 +10,12 @@ else
     source $PROJECT_PATH/venv/bin/activate
     python3 -m build -o $PROJECT_PATH/linux/app/
     deactivate
-    ln -sf $PROJECT_PATH/linux/app/flask_aggregator-$CURRENT_TAG-py3-none-any.whl $PROJECT_PATH/linux/app/latest.whl
-    ln -sf $PROJECT_PATH/linux/app/flask_aggregator-$CURRENT_TAG.tar.gz $PROJECT_PATH/linux/app/latest.tar.gz
+    whl_path="$PROJECT_PATH/linux/app/flask_aggregator-$CURRENT_TAG-py3-none-any.whl"
+    whl_dirty_path="$PROJECT_PATH/linux/app/flask_aggregator-$CURRENT_TAG.post0+dirty-py3-none-any.whl"
+    if [[ -e "$whl_path" ]]; then
+        ln -sf "$whl_path" $PROJECT_PATH/linux/app/latest.whl
+    fi
+    if [[ -e "$whl_dirty_path" ]]; then
+        ln -sf "$whl_dirty_path" $PROJECT_PATH/linux/app/latest.whl
+    fi
 fi
