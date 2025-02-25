@@ -1,6 +1,12 @@
 #!/bin/bash
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+FA_ENV=
+
+# define whether system is prod or dev
+if [[ "$(ip a show dev enp1s0 | awk 'NR==3' | awk '{print $2}')" == "10.105.239.11/24" ]]; then
+    FA_ENV="dev"
+fi
 
 # setting up http proxy environment for python
 export HTTPS_PROXY=http://usergate5.crimea.rncb.ru:8090/
@@ -13,8 +19,22 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 postgresql-setup --initdb
-systemctl start zabbix-agent postgresql nginx
-systemctl enable zabbix-agent postgresql nginx
+
+# update pg_hba.conf file for postgres password access
+sed -i 's/ident$/scram-sha-256/' /var/lib/pgsql/data/pg_hba.conf
+
+# if it is k45 test vm - make additional pg_hba.conf line for remote database access
+if [[ "$FA_ENV" == "dev" ]]; then
+    echo -e "host\taggregator_db\taggregator\t0.0.0.0/0\tmd5" >> /var/lib/pgsql/data/pg_hba.conf
+fi
+
+# add lines to zabbix custom userparameters
+echo "UserParameter=domains_storage, cat /app/get_storages.json" >> /etc/zabbix/zabbix_agent2.d/userparameter_custom.conf
+echo "UserParameter=virt_hosts, cat /app/get_hosts.json" >> /etc/zabbix/zabbix_agent2.d/userparameter_custom.conf
+
+# starting services
+systemctl start zabbix-agent2 postgresql nginx
+systemctl enable zabbix-agent2 postgresql nginx
 
 # set up user and folder rights
 groupadd aggregator-group
@@ -42,12 +62,16 @@ chmod -R g+rx /app/*
 # set up targets, timers and services
 cp $SCRIPT_DIR/etc/systemd/system/aggregator-gunicorn.service /etc/systemd/system/aggregator-gunicorn.service
 cp $SCRIPT_DIR/etc/systemd/system/aggregator.target /etc/systemd/system/aggregator.target
+cp $SCRIPT_DIR/etc/systemd/system/aggregator-collector-vms.service /etc/systemd/system/aggregator-collector-vms.service
+cp $SCRIPT_DIR/etc/systemd/system/aggregator-collector-vms.timer /etc/systemd/system/aggregator-collector-vms.timer
 cp $SCRIPT_DIR/etc/systemd/system/aggregator-collector-hosts.service /etc/systemd/system/aggregator-collector-hosts.service
 cp $SCRIPT_DIR/etc/systemd/system/aggregator-collector-hosts.timer /etc/systemd/system/aggregator-collector-hosts.timer
 cp $SCRIPT_DIR/etc/systemd/system/aggregator-collector-storages.service /etc/systemd/system/aggregator-collector-storages.service
 cp $SCRIPT_DIR/etc/systemd/system/aggregator-collector-storages.timer /etc/systemd/system/aggregator-collector-storages.timer
 cp $SCRIPT_DIR/etc/systemd/system/aggregator-collector-backups.service /etc/systemd/system/aggregator-collector-backups.service
 cp $SCRIPT_DIR/etc/systemd/system/aggregator-collector-backups.timer /etc/systemd/system/aggregator-collector-backups.timer
+cp $SCRIPT_DIR/etc/systemd/system/aggregator-collector-elma-vm-access-doc.service /etc/systemd/system/aggregator-collector-elma-vm-access-doc.service
+cp $SCRIPT_DIR/etc/systemd/system/aggregator-collector-elma-vm-access-doc.timer /etc/systemd/system/aggregator-collector-elma-vm-access-doc.timer
 
 # reload systemd
 systemctl daemon-reload
@@ -68,12 +92,10 @@ systemctl restart nginx
 # set up postgresql config (user, pass, db)
 DB_NAME="aggregator_db"
 DB_USER="aggregator"
-echo "db pass is $DB_PASS"
 sudo -u postgres psql -c "create database $DB_NAME;"
 sudo -u postgres psql -c "create user $DB_USER with password '$DB_PASS';"
 sudo -u postgres psql -c "alter database $DB_NAME owner to $DB_USER;"
 sudo -u postgres psql -c "grant all privileges on database $DB_NAME to $DB_USER;"
-echo "[INFO] In pg_hba.conf auth method change is required from 'ident' to 'scram-sha-256'."
 
 # deactivating environment
 deactivate

@@ -299,6 +299,10 @@ class LatestBackupRepository(DBRepository):
                         self._query = (self._query.filter(
                                 Backups.source_key.like("%POOL%")
                         ))
+                if k == "server" and v != "" and v is not None:
+                    self._query = (self._query.filter(
+                        Backups.backup_server == v
+                    ))
         return self
 
     def set_order(self):
@@ -652,10 +656,16 @@ class DBRepositoryFactory:
         if repo_name == "LatestBackup":
             repo = LatestBackupRepository(self.__db_conn)
             repo.set_col_order(
-                ["name", "created", "size", "source_key", "type"]
+                [
+                    "name", "backup_server", "created", "size", "source_key",
+                    "type"
+                ]
             )
             repo.set_filter_fields([
                 {"name": "name", "type": "text", "default_value": ''},
+                {"name": "server", "type": "option", "options":
+                    {"": "all", "k45": "k45", "n32": "n32", "e15": "e15"}
+                },
                 {"name": "type", "type": "option", "options":
                     {"":"all", "full": "full", "incremental": "incremental"}
                 },
@@ -686,7 +696,9 @@ class DBRepositoryFactory:
         if repo_name == "VmOvirt":
             repo = DBBasicRepository(self.__db_conn)
             repo.set_model(Vm)
-            repo.set_col_order(["uuid", "name", "engine", "ip", "href"])
+            repo.set_col_order(
+                ["uuid", "name", "engine", "ip", "href", "storage_domains"]
+            )
             engines_repo = DBBasicRepository(self.__db_conn)
             engines_repo.set_model(OvirtEngine)
             engines_repo.set_base_query()
