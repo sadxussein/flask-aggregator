@@ -127,6 +127,26 @@ class Config:
     CYBERBACKUP_DB_PORT = "5432"
     CYBERBACKUP_DB_NAME = "cyberprotect_vault_manager"
     CYBERBACKUP_DB_USER = "cyberbackup"
+    CYBERBACKUP = [
+        {
+            "name": "e15",
+            "ip": "10.105.252.10",
+            "port": 5432,
+            "user": "cyberbackup"
+        },
+        {
+            "name": "n32",
+            "ip": "10.105.245.10",
+            "port": 5432,
+            "user": "cyberbackup"
+        },
+        {
+            "name": "k45",
+            "ip": "10.105.238.10",
+            "port": 5432,
+            "user": "cyberbackup"
+        }
+    ]
 
 class DevelopmentConfig(Config):
     """Development flask app configuration."""

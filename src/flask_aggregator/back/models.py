@@ -1,13 +1,13 @@
 """Database models module."""
 
-import uuid
 from datetime import datetime, timezone, timedelta
 
 from sqlalchemy import (
-    Column, Integer, String, Float, Boolean, UUID, DateTime, create_engine
+    Column, Integer, String, Float, Boolean, UUID, DateTime, BigInteger
 )
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.ext.hybrid import hybrid_property
+from sqlalchemy.dialects.postgresql import JSONB
 
 Base = declarative_base()
 
@@ -360,3 +360,33 @@ class VmsToBeBackedUpView:
         """Default set of filters."""
         return ["name", "engine"]
 
+class CyberbackupServers(Base):
+    """List of CB servers.
+    
+    Critical table, containing all links, ips and other info about target CB
+    servers.
+    """
+    __tablename__ = "cyberbackup_servers"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String, unique=True, nullable=False)
+    user = Column(String, nullable=False)
+    ip = Column(String, nullable=False)
+    port = Column(Integer, nullable=False)
+
+
+class CyberbackupAlert(Base):
+    """Aggregated 'alert' tables from all Cyberbackup servers."""
+    __tablename__ = "cyberbackup_alert"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    server = Column(String, nullable=False)
+    type = Column(String)
+    bin_parameters = Column(JSONB)
+    created_at = Column(BigInteger)
+    recieved_at = Column(BigInteger)
+    updated_at = Column(BigInteger)
+    deleted_at = Column(BigInteger)
+    severity = Column(Integer)
+    enabled = Column(Boolean)
+    deleted_by_user = Column(Boolean)

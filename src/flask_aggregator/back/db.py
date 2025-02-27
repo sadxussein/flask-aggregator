@@ -4,9 +4,10 @@ from abc import ABC, abstractmethod
 from collections import OrderedDict
 from datetime import datetime, timedelta
 
-from sqlalchemy import create_engine, func, asc, desc
+from sqlalchemy import create_engine, func, asc, desc, text
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import scoped_session, sessionmaker
+from sqlalchemy.exc import OperationalError
 
 from flask_aggregator.back.models import (
     get_base,
@@ -20,6 +21,7 @@ from flask_aggregator.back.models import (
     ElmaVmAccessDoc,
     OvirtEngine
 )
+from flask_aggregator.back.logger import Logger
 
 
 class DBConnection:
@@ -42,6 +44,23 @@ class DBConnection:
         """Close current session with DB."""
         self.__ss.remove()
 
+class DBROManager:
+    """Read-only manager for external databases."""
+    def __init__(self, conn: DBConnection, logger: Logger=Logger()):
+        self.__s = conn.get_scoped_session()
+        self.__logger = logger
+
+    def get_all_data(self, query: str) -> dict:
+        """Get all data as dict by query."""
+        q = text(query)
+        rows = None
+        try:
+            result = self.__s.execute(q)
+            rows = result.fetchall()
+            self.__s.close()
+        except OperationalError as e:
+            self.__logger.log_error(e)
+        return rows
 
 class DBManager(ABC):
     """Class for managing table/view creation."""
@@ -102,6 +121,12 @@ class DBManager(ABC):
             set_=dict_set
         )
         self.__s.execute(stmt)
+        self.__s.commit()
+        self.__s.close()
+
+    def add_data(self, data: list):
+        """Add rows to table."""
+        self.__s.add_all(data)
         self.__s.commit()
         self.__s.close()
 
@@ -597,7 +622,9 @@ class DBBasicRepository(DBRepository):
 
     def set_filter(self):
         if self._query is None:
-            raise ValueError("Query is 'None'. Can't apply filter to empty query.")
+            raise ValueError(
+                "Query is 'None'. Can't apply filter to empty query."
+            )
         if self._filter and self._filter.filters:
             for k, v in self._filter.filters.items():
                 if v != "" and v is not None:
@@ -609,7 +636,9 @@ class DBBasicRepository(DBRepository):
 
     def set_order(self):
         if self._query is None:
-            raise ValueError("Query is 'None'. Can't apply order_by to empty query.")
+            raise ValueError(
+                "Query is 'None'. Can't apply order_by to empty query."
+            )
         if self._filter and self._filter.sort_by and self._filter.sort_order:
             sb = self._filter.sort_by
             so = self._filter.sort_order
@@ -624,7 +653,8 @@ class DBBasicRepository(DBRepository):
     def set_pagination(self):
         if self._query is None:
             raise ValueError(
-                "Query is 'None'. Can't apply offset and limit to empty " "query."
+                "Query is 'None'. Can't apply offset and limit to empty"
+                " query."
             )
         if self._filter and self._filter.page and self._filter.per_page:
             p = self._filter.page
