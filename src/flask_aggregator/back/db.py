@@ -42,6 +42,7 @@ class DBConnection:
 
     def close_session(self):
         """Close current session with DB."""
+        self.__ss.close_all()
         self.__ss.remove()
 
 class DBROManager:
@@ -234,7 +235,9 @@ class DBRepository(ABC):
         n = self._query.count()
         self.set_order()
         self.set_pagination()
-        return self._query.all(), n
+        data = self._query.all()
+        self._s.close_all()
+        return data, n
 
     @abstractmethod
     def set_base_query(self):

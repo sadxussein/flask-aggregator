@@ -148,6 +148,17 @@ class Config:
         }
     ]
 
+    # Rosplatforma config.
+    RP_PORT = 22
+    RP_USER = "root"
+    # One host per cluster is required. Data from other hosts will be
+    # gathered automatically.
+    RP_HOSTS = [
+        # "10.165.253.31",    # e15-prod
+        # "10.165.255.128",   # k45-prod
+        "10.166.255.121",   # k45-test
+    ]
+
 class DevelopmentConfig(Config):
     """Development flask app configuration."""
     DEBUG = True

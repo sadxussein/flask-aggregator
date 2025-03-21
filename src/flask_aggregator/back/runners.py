@@ -10,6 +10,7 @@ from flask_aggregator.back.cyberbackup_helper import (
 from flask_aggregator.back.db import DBConnection, DBManager
 from flask_aggregator.back.elma_helper import ElmaHelper
 from flask_aggregator.back.models import Backups, CyberbackupAlert
+from flask_aggregator.back.logger import Logger
 from flask_aggregator.config import Config, DevelopmentConfig, ProductionConfig
 
 LOCAL_DB_URL = (
@@ -17,7 +18,7 @@ LOCAL_DB_URL = (
     if os.getenv("FA_ENV") == "dev"
     else ProductionConfig.DB_URL
 )
-
+LOGGER = Logger()
 
 def get_elma_vm_access_doc() -> None:
     """Collect VmAccessDoc from elma API.
@@ -67,6 +68,7 @@ def collect_cb_alerts():
                 "cyberprotect_alert_manager"
             )
             raw_data = cbh.get_all_data("alert")
+            
             # Transform data fields from remote database for local.
             for el in raw_data:
                 alert_row = CyberbackupAlert(server=srv["name"])
@@ -107,6 +109,9 @@ def get_backups():
                 "cyberprotect_vault_manager"
             )
             raw_data = cbh.get_latest_backups()
+            LOGGER.log_debug(
+                f"Collected {len(raw_data)} from {srv['name']} Cyberbackup."
+            )
             for row in raw_data:
                 namespace = uuid.UUID("12345678-1234-1234-1234-123456789123")
                 upstert_uuid = uuid.uuid5(

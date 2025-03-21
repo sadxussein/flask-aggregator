@@ -390,3 +390,11 @@ class CyberbackupAlert(Base):
     severity = Column(Integer)
     enabled = Column(Boolean)
     deleted_by_user = Column(Boolean)
+
+class RPVM(Base):
+    __tablename__ = "rv_vms"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String, nullable=False)
+    host = Column(String, nullable=False)
+    cluster = Column(String, nullable=False)

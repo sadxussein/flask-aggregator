@@ -109,3 +109,15 @@ DPC_URLS = {
 6. endpoint `/view/clusters` - список кластеров
 7. endpoint `/view/data_centers` - список датацентров
 8. endpoint `/view/storages` - список хранилок
+
+## Test/refactor commands
+- `black "file_path.py" -l 79`
+- `isort "file_path.py"`
+- `mypy "file_path.py"`
+- `pylint "file_path.py"`
+### Tests coverage
+Лучше всего запускать из src, тогда там и будут лежать HTML и .coverage файлы.
+- `coverage run -m unittest discover` находясь в src папке
+- `coverage run -m unittest discover -s tests -t /home/krasnoschekovvd/flask-aggregator/src/flask_aggregator/` из любого места в системе
+- `coverage report -m`
+- `coverage html`
