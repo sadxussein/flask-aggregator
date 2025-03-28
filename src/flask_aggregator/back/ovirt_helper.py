@@ -948,7 +948,8 @@ class OvirtHelper(VirtProtocol):
         cluster_networks = cluster_networks_service.list()
         current_vlan_exists = False
         for cluster_network in cluster_networks:
-            if cluster_network.vlan.id == config["vlan"]["id"]:
+            if cluster_network.vlan and cluster_network.vlan.id and \
+               cluster_network.vlan.id == config["vlan"]["id"]:
                 current_vlan_exists = True
                 self.__logger.log_error(
                     f"Network {config['vlan']['name']} already exists in "

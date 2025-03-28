@@ -22,9 +22,9 @@ class VirtProtocol(Protocol):
         """Get all 'datacenters' if there are any."""
     def get_storages(self) -> list:
         """Get all storages."""
-    def get_user_vm_list(self) -> list:
-        """Get a list of VMs that user owns (has permission to operate
-        with).
-        """
+    # def get_user_vm_list(self) -> list:
+    #     """Get a list of VMs that user owns (has permission to operate
+    #     with).
+    #     """
     # def get_snapshots(self) -> list:
     #     """Get all snapshots."""
