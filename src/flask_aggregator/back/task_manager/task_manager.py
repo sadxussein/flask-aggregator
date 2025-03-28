@@ -8,6 +8,11 @@ from abc import ABC, abstractmethod
 from concurrent.futures import ThreadPoolExecutor
 
 class Command(ABC):
+    @property
+    @abstractmethod
+    def success(self) -> bool:
+        pass
+
     @abstractmethod
     def execute(self):
         pass
@@ -18,12 +23,19 @@ class CreateVMInOvirt(Command):
     def __init__(self, config: str):
         self._config = config
 
+    def success(self) -> bool:
+        return True     # DEBUG
+
     def execute(self):
         print(f"Creating oVirt VM by config: {self._config}")
 
 
 class GetVMsFromOvirt(Command):
     """Dummy class for getting VM list."""
+
+    def success(self) -> bool:
+        return False    # DEBUG
+
     def execute(self):
         print("GetVMsFromOvirt", ["VM1", "VM2", "VM3"])
 
@@ -44,23 +56,53 @@ class TaskRunStrategy(ABC):
 
 
 class OneTimeRun(TaskRunStrategy):
+    TASK_WAS_NOT_RUN_YET = -1
+
+    def __init__(self):
+        self._time_created = time.time()
+        self._last_run_time = self.TASK_WAS_NOT_RUN_YET
+
+    @property
+    def last_run_time(self):
+        """In epoch time."""
+        return self._last_run_time
+
+    def mark_now_as_last_run_time(self):
+        self._last_run_time = time.time()
+
+
+class IntervalRun(OneTimeRun):
+    def __init__(self, interval: int=60):
+        if interval <= 0:
+            raise ValueError("Time interval can not be equal or less than 0.")
+        super().__init__()
+        self._interval = interval
+        self._next_run_time = self.TASK_WAS_NOT_RUN_YET
+        self.__calc_next_run_time()
+
+    def __calc_next_run_time(self):
+        """Add interval time to last time run. Or, if it is empty, to time
+        created."""
+        if self._next_run_time <= time.time():
+            if self._last_run_time == self.TASK_WAS_NOT_RUN_YET:
+                self._next_run_time = self._time_created + self._interval
+            else:
+                self._next_run_time = self._last_run_time + self._interval
+
+    @property
+    def next_run_time(self) -> int:
+        self.__calc_next_run_time()
+        return self._next_run_time
+
+
+class RetryRun(OneTimeRun):
     def __init__(self, max_retries: int=3, retry_interval: int=10):
         if max_retries < 1 or retry_interval < 1:
             raise ValueError("Max retries can not be less than 1.")
         self._max_retries = 3
         self._retry_interval = 10
         self._retry_count = 0
-        self._last_run_time = time.time()
         self._was_last_run_successful = False
-
-    @property
-    def last_run_time(self):
-        """In epoch time."""
-        return self._last_run_time
-    
-    @last_run_time.setter
-    def last_run_time(self):
-        self._last_run_time = time.time()
 
     @property
     def was_last_run_successful(self):
@@ -77,44 +119,33 @@ class OneTimeRun(TaskRunStrategy):
         return False
 
 
-class IntervalRun(OneTimeRun):
-    def __init__(self, interval: int=60):
-        self._interval = interval
-        self._next_run_time = self._last_run_time + interval
-
-    def calc_next_run_time(self):
-        """Add interval time to last time run."""
-        self._next_run_time = self._last_run_time + self._interval
-
-    @property
-    def next_run_time(self) -> int:
-        """_summary_
-
-        Returns:
-            int: Time (in epoch) when task should be ran next.
-        """
-        if self._next_run_time > time.now():
-            return self._next_run_time
-        self._next_run_time = self._last_run_time + self._interval
-
-    @next_run_time.setter
-    def next_run_time(self):
-        pass
-
 class Task:
     """Abstract task class. Runs all operations."""
     def __init__(self, command: Command, strategy: TaskRunStrategy):
         self._command = command
         self._strategy = strategy
-        self._was_last_run_successful = False
 
     @property
     def was_last_run_successful(self):
         """For retries. If failed - retry a set number of times."""
-        return self._was_last_run_successful
+        return self._command.success
+
+    @property
+    def is_periodic(self):  
+        # TODO: this is temporary solution. Perhaps other ways of defining
+        # whether task is periodic or not should be implemented.
+        if isinstance(self._strategy, IntervalRun):
+            return True
+        return False
+
+    @property
+    def last_run_time(self):
+        return self._strategy.last_run_time
 
     def run(self):
+        self._strategy.mark_now_as_last_run_time()
         self._command.execute()
+
 
 class TaskManager:
     """TM singleton class."""
@@ -166,13 +197,16 @@ class TaskManager:
     def __run_tasks(self):
         now = time.time()
         with self._lock:
+            print(self._task_queue.qsize(), len(self._tasks))
             for i, task in enumerate(self._tasks):
-                if now >= task.next_run_time:
-                    future = self._executor.submit(task.run)
-                    task.set_last_run_time = now
+                future = self._executor.submit(task.run)
+                if task.is_periodic:
                     self._tasks[i] = task
-                    self._futures.append(future)
-            
+                else:
+                    self._tasks.pop(i)
+                self._futures.append(future)
+            # TODO: Periodic tasks might be still running when their next
+            # iteration comes to running time. Need to check this.
             for f in self._futures:
                 print(f.result())
 
@@ -181,39 +215,3 @@ class TaskManager:
         finish."""
         self._running = False
         self._executor.shutdown(wait=True)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# class OneTimeTask(Task, ABC):
-#     """One time task."""
-
-# class PeriodicTask(Task, ABC):
-#     """Task which should be executed within certain period of time continuously."""
-#     def __init__(self, retries: int=1, interval: int=3600):
-#         super().__init__(retries)
-#         self._interval = interval
-#         self._last_run_epoch_time = None
-
-#     @property
-#     def interval(self) -> int:
-#         """In seconds."""
-#         return self._interval
-
-#     @property
-#     def next_run_time(self):
-#         """In epoch time."""
-#         if self._last_run_epoch_time is None:
-#             return time.time()
-#         return self._last_run_epoch_time + self._interval

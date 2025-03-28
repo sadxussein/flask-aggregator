@@ -17,5 +17,6 @@ venv
 linux
 htmlcov
 test.py
+prettify.sh
 passwords.sh
 test_vm_description.py
