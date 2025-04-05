@@ -7,9 +7,11 @@ __pycache__
 *.egg-info
 
 .env
+.venv
 .env.sh
 .vscode
 .coverage
+.pylintrc
 .gitignore
 .mypy_cache
 
