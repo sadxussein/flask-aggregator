@@ -11,29 +11,15 @@ class State(Enum):
     RUNNING = 2
     SUCCESS = 3
     FAILED = 4
+    CANCELLED = 5
 
 
 class Command(ABC):
     """Abstract class for all commands."""
     def __init__(self):
-        self._result: Any = None
-        self._error: str = None
-        self._state: State = State.NEW
-
-    @property
-    def state(self):
-        """Command execution state (enum `State`)."""
-        return self._state
-
-    @property
-    def error(self):
-        """Command execution state (enum `State`)."""
-        return self._error
-
-    @property
-    def result(self) -> any:
-        """Returns result from commands execution."""
-        return self._result
+        self.result: Any = None
+        self.error: str = None
+        self.state: State = State.NEW
 
     @abstractmethod
     def execute(self):
@@ -43,19 +29,19 @@ class Command(ABC):
         # incorporation every time `execute` is implemented.
 
 
-class CommandFactory:
-    """So far only for tests."""
-    @staticmethod
-    def make_command(name: str, **kwargs) -> Command:
-        """Factory method for commands.
+# class CommandFactory:
+#     """So far only for tests."""
+#     @staticmethod
+#     def make_command(name: str, **kwargs) -> Command:
+#         """Factory method for commands.
 
-        Args:
-            name (str): Command name.
+#         Args:
+#             name (str): Command name.
 
-        Raises:
-            ValueError: For unknown commands.
+#         Raises:
+#             ValueError: For unknown commands.
 
-        Returns:
-            Command: command class instance.
-        """
-        raise ValueError("Unknown command.")
+#         Returns:
+#             Command: command class instance.
+#         """
+#         raise ValueError("Unknown command.")

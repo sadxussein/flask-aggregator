@@ -29,13 +29,17 @@ class Task:
 
     @property
     def uuid(self):
-        "Task UUID as string."
+        """Task UUID as string."""
         return str(self._uuid)
 
     @property
     def name(self):
-        "Task string name."
+        """Task string name."""
         return self._name
+
+    def can_be_cancelled(self):
+        """`True` if task is running or should run, `False` otherwise."""
+        return self._command.state == State.RUNNING or self.should_run()
 
     def to_dict(self) -> dict[str, Any]:
         """JSON-friendly view of task.
@@ -46,22 +50,39 @@ class Task:
         return {
             "uuid": str(self._uuid),
             "name": self._name,
+            "time_created": self._strategy.time_created,
             "last_run_time": self._strategy.last_run_time,
+            "start_run_time": self._strategy.start_run_time,
+            "stop_run_time": self._strategy.stop_run_time,
+            "run_time": self._strategy.run_time,
             "has_to_run": self._strategy.task_has_to_run,
             "state": self._command.state,
             "result": self._command.result,
             "error": self._command.error
         }
 
+    def should_run(self) -> bool:
+        """Make decision, whether should task be run.
+
+        Returns:
+            bool: True if task shoud run, False otherwise.
+        """
+        if self._strategy.task_has_to_run and not self._command.state in [
+            State.RUNNING, State.FAILED, State.CANCELLED
+        ]:
+            return True
+        return False
+
     def run(self):
         """Execute commands and mark time, when in was run (in epoch
         seconds)."""
-        if self._strategy.task_has_to_run and not self._command.state in [
-            State.RUNNING,
-            State.FAILED,
-        ]:
-            self._strategy.mark_run_time()
-            self._command.execute()
+        self._strategy.mark_start_time()
+        self._command.execute()
+        self._strategy.mark_stop_time()
+
+    def cancel(self):
+        """Set task state to CANCELLED."""
+        self._command.state = State.CANCELLED
 
 
 class TaskRegistry:
@@ -76,6 +97,14 @@ class TaskRegistry:
 
     def __init__(self):
         self._tasks: Dict[str, Any] = {}
+
+    def get_tasks(self) -> list[Task]:
+        """Get tasks as list.
+
+        Returns:
+            list[Task]: List of tasks.
+        """
+        return list(self._tasks.values())
 
     def get_tasks_uuid(self) -> list[str]:
         """List of tasks UUIDs.
@@ -145,11 +174,17 @@ class TaskManager:
             cls._instance = super().__new__(cls)
         return cls._instance
 
-    def __init__(self, max_workers: int = 20):
+    def __init__(
+        self,
+        polling_interval: int = 1,
+        max_workers: int = 20,
+        max_iterations: int = None
+    ):
         self._executor = ThreadPoolExecutor(
             max_workers=max_workers, thread_name_prefix="fatm"
         )
-        self._tasks = []
+        self._polling_interval = polling_interval
+        self._max_iterations = max_iterations
         self._registry = TaskRegistry()
         self._task_queue = queue.Queue()
         self._lock = threading.Lock()
@@ -165,27 +200,21 @@ class TaskManager:
         """Get task registry."""
         return self._registry
 
-    def run(self, max_iterations: int = None):
-        """Run tasks.
-
-        Args:
-            max_iterations (int, optional): Number of iterations main loop
-                will be run. Debug option. Defaults to None.
-        """
+    def run(self):
+        """Run tasks."""
         iteration = 0  # DEBUG
 
         while self._running:
+            if self._max_iterations is not None:  # DEBUG
+                iteration += 1
+                if iteration > self._max_iterations:
+                    self.stop(wait=True, cancel_futures=True)
+                    break
+
             self.__append_tasks_from_queue()
             self.__run_tasks()
 
-            if max_iterations is not None:  # DEBUG
-                iteration += 1
-                if iteration > max_iterations:
-                    break
-
-            time.sleep(1)
-
-        self.stop()
+            time.sleep(self._polling_interval)
 
     def __append_tasks_from_queue(self):
         while not self._task_queue.empty():
@@ -197,22 +226,33 @@ class TaskManager:
         with self._lock:
             for uuid_ in self._registry.get_tasks_uuid():
                 task = self._registry.get_task_by_uuid(uuid_)
-                future = self._executor.submit(task.run)
-                self._futures.append(future)
+                if task.should_run():
+                    future = self._executor.submit(task.run)    # TODO: add thread naming by task name
+                    self._futures.append(future)
 
-            # TODO: Periodic tasks might be still running when their next
-            # iteration comes to running time. Need to check this.
-            result = []
+            tasks_pending = []
             for f in self._futures:
-                result.append(f.result())
+                if f.done():
+                    f.result()
+                else:
+                    tasks_pending.append(f)
 
-            for uuid_ in self._registry.get_tasks_uuid():
-                task = self._registry.get_task_by_uuid(uuid_)
+            self._futures = tasks_pending
 
-            self._futures = []
-
-    def stop(self):
+    def stop(self, wait=True, cancel_futures=False):
         """Shutdown all processes gracefully. Waiting for processes to
-        finish."""
+        finish (optionally).
+
+        Args:
+            wait (bool, optional): Should wait for processes to finish.
+                Defaults to True.
+        """
         self._running = False
-        self._executor.shutdown(wait=True)
+        for task in self._registry.get_tasks():
+            if task.can_be_cancelled():
+                task.cancel()
+
+        self._executor.shutdown(
+            wait=wait,
+            cancel_futures=cancel_futures
+        )

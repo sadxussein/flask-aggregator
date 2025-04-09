@@ -1,7 +1,5 @@
 """Debug classes for tests."""
 
-__all__ = ["AdditionCommand"]
-
 import time
 import flask_aggregator.back.task_manager.command as cmd
 
@@ -51,13 +49,13 @@ class AdditionCommand(cmd.Command):
 
     def execute(self):
         try:
-            self._state = cmd.State.RUNNING
+            self.state = cmd.State.RUNNING
             processor = AdditionProcess(self._a, self._b)
-            self._result = processor.process()
-            self._state = cmd.State.SUCCESS
+            self.result = processor.process()
+            self.state = cmd.State.SUCCESS
         except TypeError as e:
-            self._error = str(e)
-            self._state = cmd.State.FAILED
+            self.error = str(e)
+            self.state = cmd.State.FAILED
 
 
 class CumulativeAdditionProcess:
@@ -71,6 +69,8 @@ class CumulativeAdditionProcess:
         self._b = b
         self._sleep = sleep
         self._result = 0
+        self._elapsed_time = 0
+        self._time_created = time.time()
 
     def process(self):
         """Real process imitation."""
@@ -78,7 +78,9 @@ class CumulativeAdditionProcess:
             raise TypeError("Bad agruments. Exiting.")
         if self._sleep:
             time.sleep(self._sleep)
+        # self._elapsed_time = time.time() - self._time_created
         self._result = self._result + self._a + self._b
+        # print(self._result, self._elapsed_time)
         return self._result
 
 
@@ -90,12 +92,13 @@ class CumulativeAdditionCommand(cmd.Command):
 
     def execute(self):
         try:
-            self._state = cmd.State.RUNNING
-            self._result = self._processor.process()
-            self._state = cmd.State.SUCCESS
+            self.state = cmd.State.RUNNING
+            self.result = self._processor.process()
+            if self.state != cmd.State.CANCELLED:
+                self.state = cmd.State.SUCCESS
         except TypeError as e:
-            self._error = str(e)
-            self._state = cmd.State.FAILED
+            self.error = str(e)
+            self.state = cmd.State.FAILED
 
 
 class SleepProcess:
@@ -121,13 +124,13 @@ class SleepCommand(cmd.Command):
 
     def execute(self):
         try:
-            self._state = cmd.State.RUNNING
+            self.state = cmd.State.RUNNING
             processor = SleepProcess(self._seconds)
-            self._result = processor.process()
-            self._state = cmd.State.SUCCESS
+            self.result = processor.process()
+            self.state = cmd.State.SUCCESS
         except TypeError as e:
-            self._error = str(e)
-            self._state = cmd.State.FAILED
+            self.error = str(e)
+            self.state = cmd.State.FAILED
 
 
 class GetVmNameCommand(cmd.Command):
@@ -138,9 +141,9 @@ class GetVmNameCommand(cmd.Command):
 
     def execute(self):
         try:
-            self._state = cmd.State.RUNNING
-            self._result = next(self._vm_name_gen)
-            self._state = cmd.State.SUCCESS
+            self.state = cmd.State.RUNNING
+            self.result = next(self._vm_name_gen)
+            self.state = cmd.State.SUCCESS
         except TypeError as e:
-            self._error = str(e)
-            self._state = cmd.State.FAILED
+            self.error = str(e)
+            self.state = cmd.State.FAILED
