@@ -73,7 +73,7 @@ class TestIntervalRun(unittest.TestCase):
     def test_bad_interval(self):
         """In case if interval is < 0 exception should be raised."""
         with self.assertRaises(ValueError) as e:
-            strategy = strat.IntervalRun(-1)
+            strat.IntervalRun(-1)
         self.assertEqual(str(e.exception), "Time interval can not be equal or less than 0.")
 
     @patch("time.time")

@@ -8,6 +8,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 import flask_aggregator.back.task_manager.strategy as strat
 import flask_aggregator.back.task_manager.command as cmd
+import flask_aggregator.back.task_manager.monitor as mon
 import flask_aggregator.back.task_manager.task_manager as tm
 import tests.test_task_manager.debug_tools as dc
 
@@ -296,7 +297,7 @@ class TestTaskManager(unittest.TestCase):
         )
         # Executes even slower that its internal interval.
         self.bad_interval_long_sleep_task = tm.Task(
-            "bad_interval_task",
+            "bad_interval_long_sleep_task",
             dc.CumulativeAdditionCommand(3, "bad_arg", 10),
             strat.IntervalRun(5)
         )
@@ -388,7 +389,6 @@ class TestTaskManager(unittest.TestCase):
 
             future.result()
 
-
         # Checking results.
         for task in self.task_manager.registry.get_tasks():
             if task.name == "bad_onetime_task":
@@ -464,8 +464,6 @@ class TestTaskManager(unittest.TestCase):
                 self.assertEqual(task.should_run(), False)
                 self.assertEqual(task.can_be_cancelled(), False)
 
-
-
     def test_run_single_interval_sleep_task_success(self):
         """Single task, which should be executed long. Longer than TM polling
         and when its internal execution time is longer than its execution
@@ -478,6 +476,16 @@ class TestTaskManager(unittest.TestCase):
         with ThreadPoolExecutor() as e:
             future = e.submit(self.task_manager.run)
 
+            time.sleep(19)
+
+            task_dict = task.to_dict()
+            self.assertEqual(task_dict["result"], 30)
+            self.assertEqual(task_dict["error"], None)
+            self.assertEqual(task_dict["state"], cmd.State.RUNNING)
+            self.assertEqual(int(task_dict["last_run_time"]), self.start_time + 18)
+            self.assertEqual(task.should_run(), False)
+            self.assertEqual(task.can_be_cancelled(), True)
+
             future.result()
 
         # Task should be executed twice. Once at 0, at 9 seconds and at 18
@@ -487,10 +495,9 @@ class TestTaskManager(unittest.TestCase):
         self.assertEqual(task_dict["result"], 45)
         self.assertEqual(task_dict["error"], None)
         self.assertEqual(task_dict["state"], cmd.State.CANCELLED)
-        self.assertEqual(int(task_dict["last_run_time"]), self.start_time + 10)
+        self.assertEqual(int(task_dict["last_run_time"]), self.start_time + 18)
         self.assertEqual(task.should_run(), False)
         self.assertEqual(task.can_be_cancelled(), False)
-
 
     def test_run_single_interval_divisible_sleep_task_success(self):
         """Single task, which should be executed long. Longer than TM polling
@@ -514,9 +521,228 @@ class TestTaskManager(unittest.TestCase):
         self.assertEqual(task._command.state, cmd.State.CANCELLED)
         self.assertEqual(task._command.result, 30)
 
+    def test_run_bad_task_interrupt_with_exception(self):
+        """If exception is raised from task registry when TM is running."""
+        mock_command = MagicMock()
+        mock_strategy = MagicMock()
+        task_1 = tm.Task("task_1", mock_command, mock_strategy)
+        task_2 = tm.Task("task_1", mock_command, mock_strategy)
+
+        self.task_manager.add_task(task_1)
+        with ThreadPoolExecutor() as e:
+            future = e.submit(self.task_manager.run)
+            self.task_manager.add_task(task_2)
+            future.result()
+
+
+class TestTaskRegistry(unittest.TestCase):
+    """Test cases for task registry."""
+    def setUp(self):
+        self.task_registry = tm.TaskRegistry()
+
+    def test_add_task_unique_name_exception(self):
+        """Name of the task should be unique. 
+        
+        If it is not - exception is raised.
+        """
+        # 2 tasks with same name.
+        command_mock = MagicMock()
+        strategy_mock = MagicMock()
+
+        task_1 = tm.Task("task_1", command_mock, strategy_mock)
+        task_2 = tm.Task("task_1", command_mock, strategy_mock)
+
+        self.task_registry.add_task(task_1)
+        with self.assertRaises(NameError) as e:
+            self.task_registry.add_task(task_2)
+        self.assertEqual(str(e.exception), f"Task with name {task_2.name} already exists.")
+
+    def test_get_task_by_name_success(self):
+        """Get task by name test."""
+        command_mock = MagicMock()
+        strategy_mock = MagicMock()
+
+        task_1 = tm.Task("task_1", command_mock, strategy_mock)
+
+        self.task_registry.add_task(task_1)
+
+        task_from_get = self.task_registry.get_task_by_name("task_1")
+        self.assertEqual(task_from_get.uuid, task_1.uuid)
+
+    def test_get_task_by_name_failure(self):
+        """Get task by name test, when no name is found."""
+        with self.assertRaises(LookupError) as e:
+            self.task_registry.get_task_by_name("task_name")
+        self.assertEqual(str(e.exception), "No task with name task_name found.")
+
+    def test_clear(self):
+        """Test emptying tasks."""
+        command_mock = MagicMock()
+        strategy_mock = MagicMock()
+
+        task_1 = tm.Task("task_1", command_mock, strategy_mock)
+
+        self.task_registry.add_task(task_1)
+
+        self.assertEqual(len(self.task_registry.get_tasks()), 1)
+
+        self.task_registry.clear()
+
+        self.assertEqual(len(self.task_registry.get_tasks()), 0)
+
+    def test_delete_task(self):
+        """Test task removal from registry."""
+        command_mock = MagicMock()
+        strategy_mock = MagicMock()
+
+        task_1 = tm.Task("task_1", command_mock, strategy_mock)
+
+        self.task_registry.add_task(task_1)
+
+        self.task_registry.get_task_by_name("task_1")
+
+        self.task_registry.delete_task(task_1.uuid)
+
+        with self.assertRaises(LookupError):
+            self.task_registry.get_task_by_name("task_1")
+
+    def test_notify_monitor(self):
+        """Add, remove and notify monitor (with task data)."""
+        mock_monitor_callback = MagicMock()
+        self.task_registry.attach_monitor(mock_monitor_callback)
+        command_mock = MagicMock()
+        strategy_mock = MagicMock()
+        task_1 = tm.Task("task_1", command_mock, strategy_mock)
+        task_2 = tm.Task("task_2", command_mock, strategy_mock)
+        self.task_registry.add_task(task_1)
+        self.task_registry.add_task(task_2)
+
+        self.task_registry.notify_monitor()
+        mock_monitor_callback.assert_called_once_with(
+            [task_1.to_dict(), task_2.to_dict()]
+        )
+
+        self.task_registry.detatch_monitor()
+
+
+class RealTaskManagerTest:  # TODO: finish after observer class created.
+    """Interactive testing for task manager and related classes."""
+    def __init__(self):
+        self._tm = tm.TaskManager()
+        self._task = tm.Task(
+            "task",
+            dc.CumulativeAdditionCommand(1, 3),
+            strat.IntervalRun(5)
+        )
+        self._running = True
+
+    def __stop(self):
+        self._running = False
+        self._tm.stop()
+
+    def __run_interaction(self):
+        user_input = input("Select option: ")
+        if user_input == "e":
+            self.__stop()
+        elif user_input == "show":
+            for task in self._tm.registry.get_tasks():
+                task_dict = task.to_dict()
+                print(f'name: \"{task_dict["name"]}\" result: {task_dict["result"]} error: {task_dict["error"]}')
+        elif user_input == "add":
+            print("Adding simple addition task.")
+            name = input("name: ")
+            a = input("a: ")
+            b = input("b: ")
+            sleep = input("sleep: ")
+            interval = input("interval: ")
+            self._tm.add_task(tm.Task(
+                name,
+                dc.CumulativeAdditionCommand(int(a), int(b), int(sleep)),
+                strat.IntervalRun(int(interval))
+            ))
+        else:
+            print("unknown command")
+
+    def run(self):
+        """Simple task manager run."""
+        with ThreadPoolExecutor() as e:
+            future = e.submit(self._tm.run)
+
+            self._tm.add_task(self._task)
+
+            while self._running and self._tm._running:
+                self.__run_interaction()
+                time.sleep(0.1)
+
+            future.result()
+
+
+class RealTaskManagerWithMonitorTest:
+    """Interactive testing for task manager and related classes."""
+    def __init__(self):
+        self._tm = tm.TaskManager()
+        self._tr = self._tm.registry
+        self._mon = mon.Server()
+        self._tr.attach_monitor(self._mon.observer_callback)
+        self._task = tm.Task(
+            "task",
+            dc.CumulativeAdditionCommand(1, 3),
+            strat.IntervalRun(5)
+        )
+        self._running = True
+
+    def __stop(self):
+        self._running = False
+        self._mon.stop()
+        self._tm.stop()
+
+    def __run_interaction(self):
+        user_input = input("Select option: ")
+        if user_input == "e":
+            self.__stop()
+        elif user_input == "show":
+            for task in self._tm.registry.get_tasks():
+                task_dict = task.to_dict()
+                print(f'name: \"{task_dict["name"]}\" result: {task_dict["result"]} error: {task_dict["error"]}')
+        elif user_input == "add":
+            print("Adding simple addition task.")
+            name = input("name: ")
+            a = input("a: ")
+            b = input("b: ")
+            sleep = input("sleep: ")
+            interval = input("interval: ")
+            self._tm.add_task(tm.Task(
+                name,
+                dc.CumulativeAdditionCommand(int(a), int(b), int(sleep)),
+                strat.IntervalRun(int(interval))
+            ))
+        else:
+            print("unknown command")
+
+    def run(self):
+        """Simple task manager run."""
+        with ThreadPoolExecutor() as e:
+            tm_future = e.submit(self._tm.run)
+            tm_monitor = e.submit(self._mon.run)
+
+            self._tm.add_task(self._task)
+
+            while self._running and self._tm._running:
+                self.__run_interaction()
+                time.sleep(0.1)
+
+            tm_future.result()
+            tm_monitor.result()
+
+
+def single_function_testing():
+    """For debugger runs and usage in __main__."""
+    test = TestTaskRegistry(methodName="test_add_task_unique_name_exception")
+    test.setUp()
+    test.test_add_task_unique_name_exception()
+    test.tearDown()
+
 
 if __name__ == "__main__":
-    test = TestTaskManager(methodName="test_run_single_interval_sleep_task_success")
-    test.setUp()
-    test.test_run_single_interval_sleep_task_success()
-    test.tearDown()
+    tm_test = RealTaskManagerWithMonitorTest()
+    tm_test.run()

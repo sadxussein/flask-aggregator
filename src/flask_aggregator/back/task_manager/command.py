@@ -1,17 +1,16 @@
 """Commands and its factory module."""
 
-from enum import Enum
 from typing import Any
 from abc import ABC, abstractmethod
 
 
-class State(Enum):
+class State:
     """Command states."""
-    NEW = 1
-    RUNNING = 2
-    SUCCESS = 3
-    FAILED = 4
-    CANCELLED = 5
+    NEW = "new"
+    RUNNING = "running"
+    SUCCESS = "success"
+    FAILED = "failed"
+    CANCELLED = "cancelled"
 
 
 class Command(ABC):
@@ -29,19 +28,19 @@ class Command(ABC):
         # incorporation every time `execute` is implemented.
 
 
-# class CommandFactory:
-#     """So far only for tests."""
-#     @staticmethod
-#     def make_command(name: str, **kwargs) -> Command:
-#         """Factory method for commands.
+class CommandFactory:
+    """So far only for tests."""
+    @staticmethod
+    def make_command(name: str, **kwargs) -> Command:
+        """Factory method for commands.
 
-#         Args:
-#             name (str): Command name.
+        Args:
+            name (str): Command name.
 
-#         Raises:
-#             ValueError: For unknown commands.
+        Raises:
+            ValueError: For unknown commands.
 
-#         Returns:
-#             Command: command class instance.
-#         """
-#         raise ValueError("Unknown command.")
+        Returns:
+            Command: command class instance.
+        """
+        raise ValueError("Unknown command.")

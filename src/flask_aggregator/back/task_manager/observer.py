@@ -1,35 +1,29 @@
 """For updating info about task progress/status."""
 
 from abc import ABC, abstractmethod
+from typing import Any
+
 
 class Observer(ABC):
     """Abstract class for task observers."""
     def __init__(self):
-        self._state = None
+        self._data = None
 
     @property
-    def state(self):
+    def data(self):
         """State of task."""
-        return self._state
+        return self._data
 
     @abstractmethod
-    def update(self, state: str):
+    def update(self, data: Any):
         """Update task current state."""
 
 
-class State(Observer):
-    """Concrete class for keeping entity status up-to-date result."""
-    def update(self, state):
-        self._state = state
-
-
 class TaskState(Observer):
-    """Concrete class for keeping task status up-to-date."""
-    def update(self, state):
-        self._state = state
-
-
-class CommandState(Observer):
-    """Concrete class for keeping command status up-to-date."""
-    def update(self, state):
-        self._state = state
+    """Concrete class for task registry observer."""
+    def update(self, data: dict[str, Any]):
+        self._data = (
+            f'name: {data["name"]} result: {data["result"]}'
+            f'error: {data["error"]}'
+            f'last_run_time: {int(data["last_run_time"])}'
+        )

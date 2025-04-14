@@ -7,6 +7,10 @@ import uuid
 from typing import Dict, Any
 from concurrent.futures import ThreadPoolExecutor
 from flask_aggregator.back.task_manager.command import Command, State
+from flask_aggregator.back.task_manager.observer import Observer
+
+# TODO: consider that default logging module can be used as an option.
+from flask_aggregator.back.logger import Logger
 
 # TODO: this import requires reconfiguration. There should be factory method
 # or something like that. Maybe only interface/abstract class.
@@ -97,6 +101,24 @@ class TaskRegistry:
 
     def __init__(self):
         self._tasks: Dict[str, Any] = {}
+        self._observer_callback = None
+
+    def attach_monitor(self, observer_callback):
+        """Attach observer (monitor server) to registry."""
+        self._observer_callback = observer_callback
+
+    def detatch_monitor(self):
+        """Remove observer (monitor server) from registry."""
+        self._observer_callback = None
+
+    def notify_monitor(self):
+        """Notify observers about tasks states."""
+        if not self._observer_callback:
+            raise RuntimeError("No server observer callback attached!")
+        result = []
+        for task in self._tasks.values():
+            result.append(task.to_dict())
+        self._observer_callback(result)
 
     def get_tasks(self) -> list[Task]:
         """Get tasks as list.
@@ -115,7 +137,7 @@ class TaskRegistry:
         return list(self._tasks)
 
     # TODO: make sure that no task with same name exists.
-    def add_task(self, task_uuid: str, task: Task):
+    def add_task(self, task: Task):
         """Store result of task execution.
 
         Args:
@@ -123,7 +145,10 @@ class TaskRegistry:
             result (Any): Preferably dict, but could be anything.
             error (str): Error string if there is any, None otherwise.
         """
-        self._tasks[task_uuid] = task
+        for t in self._tasks.values():
+            if task.name == t.name:
+                raise NameError(f"Task with name {task.name} already exists.")
+        self._tasks[task.uuid] = task
 
     def get_task_by_uuid(self, task_uuid: str) -> Task:
         """Get task.
@@ -149,7 +174,9 @@ class TaskRegistry:
         for _, task in self._tasks.items():
             if task.name == task_name:
                 result = task
-        return result
+        if result:
+            return result
+        raise LookupError(f"No task with name {task_name} found.")
 
     def delete_task(self, task_uuid: str):
         """Remore task from inventory.
@@ -190,6 +217,9 @@ class TaskManager:
         self._lock = threading.Lock()
         self._running = True
         self._futures = []
+        self._logger = Logger()
+        if max_iterations:
+            self.__iteration = 0    # TODO: DEBUG. Consider removing
 
     def add_task(self, task: Task):
         """Add task to task queue."""
@@ -202,25 +232,35 @@ class TaskManager:
 
     def run(self):
         """Run tasks."""
-        iteration = 0  # DEBUG
-
         while self._running:
-            if self._max_iterations is not None:  # DEBUG
-                iteration += 1
-                if iteration > self._max_iterations:
-                    self.stop(wait=True, cancel_futures=True)
-                    break
+            if self.__is_in_debug() and self.__should_debug_end():
+                self.stop(wait=True, cancel_futures=True)
+                break
 
-            self.__append_tasks_from_queue()
+            self.__append_tasks_from_queue_if_not_empty()
             self.__run_tasks()
 
             time.sleep(self._polling_interval)
 
-    def __append_tasks_from_queue(self):
+        self.__log_results()
+
+    def __is_in_debug(self):
+        return bool(self._max_iterations)
+
+    def __should_debug_end(self):
+        self.__iteration += 1
+        if self.__iteration > self._max_iterations:
+            return True
+        return False
+
+    def __append_tasks_from_queue_if_not_empty(self):
         while not self._task_queue.empty():
             task = self._task_queue.get()
             with self._lock:
-                self._registry.add_task(task.uuid, task)
+                try:
+                    self._registry.add_task(task)
+                except NameError as e:
+                    self._logger.log_error(str(e))
 
     def __run_tasks(self):
         with self._lock:
@@ -237,7 +277,17 @@ class TaskManager:
                 else:
                     tasks_pending.append(f)
 
+            self._registry.notify_monitor()
             self._futures = tasks_pending
+
+    def __log_results(self):
+        self._logger.log_info("Stopped working. Tasks results below.")
+        for task in self._registry.get_tasks():
+            task_dict = task.to_dict()
+            self._logger.log_info(
+                f"{task.uuid} - {task.name}: "
+                f"{task_dict['result'] or task_dict['error']}"
+            )
 
     def stop(self, wait=True, cancel_futures=False):
         """Shutdown all processes gracefully. Waiting for processes to
