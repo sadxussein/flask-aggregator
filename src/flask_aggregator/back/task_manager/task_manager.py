@@ -16,12 +16,8 @@ from flask_aggregator.back.logger import Logger
 # or something like that. Maybe only interface/abstract class.
 from flask_aggregator.back.task_manager.strategy import TaskRunStrategy
 
-# TODO: this import requires attention. Perhaps, if there will be more
-# observers, some other import/use of Observer pattern approach will be in
-# order. Also, usage of Observer pattern here is questionable.
-# from flask_aggregator.back.task_manager.observer import TaskState
-
-
+# TODO: consider necessity of TaskResult or CommandResult class. Perhaps it
+# will be easier if there will be incapsulation for command/task execution.
 class Task:
     """Abstract task class. Runs all operations."""
 
@@ -101,24 +97,16 @@ class TaskRegistry:
 
     def __init__(self):
         self._tasks: Dict[str, Any] = {}
-        self._observer_callback = None
-
-    def attach_monitor(self, observer_callback):
-        """Attach observer (monitor server) to registry."""
-        self._observer_callback = observer_callback
-
-    def detatch_monitor(self):
-        """Remove observer (monitor server) from registry."""
-        self._observer_callback = None
+        self.observer_callback = None
 
     def notify_monitor(self):
         """Notify observers about tasks states."""
-        if not self._observer_callback:
+        if not self.observer_callback:
             raise RuntimeError("No server observer callback attached!")
         result = []
         for task in self._tasks.values():
             result.append(task.to_dict())
-        self._observer_callback(result)
+        self.observer_callback(result)
 
     def get_tasks(self) -> list[Task]:
         """Get tasks as list.
@@ -225,6 +213,14 @@ class TaskManager:
         """Add task to task queue."""
         self._task_queue.put(task)
 
+    def attach_monitor(self, observer_callback):
+        """Attach observer (monitor server) to registry."""
+        self._registry.observer_callback = observer_callback
+
+    def detatch_monitor(self):
+        """Remove observer (monitor server) from registry."""
+        self._registry.observer_callback = None
+
     @property
     def registry(self):
         """Get task registry."""
@@ -267,7 +263,8 @@ class TaskManager:
             for uuid_ in self._registry.get_tasks_uuid():
                 task = self._registry.get_task_by_uuid(uuid_)
                 if task.should_run():
-                    future = self._executor.submit(task.run)    # TODO: add thread naming by task name
+                    # TODO: add thread naming by task name
+                    future = self._executor.submit(task.run)
                     self._futures.append(future)
 
             tasks_pending = []

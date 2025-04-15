@@ -77,12 +77,14 @@ class TestClient(unittest.TestCase):
             {
                 "name": "some_name",
                 "result": "some_result",
-                "error": null
+                "error": null,
+                "state": "running"
             },
             {
                 "name": "some_other_name",
                 "result": null,
-                "error": "some_error"
+                "error": "some_error",
+                "state": "success"
             }
         ]"""
         mock_socket_class.return_value = mock_socket
@@ -114,12 +116,14 @@ class TestServerClient(unittest.TestCase):
             {
                 "name": "some_name",
                 "result": "some_result",
-                "error": None
+                "error": None,
+                "state": "running"
             },
             {
                 "name": "some_other_name",
                 "result": None,
-                "error": "some_error"
+                "error": "some_error",
+                "state": "success"
             }
         ])
 

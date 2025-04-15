@@ -8,7 +8,6 @@ from concurrent.futures import ThreadPoolExecutor
 
 import flask_aggregator.back.task_manager.strategy as strat
 import flask_aggregator.back.task_manager.command as cmd
-import flask_aggregator.back.task_manager.monitor as mon
 import flask_aggregator.back.task_manager.task_manager as tm
 import tests.test_task_manager.debug_tools as dc
 
@@ -625,116 +624,6 @@ class TestTaskRegistry(unittest.TestCase):
         self.task_registry.detatch_monitor()
 
 
-class RealTaskManagerTest:  # TODO: finish after observer class created.
-    """Interactive testing for task manager and related classes."""
-    def __init__(self):
-        self._tm = tm.TaskManager()
-        self._task = tm.Task(
-            "task",
-            dc.CumulativeAdditionCommand(1, 3),
-            strat.IntervalRun(5)
-        )
-        self._running = True
-
-    def __stop(self):
-        self._running = False
-        self._tm.stop()
-
-    def __run_interaction(self):
-        user_input = input("Select option: ")
-        if user_input == "e":
-            self.__stop()
-        elif user_input == "show":
-            for task in self._tm.registry.get_tasks():
-                task_dict = task.to_dict()
-                print(f'name: \"{task_dict["name"]}\" result: {task_dict["result"]} error: {task_dict["error"]}')
-        elif user_input == "add":
-            print("Adding simple addition task.")
-            name = input("name: ")
-            a = input("a: ")
-            b = input("b: ")
-            sleep = input("sleep: ")
-            interval = input("interval: ")
-            self._tm.add_task(tm.Task(
-                name,
-                dc.CumulativeAdditionCommand(int(a), int(b), int(sleep)),
-                strat.IntervalRun(int(interval))
-            ))
-        else:
-            print("unknown command")
-
-    def run(self):
-        """Simple task manager run."""
-        with ThreadPoolExecutor() as e:
-            future = e.submit(self._tm.run)
-
-            self._tm.add_task(self._task)
-
-            while self._running and self._tm._running:
-                self.__run_interaction()
-                time.sleep(0.1)
-
-            future.result()
-
-
-class RealTaskManagerWithMonitorTest:
-    """Interactive testing for task manager and related classes."""
-    def __init__(self):
-        self._tm = tm.TaskManager()
-        self._tr = self._tm.registry
-        self._mon = mon.Server()
-        self._tr.attach_monitor(self._mon.observer_callback)
-        self._task = tm.Task(
-            "task",
-            dc.CumulativeAdditionCommand(1, 3),
-            strat.IntervalRun(5)
-        )
-        self._running = True
-
-    def __stop(self):
-        self._running = False
-        self._mon.stop()
-        self._tm.stop()
-
-    def __run_interaction(self):
-        user_input = input("Select option: ")
-        if user_input == "e":
-            self.__stop()
-        elif user_input == "show":
-            for task in self._tm.registry.get_tasks():
-                task_dict = task.to_dict()
-                print(f'name: \"{task_dict["name"]}\" result: {task_dict["result"]} error: {task_dict["error"]}')
-        elif user_input == "add":
-            print("Adding simple addition task.")
-            name = input("name: ")
-            a = input("a: ")
-            b = input("b: ")
-            sleep = input("sleep: ")
-            interval = input("interval: ")
-            self._tm.add_task(tm.Task(
-                name,
-                dc.CumulativeAdditionCommand(int(a), int(b), int(sleep)),
-                strat.IntervalRun(int(interval))
-            ))
-        else:
-            print("unknown command")
-
-    def run(self):
-        """Simple task manager run."""
-        with ThreadPoolExecutor() as e:
-            tm_future = e.submit(self._tm.run)
-            tm_monitor = e.submit(self._mon.run)
-
-            self._tm.add_task(self._task)
-
-            while self._running and self._tm._running:
-                self.__run_interaction()
-                time.sleep(0.1)
-
-            tm_future.result()
-            tm_monitor.result()
-
-
 def single_function_testing():
     """For debugger runs and usage in __main__."""
     test = TestTaskRegistry(methodName="test_add_task_unique_name_exception")
@@ -744,5 +633,4 @@ def single_function_testing():
 
 
 if __name__ == "__main__":
-    tm_test = RealTaskManagerWithMonitorTest()
-    tm_test.run()
+    pass

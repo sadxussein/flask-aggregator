@@ -3,6 +3,7 @@
 from typing import Any
 from abc import ABC, abstractmethod
 
+from flask_aggregator.back.ovirt_helper import OvirtHelper
 
 class State:
     """Command states."""
@@ -26,6 +27,27 @@ class Command(ABC):
         # TODO: need to incorporate decorator for this method. It is
         # unappropriable for client code to be required `State` enum manual
         # incorporation every time `execute` is implemented.
+
+
+# TODO: think this through. We are close to making real oVirt interaction
+# command. Need to think what to pass to command - user, pass, engine link
+# etc. Perhaps OvirtCommand should be subclassed by real command classes.
+# This one might be needed only for storing login credentials or urls.
+class OvirtCommand(Command):
+    """Base class for oVirt interactions."""
+    def __init__(self):
+        super().__init__()
+        # TODO: below is just a test!
+        self._helper = OvirtHelper(urls_list=["e15-test2"])
+
+    def execute(self):
+        self.result = self._helper.get_hosts()
+
+class VMWareCommand(Command):
+    pass
+
+class RosplatformaCommand(Command):
+    pass
 
 
 class CommandFactory:
